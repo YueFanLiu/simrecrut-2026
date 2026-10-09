@@ -50,6 +50,14 @@ build artifacts and machine-specific JDK paths do not belong in Git.
 The wrapper verifies the pinned Maven distribution with a SHA-256 checksum,
 derived after checking Maven Central's published SHA-512 checksum.
 
+## IDE setup
+
+Register an installed JDK 17 as the project SDK named `17`. Open
+`backend/java/pom.xml` as a Maven project so the IDE imports the Java source roots
+and dependencies. Use the same JDK for the project, Maven importer, and Maven
+runner. The existing repository-level IDE module points at the repository root;
+it does not replace Maven's backend module configuration.
+
 ## Runtime prerequisites
 
 Configure a reachable MySQL database and Redis service before starting the
