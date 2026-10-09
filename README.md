@@ -6,7 +6,7 @@ Neutral AI, Biased AI, Standard Human, and Instructed-Bias Human results through
 authorized views. Matching is an intermediate calculation used by the rules and
 models.
 
-This repository currently contains the agreed directory scaffold, contribution
+This repository currently contains the initial directory layout, contribution
 rules, configuration examples, and a Java build bootstrap. Product workflows,
 frontend pages, inference endpoints, training programs, database migrations, and
 the deployment stack are developed incrementally in their designated locations.
@@ -86,7 +86,6 @@ caches. Durable case, task, result, and deletion state belongs in MySQL.
 |-- .env.example
 |-- .gitignore
 |-- .editorconfig
-|-- AGENTS.md
 `-- README.md
 ```
 

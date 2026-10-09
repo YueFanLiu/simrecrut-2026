@@ -1,5 +1,5 @@
 {
-  "description": "Required directories for the approved initial scaffold.",
+  "description": "Required repository directories.",
   "directories": [
     ".github",
     ".github/workflows",

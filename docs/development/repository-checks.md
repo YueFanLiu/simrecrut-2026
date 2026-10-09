@@ -10,8 +10,8 @@ The checker uses Git's tracked and unignored file list. It verifies that require
 directories in `.github/project-layout.json` exist, project-owned text files and
 paths contain no Han characters, text files use UTF-8, and local Markdown links
 resolve within the repository. It also verifies that documentation pages live in
-`docs/`, except the root README and agent instructions. It does not follow
-symlinks or fetch external links. Binary files and ignored private data are not
+`docs/`, except the root README and repository templates under `.github/`. It
+does not follow symlinks or fetch external links. Binary files and ignored private data are not
 treated as authored text.
 
 The language scan is a practical guard against Chinese text. Human review still

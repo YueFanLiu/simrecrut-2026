@@ -19,7 +19,7 @@ BINARY_SUFFIXES = {
     ".bin", ".docx", ".gif", ".ico", ".jar", ".jpeg", ".jpg", ".npz",
     ".onnx", ".pdf", ".png", ".pt", ".pth", ".safetensors", ".webp", ".zip",
 }
-ROOT_MARKDOWN = {"README.md", "AGENTS.md"}
+ROOT_MARKDOWN = {"README.md"}
 
 
 def repository_files(root: Path) -> list[Path]:

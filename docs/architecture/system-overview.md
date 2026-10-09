@@ -2,7 +2,7 @@
 
 This document defines the intended architecture. The repository is an initial scaffold; directory names and interfaces do not establish that the workflows, database schema, or operational guarantees are implemented.
 
-The source specification is [SimRecrut - Third Meeting Preparation](https://ijppwkmdd5yg.jp.larksuite.com/docx/UGOYdlnb5or8prxDdtrjKzyvpwd). [ADR 0001](decisions/0001-repository-and-runtime-boundaries.md) records the agreed repository adjustments, including the independent Java backend and layer-first packages. The [root README](../../README.md) is the repository entry point. Maintain architecture details here rather than duplicating them in component READMEs.
+The source specification is [SimRecrut - Third Meeting Preparation](https://ijppwkmdd5yg.jp.larksuite.com/docx/UGOYdlnb5or8prxDdtrjKzyvpwd). [ADR 0001](decisions/0001-repository-and-runtime-boundaries.md) records the repository organization and runtime boundaries, including the independent Java backend and layer-first packages. The [root README](../../README.md) is the repository entry point. Maintain architecture details here rather than duplicating them in component READMEs.
 
 ## Components and runtime boundaries
 

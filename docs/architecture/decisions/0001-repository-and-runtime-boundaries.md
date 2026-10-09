@@ -6,7 +6,7 @@
 
 ## Context
 
-The [Lark architecture specification](https://ijppwkmdd5yg.jp.larksuite.com/docx/UGOYdlnb5or8prxDdtrjKzyvpwd) separates frontend, Java business logic, storage, online prediction, and offline model development. The agreed repository needs three clear source components while retaining these logical responsibilities. The backend must be independent of RuoYi, use JDK 17, and keep online prediction separate from offline training.
+The [Lark architecture specification](https://ijppwkmdd5yg.jp.larksuite.com/docx/UGOYdlnb5or8prxDdtrjKzyvpwd) separates frontend, Java business logic, storage, online prediction, and offline model development. The repository needs three clear source components while retaining these logical responsibilities. The backend must be independent of RuoYi, use JDK 17, and keep online prediction separate from offline training.
 
 ## Decision
 
