@@ -1,0 +1,23 @@
+name: Java 17 build
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  java:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: backend/java/pom.xml
+      - name: Verify the Java bootstrap
+        working-directory: backend/java
+        run: bash mvnw --batch-mode verify

@@ -1,0 +1,49 @@
+# Local credentials and service configuration.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependency caches and generated output.
+**/node_modules/
+**/dist/
+**/target/
+**/.venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/coverage/
+**/.coverage
+**/*.egg-info/
+*.log
+
+# Restricted live files and local research output.
+/runtime/cases/*
+!/runtime/cases/.gitkeep
+/offline-ml/datasets/raw/*
+!/offline-ml/datasets/raw/.gitkeep
+/offline-ml/datasets/clean/*
+!/offline-ml/datasets/clean/.gitkeep
+/offline-ml/datasets/manifests/*
+!/offline-ml/datasets/manifests/.gitkeep
+/offline-ml/runs/*
+!/offline-ml/runs/.gitkeep
+/offline-ml/reports/validation/*
+!/offline-ml/reports/validation/.gitkeep
+/offline-ml/reports/final-test/*
+!/offline-ml/reports/final-test/.gitkeep
+/model_artifacts/neutral/*
+!/model_artifacts/neutral/.gitkeep
+/model_artifacts/biased/*
+!/model_artifacts/biased/.gitkeep
+
+# Editor and operating-system files.
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini

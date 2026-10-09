@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+!.env.example
+**/node_modules
+**/target
+**/.venv
+**/__pycache__
+runtime
+offline-ml/datasets
+offline-ml/runs
+offline-ml/reports
+model_artifacts
+**/*.log
