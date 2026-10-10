@@ -77,9 +77,10 @@ def main(argv: list[str] | None = None) -> int:
     Paths are explicit so execution does not depend on an installation
     directory. Return zero on success or one for a source, contract, or
     filesystem failure. Argparse reports invalid command syntax itself.
-    Download writes raw data and manifests; other commands write only
-    below the manifest's datasets/clean directory and refuse overwrites.
-    Audit-readiness is read-only and does not grant training approval.
+    Download writes raw data and manifests. Preparation, review and
+    extraction write below datasets/clean and preserve earlier drafts.
+    Audit-extraction replaces its selected comparison report.
+    Audit-readiness only reads local files and grants no training approval.
     """
     arguments = _parser().parse_args(argv)
     try:

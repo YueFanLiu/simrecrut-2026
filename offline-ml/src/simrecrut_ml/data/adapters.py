@@ -38,7 +38,7 @@ def safe_dataset_path(dataset_root: Path, relative_path: str) -> Path:
 
 
 def file_sha256(path: Path) -> str:
-    """Hash a local file in bounded chunks without reading it into memory."""
+    """Hash a file in chunks without loading it all into memory."""
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):

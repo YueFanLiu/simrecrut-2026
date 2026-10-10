@@ -6,13 +6,16 @@ Neutral AI, Biased AI, Standard Human, and Instructed-Bias Human results through
 authorized views. Matching is an intermediate calculation used by the rules and
 models.
 
-This repository contains the directory layout, contribution rules, configuration
-examples, a Java build bootstrap, and offline dataset download and preparation
-tools, evidence-backed DeepSeek extraction drafts, and PyTorch feature and
-development-training components. Product
-workflows, frontend pages, inference endpoints, final ML evaluation/packaging,
-database migrations, and deployment are developed incrementally in their
-designated locations. Prepared data remains unconfirmed until human review.
+This repository provides the project layout, development rules, configuration
+examples and a Java build setup. Offline tools download and clean datasets,
+then prepare review drafts with source evidence. DeepSeek handles structured
+extraction through a replaceable provider. PyTorch tools encode features,
+split data by person and run development training on prepared numeric inputs.
+Actual data still requires human review before training.
+
+Product workflows, frontend pages, inference endpoints, final ML evaluation
+and packaging, database migrations and deployment are developed in their
+designated modules.
 
 See [Dataset preparation](docs/research/dataset-preparation.md) to download the
 sources, create local review drafts, and check the required training protocol.
@@ -69,13 +72,14 @@ caches. Durable case, task, result, and deletion state belongs in MySQL.
 |       `-- tests/{contracts,features,prediction}/
 |-- offline-ml/
 |   |-- configs/
-|   |-- src/simrecrut_ml/{data,features,models,training,evaluation,packaging}/
+|   |-- src/simrecrut_ml/{data,extraction,features,models,training,evaluation,packaging}/
 |   |-- datasets/{raw,clean,manifests}/
 |   |-- runs/
 |   |-- reports/{validation,final-test}/
-|   `-- tests/{data,features,evaluation}/
+|   `-- tests/{data,extraction,features,training,evaluation}/
 |-- contracts/
 |   |-- api/
+|   |-- fact-schemas/
 |   |-- feature-schemas/
 |   |-- ml/
 |   |-- schemas/{professional-features,research-attributes,model-package}/
@@ -173,21 +177,24 @@ redundant repository wrapper. Mapper XML uses the same business grouping under
 
 ## Online inference and offline ML
 
-`backend/inference/` is a separate Python runtime on the internal network. It
-validates versioned requests, encodes features, loads approved model packages,
-and calculates predictions. Java validates returned identities, versions, and
-numbers before saving results. Inference has no application database credentials
-and no training endpoint.
+`backend/inference/` is reserved for a separate Python service on the internal
+network. The planned service will validate versioned requests, encode features,
+load approved model packages and calculate predictions. Java will check returned
+identities, versions and numbers before saving results. Inference must receive
+no application database credentials and expose no training endpoint.
 
 `offline-ml/` owns source manifests, data cleaning, pairing, grouped splits,
 training, validation, held-out evaluation, and model export. Live Candidate
 uploads do not automatically become training samples.
+Data preparation, extraction and a development training runner are implemented.
+Reviewed pairing, label calibration, final evaluation and release packaging
+remain unfinished.
 
-Shared contracts belong in `contracts/`. Model releases use
+Shared contracts belong in `contracts/`. Planned model releases will use
 `model_artifacts/{neutral,biased}/{version}/` with weights, schema, preprocessing,
-thresholds, manifest, checksums, and evaluation evidence. Java model registry
-metadata records imported provenance and release decisions. Online workers
-perform inference only.
+thresholds, manifest, checksums, and evaluation evidence. The planned Java model
+registry will record imported provenance and release decisions. Online workers
+will perform inference only.
 
 ## Documentation and contribution rules
 
