@@ -25,6 +25,20 @@ files, SQL migrations, executable configuration, and concise source comments sta
 Add a root metadata file only when a tool or repository convention requires that location; link it
 to the central documentation instead of duplicating policies.
 
+Dataset directories are a narrow exception: `offline-ml/datasets/raw/`, `clean/`,
+and `manifests/`, including their subdirectories, may contain `data-notes.md`
+files of at most 4,096 bytes. These notes explain local files and link to the
+central [dataset preparation guide](../research/dataset-preparation.md).
+Download instructions, processing contracts, and research procedures stay in
+that guide. Raw and derived dataset files remain ignored by Git.
+
+The research guides have distinct ownership: dataset preparation covers
+acquisition, cleaning and review import; pilot review and training covers the
+training protocol and its implementation. Keep source-derived review questions,
+mapping drafts, evidence and verification in the ignored local pilot-audit folder,
+classified by purpose. Update the existing questions file with later answers;
+do not leave competing copies in temporary directories or tracked guides.
+
 ## One authoritative explanation
 
 [Local Setup](local-setup.md) owns environment loading, local prerequisites, and local startup

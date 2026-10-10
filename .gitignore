@@ -24,12 +24,10 @@
 # Restricted live files and local research output.
 /runtime/cases/*
 !/runtime/cases/.gitkeep
-/offline-ml/datasets/raw/*
-!/offline-ml/datasets/raw/.gitkeep
-/offline-ml/datasets/clean/*
-!/offline-ml/datasets/clean/.gitkeep
-/offline-ml/datasets/manifests/*
-!/offline-ml/datasets/manifests/.gitkeep
+/offline-ml/datasets/**
+!/offline-ml/datasets/**/
+!/offline-ml/datasets/**/.gitkeep
+!/offline-ml/datasets/**/data-notes.md
 /offline-ml/runs/*
 !/offline-ml/runs/.gitkeep
 /offline-ml/reports/validation/*

@@ -38,12 +38,14 @@ The scaffold does not yet provide the complete application stack.
 | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` | Java backend only. |
 | `ML_BASE_URL` | Java backend only. |
 | `ML_INTERNAL_TOKEN` | Java backend and internal inference service. |
-| `DEEPSEEK_BASE_URL`, `DEEPSEEK_API_KEY` | Java extraction integration only. |
+| `DEEPSEEK_BASE_URL`, `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL` | Java extraction integration and the local offline extraction command. |
 | `CASE_WORKSPACE_PATH` | Java backend's restricted temporary-file workspace. |
 | `MODEL_ARTIFACTS_PATH` | Java package validation and read-only inference loading. |
 
-The frontend receives public values only. Offline jobs receive their own approved
-data and configuration, rather than an unrestricted copy of backend credentials.
+The frontend receives public values only. The offline extraction command reads
+only the three extraction settings from the explicitly selected local file.
+It does not inject database, Redis or internal inference credentials into its
+environment. Other offline jobs receive their own approved data and configuration.
 Future Compose files must declare environment variables per service; reading a
 root `.env` for interpolation does not inject those variables automatically.
 
@@ -60,7 +62,9 @@ paths therefore resolve from that root. Container paths will be explicit mount
 targets in deployment configuration.
 
 Keep `.env`, temporary CVs, actual datasets, run output, and model weights out of
-Git. The directory markers preserve the scaffold without storing those files.
+Git. Directory markers and small dataset notes preserve guidance without
+storing those files. Offline source preparation uses Python 3.12 or newer;
+its package setup and commands are in [Dataset preparation](../research/dataset-preparation.md).
 
 ## Repository verification
 

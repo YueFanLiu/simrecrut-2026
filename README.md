@@ -6,10 +6,19 @@ Neutral AI, Biased AI, Standard Human, and Instructed-Bias Human results through
 authorized views. Matching is an intermediate calculation used by the rules and
 models.
 
-This repository currently contains the initial directory layout, contribution
-rules, configuration examples, and a Java build bootstrap. Product workflows,
-frontend pages, inference endpoints, training programs, database migrations, and
-the deployment stack are developed incrementally in their designated locations.
+This repository contains the directory layout, contribution rules, configuration
+examples, a Java build bootstrap, and offline dataset download and preparation
+tools, evidence-backed DeepSeek extraction drafts, and PyTorch feature and
+development-training components. Product
+workflows, frontend pages, inference endpoints, final ML evaluation/packaging,
+database migrations, and deployment are developed incrementally in their
+designated locations. Prepared data remains unconfirmed until human review.
+
+See [Dataset preparation](docs/research/dataset-preparation.md) to download the
+sources, create local review drafts, and check the required training protocol.
+See [Pilot review and PyTorch preparation](docs/research/pilot-review-and-training.md)
+for the inspected 20-CV/20-job pilot, local mapping questions and remaining
+real-data training prerequisites.
 
 All project-owned content must be in English, including documentation, comments,
 identifiers, interface text, logs, errors, examples, and commit messages. Java
@@ -67,6 +76,7 @@ caches. Durable case, task, result, and deletion state belongs in MySQL.
 |   `-- tests/{data,features,evaluation}/
 |-- contracts/
 |   |-- api/
+|   |-- feature-schemas/
 |   |-- ml/
 |   |-- schemas/{professional-features,research-attributes,model-package}/
 |   `-- examples/golden_cases/

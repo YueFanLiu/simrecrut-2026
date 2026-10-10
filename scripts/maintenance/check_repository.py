@@ -20,6 +20,17 @@ BINARY_SUFFIXES = {
     ".onnx", ".pdf", ".png", ".pt", ".pth", ".safetensors", ".webp", ".zip",
 }
 ROOT_MARKDOWN = {"README.md"}
+DATASET_NOTE_LIMIT = 4096
+
+
+def is_dataset_note(relative: Path) -> bool:
+    """Allow short local-use notes beside ignored research files."""
+    return (
+        len(relative.parts) >= 4
+        and relative.parts[:2] == ("offline-ml", "datasets")
+        and relative.parts[2] in {"raw", "clean", "manifests"}
+        and relative.name == "data-notes.md"
+    )
 
 
 def repository_files(root: Path) -> list[Path]:
@@ -112,8 +123,15 @@ def check(root: Path) -> tuple[list[str], int]:
                 # Report the location without echoing potentially sensitive text.
                 errors.append(f"{label}:{number}: text contains Han characters")
         if relative.suffix.lower() == ".md":
-            if relative.parts[0] not in {"docs", ".github"} and label not in ROOT_MARKDOWN:
+            dataset_note = is_dataset_note(relative)
+            if (
+                relative.parts[0] not in {"docs", ".github"}
+                and label not in ROOT_MARKDOWN
+                and not dataset_note
+            ):
                 errors.append(f"{label}: move project documentation under docs/")
+            if dataset_note and absolute.stat().st_size > DATASET_NOTE_LIMIT:
+                errors.append(f"{label}: keep dataset notes within 4096 bytes")
             errors.extend(local_link_errors(root, relative, text))
     return errors, len(files)
 

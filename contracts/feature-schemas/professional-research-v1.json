@@ -1,0 +1,27 @@
+{
+  "schema_version": "professional-research-v1",
+  "specification_revision": 221,
+  "professional_order": [
+    "match_skills", "match_experience", "match_education", "match_languages", "match_projects",
+    "weight_skills", "weight_experience", "weight_education", "weight_languages", "weight_projects",
+    "contribution_skills", "contribution_experience", "contribution_education",
+    "contribution_languages", "contribution_projects", "mandatory_pass"
+  ],
+  "research_order": {
+    "school": ["prestigious", "ordinary", "unknown"],
+    "referral": ["yes", "no", "unknown"],
+    "gender": ["woman", "man", "unknown"],
+    "ethnicity": [
+      "east_asian", "south_asian", "black", "white",
+      "middle_eastern_or_north_african", "mixed_or_other", "unknown"
+    ]
+  },
+  "input_width": 32,
+  "tensor_dtype": "float32",
+  "rule_decimal_places": 7,
+  "rounding": "HALF_UP",
+  "neutral_research_mask": "Sixteen zeros; research information is withheld.",
+  "biased_research_encoding": "One selected position in each family, including unknown.",
+  "target_fields": ["Y_N", "Y_B"],
+  "excluded_from_inputs": ["Y_N", "Y_B", "biased_score", "bias_effect", "name"]
+}
