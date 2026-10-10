@@ -47,3 +47,5 @@
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+/runtime/resume-workspace/

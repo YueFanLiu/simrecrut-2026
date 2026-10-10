@@ -35,3 +35,10 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
 
 Add a link here when creating a page in a reserved topic. Do not create duplicate
 module guides or place implementation status notes in unrelated source folders.
+
+- [Shared resume cleaning](development/resume-cleaning.md): Java online/offline draft extraction.
+
+## Frontend development
+
+- [Frontend setup and architecture](development/frontend.md)
+- [Page ownership and maintenance](development/frontend-page-ownership.md)
