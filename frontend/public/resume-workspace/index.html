@@ -1,19 +1,484 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="app-token" content="__APP_TOKEN__"><title>SimRecrut · Resume Data Workspace</title><link rel="stylesheet" href="/style.css"></head>
-<body>
-<aside class="sidebar"><a class="brand" href="/"><span class="brand-mark">S</span><div>SimRecrut<small>RESEARCH WORKSPACE</small></div></a><div class="workspace-label">DATA MANAGEMENT</div><button class="nav active" id="navWorkspace">▤ <span>Resume Workspace</span></button><button class="nav" id="navSettings">⚙ <span>Connections & Settings</span></button><div class="side-note"><span class="local-dot"></span>Running locally<small>Temporary originals stay on this computer<br>Deleted after successful cloud upload</small></div><div class="member"><span class="avatar">YW</span><div>YinJI WANG<small>CV extraction & integration</small></div></div></aside>
-<main>
-<header><div class="breadcrumb">SimRecrut <span>/</span> Data Workspace</div><button class="quiet" id="settingsTop">⚙ Connection Settings</button></header>
-<section class="page-head"><div><div class="eyebrow">RESUME DATA PIPELINE</div><h1>Turn resumes into reviewable data.</h1><p>Import locally, extract with local rules, review, and sync to the cloud.</p></div><span class="pill" id="connectionBadge">Setup required</span></section>
-<div class="steps"><div class="step"><b>01</b><span>Local import<small>Temporary local files</small></span></div><span class="arrow">→</span><div class="step"><b>02</b><span>Read & clean<small>Shared offline cleaner</small></span></div><span class="arrow">→</span><div class="step"><b>03</b><span>Review & confirm<small>Keep supporting evidence</small></span></div><span class="arrow">→</span><div class="step"><b>04</b><span>Cloud sync<small>Aiven MySQL</small></span></div></div>
-<div class="stats"><div><span>Local resumes</span><strong id="totalCount">0</strong><small>Temporary files awaiting confirmation</small></div><div><span>Needs review</span><strong id="reviewCount">0</strong><small>Cleaned data awaiting review</small></div><div><span>Synced</span><strong id="cloudCount">0</strong><small>Current versions uploaded</small></div><div class="storage-info"><span class="folder-icon">▱</span><div><span>STORAGE</span><b>Temporary originals · Confirmed cloud JSON</b><small>No PDFs, filenames, or local paths in the cloud</small></div></div></div>
-<section class="panel upload-panel"><div class="section-title"><div><h2>Import original resumes</h2><p>Drop one or more files. Originals are kept temporarily until confirmed data is uploaded successfully.</p></div><span class="subtle">PDF / DOCX / TXT</span></div><div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Choose or drop resumes"><div class="upload-icon">↥</div><h3>Drop resumes here</h3><p>or <span>click to browse</span></p><small>Up to 10 MB per file · PDFs up to 20 pages · Text PDFs only · Scanned PDFs need OCR</small><input type="file" id="fileInput" accept=".pdf,.docx,.txt" multiple hidden></div><div id="importProgress" class="inline-message hidden" aria-live="polite"></div></section>
-<section class="panel library"><div class="section-title"><div><h2>Resume library <span class="counter" id="listCount">0</span></h2><p>Open a resume to clean, review, or upload it.</p></div><div class="list-tools"><input id="search" placeholder="Search local filenames…" aria-label="Search resumes"><button id="refresh" class="quiet">↻ Refresh</button></div></div><div class="table-scroll"><table><thead><tr><th>Local file</th><th>Imported</th><th>Processing status</th><th>Cloud status</th><th></th></tr></thead><tbody id="resumeRows"></tbody></table></div><div class="empty-state" id="emptyState"><div>▤</div><h3>Start with your first resume</h3><p>Imported files and processing status will appear here.</p></div></section>
-<footer><span>SimRecrut / Professional fact schema v1</span><span>Skills · Experience · Education · Languages · Projects</span></footer>
-</main>
-<dialog id="settingsDialog"><div class="dialog-header"><div><div class="eyebrow">CONNECTIONS</div><h2>Connections & Settings</h2></div><button class="close" data-close="settingsDialog" aria-label="Close">×</button></div><form id="settingsForm"><div class="settings-grid"><section><h3><span class="number">1</span> Aiven MySQL</h3><p class="help">Copy the details from service Overview → Connection information. Use the port shown by Aiven.</p><label>Host<input name="host" placeholder="mysql-xxx.aivencloud.com"></label><div class="form-row"><label>Port<input name="port" type="number" min="1" max="65535" value="25060"></label><label>Database<input name="database" value="defaultdb"></label></div><div class="form-row"><label>User<input name="user" placeholder="avnadmin"></label><label>Password<input name="password" type="password" autocomplete="new-password" placeholder="Not configured"></label></div><label>CA certificate <span class="subtle">Verifies the TLS connection</span><textarea name="caPem" rows="4" placeholder="Paste the contents of ca.pem downloaded from Aiven"></textarea></label><label class="secondary" for="caFile">Choose CA certificate</label><input type="file" id="caFile" accept=".pem,.crt,.cer" hidden><small>You can also choose the downloaded CA certificate file.</small></section></div><div class="local-path"><span>Temporary original file location</span><code id="localFolder"></code></div><p class="help">Database passwords are encrypted for your Windows account and stored locally. Saved secrets are never displayed.</p><div id="settingsMessage" class="inline-message hidden" aria-live="polite"></div><div class="dialog-actions"><button type="button" id="testCloud" class="secondary">Save & test cloud connection</button><button type="submit" class="primary">Save settings</button></div></form></dialog>
-<dialog id="reviewDialog" class="review-dialog"><div class="dialog-header"><div><div class="eyebrow">RESUME REVIEW</div><h2 id="reviewTitle">Review resume</h2><p id="reviewMeta" class="help"></p></div><button class="close" data-close="reviewDialog" aria-label="Close">×</button></div><div class="review-tabs"><button class="tab active" data-tab="source">01 Original resume</button><button class="tab" data-tab="facts">02 Structured data</button></div><section id="sourceTab"><div class="review-explainer"><strong>Review the original resume. Processing stays on this computer.</strong><p id="sourceExplainer"></p></div><div id="filePreview" class="file-preview hidden"></div><textarea id="sourceText" spellcheck="false" aria-label="Resume text to send"></textarea><label class="checkbox"><input type="checkbox" id="sourceChecked">I understand local rules may miss facts; I will review the extracted results</label><div class="dialog-actions"><button class="secondary" id="manualReview">Enter facts manually</button><button class="primary" id="cleanButton">Extract locally</button></div></section><section id="factsTab" class="hidden"><div id="factCards" class="fact-cards"></div><div id="warnings" class="warnings hidden"></div><details id="jsonDetails"><summary>Edit structured fields <span>JSON / Fields and evidence</span></summary><p class="help">Use UNKNOWN for uncertain codes. Do not infer language levels. Codes need manual normalization until equivalence tables are finalized.</p><textarea id="jsonEditor" spellcheck="false" aria-label="Structured JSON"></textarea></details><label class="checkbox"><input type="checkbox" id="factsChecked">I have reviewed the facts and evidence and confirmed that no names, contact details, or other direct identifiers remain</label><div class="dialog-actions"><button class="secondary" id="saveDraft">Save draft</button><button class="secondary" id="confirmDraft">Save & confirm</button><button class="secondary hidden" id="retryCleanup">Retry file cleanup</button><button class="primary" id="uploadCloud">Confirm & upload to cloud</button></div></section><div id="reviewMessage" class="inline-message hidden" aria-live="polite"></div></dialog>
-<dialog id="editDialog" class="edit-dialog"><div class="dialog-header"><div><div class="eyebrow">PROFESSIONAL FACT</div><h2 id="editTitle">Edit professional fact</h2></div><button class="close" data-close="editDialog" aria-label="Close editor">×</button></div><form id="factForm"><div id="factFields"></div><h3>Supporting evidence</h3><label>Source excerpt<textarea name="evidenceText" rows="3" maxlength="300" placeholder="Copy a short source excerpt supporting this fact"></textarea></label><label>PDF page number (leave blank for DOCX / TXT)<input name="evidencePage" type="number" min="1" max="20"></label><p class="help">Manual additions and edits are marked USER_SUPPLIED. Use UNKNOWN when reliable information is missing.</p><div class="dialog-actions"><button class="primary" type="submit">Apply to draft</button></div></form></dialog>
-<div id="toast" class="toast hidden" role="status"></div><script src="/app.js"></script></body></html>
-
-
+<!-- Declare the CV workspace markup and preserve domain-script loading order. -->
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="app-token" content="__APP_TOKEN__" />
+        <title>SimRecrut · Resume Data Workspace</title>
+        <link rel="stylesheet" href="/style.css" />
+        <link rel="stylesheet" href="/prototype.css" />
+    </head>
+    <body>
+        <div class="candidate-header">
+            <a class="candidate-brand" href="/"> <span>S</span> SimRecrut</a>
+            <nav>
+                <span>Candidate workspace</span
+                ><a href="#resumeLibrary" class="selected">My CVs</a>
+            </nav>
+            <div class="candidate-account">
+                <span class="account-avatar">YW</span> Candidate view
+            </div>
+        </div>
+        <aside class="sidebar">
+            <a class="brand" href="/"
+                ><span class="brand-mark">S</span>
+                <div>SimRecrut<small>CANDIDATE WORKSPACE</small></div></a
+            >
+            <div class="workspace-label">MY WORKSPACE</div>
+            <button class="nav active" id="navWorkspace">
+                ▤ <span>CV Upload & Review</span></button
+            ><button class="nav" id="navSettings">
+                ⚙ <span>Connections & Settings</span>
+            </button>
+            <div class="side-note">
+                <span class="local-dot"></span>Running locally<small
+                    >Temporary originals stay on this computer<br />Deleted
+                    after successful cloud upload</small
+                >
+            </div>
+            <div class="member">
+                <span class="avatar">YW</span>
+                <div>YinJI WANG<small>Professional profile</small></div>
+            </div>
+        </aside>
+        <main>
+            <header>
+                <div class="breadcrumb">My CVs <span>/</span> Upload CV</div>
+                <button class="quiet" id="settingsTop">
+                    ⚙ Connection Settings
+                </button>
+            </header>
+            <section class="page-head">
+                <div>
+                    <div class="eyebrow">C03 / CV UPLOAD & EXTRACTION</div>
+                    <h1>Upload Your CV</h1>
+                    <p>
+                        Upload your CV to extract professional facts, then
+                        verify the information before confirming.
+                    </p>
+                </div>
+                <span class="pill" id="connectionBadge">Setup required</span>
+            </section>
+            <div class="steps">
+                <div class="step">
+                    <b>01</b
+                    ><span>Upload CV<small>Temporary local file</small></span>
+                </div>
+                <span class="arrow">→</span>
+                <div class="step">
+                    <b>02</b
+                    ><span
+                        >Extract information<small
+                            >Local processing</small
+                        ></span
+                    >
+                </div>
+                <span class="arrow">→</span>
+                <div class="step">
+                    <b>03</b
+                    ><span
+                        >Verify information<small
+                            >Facts and evidence</small
+                        ></span
+                    >
+                </div>
+                <span class="arrow">→</span>
+                <div class="step">
+                    <b>04</b
+                    ><span
+                        >Confirm profile<small
+                            >Save structured data</small
+                        ></span
+                    >
+                </div>
+            </div>
+            <div class="stats">
+                <div>
+                    <span>Local resumes</span><strong id="totalCount">0</strong
+                    ><small>Temporary files awaiting confirmation</small>
+                </div>
+                <div>
+                    <span>Needs review</span><strong id="reviewCount">0</strong
+                    ><small>Cleaned data awaiting review</small>
+                </div>
+                <div>
+                    <span>Synced</span><strong id="cloudCount">0</strong
+                    ><small>Current versions uploaded</small>
+                </div>
+                <div class="storage-info">
+                    <span class="folder-icon">▱</span>
+                    <div>
+                        <span>STORAGE</span
+                        ><b>Temporary originals · Confirmed cloud JSON</b
+                        ><small
+                            >No PDFs, filenames, or local paths in the
+                            cloud</small
+                        >
+                    </div>
+                </div>
+            </div>
+            <div class="upload-layout">
+                <section class="panel upload-panel">
+                    <div class="section-title">
+                        <div>
+                            <h2>Upload a PDF</h2>
+                            <p>
+                                Your original is stored temporarily until the
+                                confirmed profile is saved successfully.
+                            </p>
+                        </div>
+                        <span class="subtle">PDF only</span>
+                    </div>
+                    <div
+                        id="dropzone"
+                        class="dropzone"
+                        tabindex="0"
+                        role="button"
+                        aria-label="Choose or drop resumes"
+                    >
+                        <div class="upload-icon">↥</div>
+                        <h3>Drag and drop your CV here</h3>
+                        <p>or <span>click to browse</span></p>
+                        <small
+                            >PDF only · Maximum 10 MB · Up to 20 pages ·
+                            Unencrypted files</small
+                        ><input
+                            type="file"
+                            id="fileInput"
+                            accept=".pdf,application/pdf"
+                            hidden
+                        />
+                    </div>
+                    <div
+                        id="importProgress"
+                        class="inline-message hidden"
+                        aria-live="polite"
+                    ></div>
+                </section>
+                <aside class="panel extraction-preview">
+                    <div class="section-title">
+                        <h2>Extracted information</h2>
+                        <span class="preview-badge">Preview</span>
+                    </div>
+                    <div id="extractionSummary" class="preview-empty">
+                        <div class="preview-icon">▤</div>
+                        <h3>No CV selected yet</h3>
+                        <p>
+                            Upload a PDF or open an existing CV to view
+                            extraction status.
+                        </p>
+                    </div>
+                    <div class="upload-tips">
+                        <strong>Before you upload</strong>
+                        <ul>
+                            <li>
+                                Use a clear, readable PDF with embedded text.
+                            </li>
+                            <li>
+                                Scanned PDFs require manual fact entry in this
+                                version.
+                            </li>
+                            <li>
+                                Verify skills, experience, education, languages
+                                and projects.
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+            <section class="panel library" id="resumeLibrary">
+                <div class="section-title">
+                    <div>
+                        <h2>
+                            My CVs <span class="counter" id="listCount">0</span>
+                        </h2>
+                        <p>Open a resume to clean, review, or upload it.</p>
+                    </div>
+                    <div class="list-tools">
+                        <input
+                            id="search"
+                            placeholder="Search local filenames…"
+                            aria-label="Search resumes"
+                        /><button id="refresh" class="quiet">↻ Refresh</button>
+                    </div>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Local file</th>
+                                <th>Imported</th>
+                                <th>Processing status</th>
+                                <th>Cloud status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="resumeRows"></tbody>
+                    </table>
+                </div>
+                <div class="empty-state" id="emptyState">
+                    <div>▤</div>
+                    <h3>Start with your first resume</h3>
+                    <p>
+                        Imported files and processing status will appear here.
+                    </p>
+                </div>
+            </section>
+            <footer>
+                <span>SimRecrut / Professional fact schema v1</span
+                ><span
+                    >Skills · Experience · Education · Languages ·
+                    Projects</span
+                >
+            </footer>
+        </main>
+        <dialog id="settingsDialog">
+            <div class="dialog-header">
+                <div>
+                    <div class="eyebrow">CONNECTIONS</div>
+                    <h2>Connections & Settings</h2>
+                </div>
+                <button
+                    class="close"
+                    data-close="settingsDialog"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+            </div>
+            <form id="settingsForm">
+                <div class="settings-grid">
+                    <section>
+                        <h3><span class="number">1</span> Aiven MySQL</h3>
+                        <p class="help">
+                            Copy the details from service Overview → Connection
+                            information. Use the port shown by Aiven.
+                        </p>
+                        <label
+                            >Host<input
+                                name="host"
+                                placeholder="mysql-xxx.aivencloud.com"
+                        /></label>
+                        <div class="form-row">
+                            <label
+                                >Port<input
+                                    name="port"
+                                    type="number"
+                                    min="1"
+                                    max="65535"
+                                    value="25060" /></label
+                            ><label
+                                >Database<input
+                                    name="database"
+                                    value="defaultdb"
+                            /></label>
+                        </div>
+                        <div class="form-row">
+                            <label
+                                >User<input
+                                    name="user"
+                                    placeholder="avnadmin" /></label
+                            ><label
+                                >Password<input
+                                    name="password"
+                                    type="password"
+                                    autocomplete="new-password"
+                                    placeholder="Not configured"
+                            /></label>
+                        </div>
+                        <label
+                            >CA certificate
+                            <span class="subtle"
+                                >Verifies the TLS connection</span
+                            ><textarea
+                                name="caPem"
+                                rows="4"
+                                placeholder="Paste the contents of ca.pem downloaded from Aiven"
+                            ></textarea></label
+                        ><label class="secondary" for="caFile"
+                            >Choose CA certificate</label
+                        ><input
+                            type="file"
+                            id="caFile"
+                            accept=".pem,.crt,.cer"
+                            hidden
+                        /><small
+                            >You can also choose the downloaded CA certificate
+                            file.</small
+                        >
+                    </section>
+                </div>
+                <div class="local-path">
+                    <span>Temporary original file location</span
+                    ><code id="localFolder"></code>
+                </div>
+                <p class="help">
+                    Database passwords are encrypted for your Windows account
+                    and stored locally. Saved secrets are never displayed.
+                </p>
+                <div
+                    id="settingsMessage"
+                    class="inline-message hidden"
+                    aria-live="polite"
+                ></div>
+                <div class="dialog-actions">
+                    <button type="button" id="testCloud" class="secondary">
+                        Save & test cloud connection</button
+                    ><button type="submit" class="primary">
+                        Save settings
+                    </button>
+                </div>
+            </form>
+        </dialog>
+        <dialog id="reviewDialog" class="review-dialog">
+            <div class="dialog-header">
+                <div>
+                    <div class="eyebrow">C04 / CV FACT REVIEW & EVIDENCE</div>
+                    <h2 id="reviewTitle">Verify Your Information</h2>
+                    <p id="reviewMeta" class="help"></p>
+                </div>
+                <button
+                    class="close"
+                    data-close="reviewDialog"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+            </div>
+            <div class="review-tabs">
+                <button class="tab active" data-tab="source">
+                    C03 · Extraction</button
+                ><button class="tab" data-tab="facts">
+                    C04 · Verify information
+                </button>
+            </div>
+            <section id="sourceTab">
+                <div class="review-explainer">
+                    <strong
+                        >Check the source before extraction. Processing stays on
+                        this computer.</strong
+                    >
+                    <p id="sourceExplainer"></p>
+                </div>
+                <div id="filePreview" class="file-preview hidden"></div>
+                <textarea
+                    id="sourceText"
+                    spellcheck="false"
+                    aria-label="Locally extracted resume text"
+                ></textarea
+                ><label class="checkbox"
+                    ><input type="checkbox" id="sourceChecked" />I understand
+                    local rules may miss facts; I will review the extracted
+                    results</label
+                >
+                <div class="dialog-actions">
+                    <button class="secondary" id="manualReview">
+                        Enter facts manually</button
+                    ><button class="primary" id="cleanButton">
+                        Extract locally
+                    </button>
+                </div>
+            </section>
+            <section id="factsTab" class="hidden">
+                <div class="verification-note">
+                    <strong>Verify your professional information</strong>
+                    <p>
+                        Check each fact against its supporting excerpt. Correct
+                        missing or uncertain values before confirming your
+                        profile.
+                    </p>
+                </div>
+                <div id="factCards" class="fact-cards"></div>
+                <div id="warnings" class="warnings hidden"></div>
+                <details id="jsonDetails">
+                    <summary>
+                        Edit structured fields
+                        <span>JSON / Fields and evidence</span>
+                    </summary>
+                    <p class="help">
+                        Use UNKNOWN for uncertain codes. Do not infer language
+                        levels. Codes need manual normalization until
+                        equivalence tables are finalized.
+                    </p>
+                    <textarea
+                        id="jsonEditor"
+                        spellcheck="false"
+                        aria-label="Structured JSON"
+                    ></textarea>
+                </details>
+                <label class="checkbox"
+                    ><input type="checkbox" id="factsChecked" />I have reviewed
+                    the facts and evidence and confirmed that no names, contact
+                    details, or other direct identifiers remain</label
+                >
+                <div class="dialog-actions">
+                    <button class="secondary" id="saveDraft">Save draft</button
+                    ><button class="secondary" id="confirmDraft">
+                        Save & confirm</button
+                    ><button class="secondary hidden" id="retryCleanup">
+                        Retry file cleanup</button
+                    ><button class="primary" id="uploadCloud">
+                        Confirm & upload to cloud
+                    </button>
+                </div>
+            </section>
+            <div
+                id="reviewMessage"
+                class="inline-message hidden"
+                aria-live="polite"
+            ></div>
+        </dialog>
+        <dialog id="editDialog" class="edit-dialog">
+            <div class="dialog-header">
+                <div>
+                    <div class="eyebrow">PROFESSIONAL FACT</div>
+                    <h2 id="editTitle">Edit professional fact</h2>
+                </div>
+                <button
+                    class="close"
+                    data-close="editDialog"
+                    aria-label="Close editor"
+                >
+                    ×
+                </button>
+            </div>
+            <form id="factForm">
+                <div id="factFields"></div>
+                <h3>Supporting evidence</h3>
+                <label
+                    >Source excerpt<textarea
+                        name="evidenceText"
+                        rows="3"
+                        maxlength="300"
+                        placeholder="Copy a short source excerpt supporting this fact"
+                    ></textarea></label
+                ><label
+                    >PDF page number (leave blank for DOCX / TXT)<input
+                        name="evidencePage"
+                        type="number"
+                        min="1"
+                        max="20"
+                /></label>
+                <p class="help">
+                    Manual additions and edits are marked USER_SUPPLIED. Use
+                    UNKNOWN when reliable information is missing.
+                </p>
+                <div class="dialog-actions">
+                    <button class="primary" type="submit">
+                        Apply to draft
+                    </button>
+                </div>
+            </form>
+        </dialog>
+        <div id="toast" class="toast hidden" role="status"></div>
+        <script defer src="/core/dom.js"></script>
+<script defer src="/services/client.js"></script>
+<script defer src="/views/settings.js"></script>
+<script defer src="/views/library.js"></script>
+<script defer src="/views/upload.js"></script>
+<script defer src="/views/review.js"></script>
+<script defer src="/views/factEditor.js"></script>
+<script defer src="/app.js"></script>
+    </body>
+</html>
