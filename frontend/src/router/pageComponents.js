@@ -15,7 +15,11 @@ import ServiceHealth from "../views/admin/ServiceHealth.vue";
 import ProcessingFailures from "../views/admin/ProcessingFailures.vue";
 import AuditLogs from "../views/admin/AuditLogs.vue";
 
+import ResumeUpload from "../views/candidate/ResumeUpload.vue";
+import ResumeReview from "../views/candidate/ResumeReview.vue";
 export const pageComponents = {
+  C03: ResumeUpload,
+  C04: ResumeReview,
   R01: ExperimentList,
   R02: ExperimentCreate,
   R03: ExperimentDetails,

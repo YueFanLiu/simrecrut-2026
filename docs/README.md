@@ -42,3 +42,5 @@ module guides or place implementation status notes in unrelated source folders.
 
 - [Frontend setup and architecture](development/frontend.md)
 - [Page ownership and maintenance](development/frontend-page-ownership.md)
+
+- [RuoYi migration and setup](development/ruoyi-migration.md)

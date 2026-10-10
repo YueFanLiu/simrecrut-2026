@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
+// RuoYi owns the team policy; this is reserved for the legacy adapter.
+@org.springframework.context.annotation.Profile("legacy-security")
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfig {
 

@@ -1,6 +1,8 @@
 // Define page identifiers, routes and display metadata in one place.
 // Synthetic interface fixtures. No real users, model predictions or health checks.
 export const pages = [
+  ["C03", "Candidate", "Upload CV", "/candidate/resumes", "Upload CV", "Import a temporary PDF and extract professional facts."],
+  ["C04", "Candidate", "Review facts", "/candidate/resumes/example", "Review Facts", "Confirm professional JSON before cloud publication."],
   [
     "R01",
     "Research",

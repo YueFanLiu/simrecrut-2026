@@ -49,3 +49,7 @@ Thumbs.db
 Desktop.ini
 
 /runtime/resume-workspace/
+
+# Public frontend mode flags contain no secrets.
+!frontend/.env.development
+!frontend/.env.production

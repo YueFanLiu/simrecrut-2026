@@ -1,6 +1,8 @@
 // Coordinate session state and demo actions consumed by independent page components.
-import { ref, reactive, computed, onMounted, onUnmounted, inject } from "vue";
+import { ref, reactive, computed, watch, inject } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { pages } from "../router/pages.js";
+import { demoMode } from "../store/modules/user";
 import { fixtures } from "../api/demoFixtures.js";
 
 export const workspaceKey = Symbol("workspace");
@@ -12,23 +14,40 @@ export function useWorkspace() {
 
 // Session-only demo state. Page components share this provider, not global singletons.
 export function createWorkspace() {
-  const path = ref(location.pathname + location.search);
+  const router = useRouter();
+  const route = useRoute();
+  const path = computed(() => route.fullPath);
   const page = computed(
     () =>
       pages.find((p) => p[3] === path.value) ||
       pages.find(
         (p) =>
           p[0] ===
-          (path.value.startsWith("/research/experiments/")
-            ? "R03"
-            : path.value.startsWith("/reviewer/tasks/")
-              ? "V02"
-              : path.value.startsWith("/research/metrics")
-                ? "R06"
-                : "R01"),
+          (path.value.startsWith("/candidate/resumes/")
+            ? "C04"
+            : path.value.startsWith("/research/experiments/")
+              ? "R03"
+              : path.value.startsWith("/reviewer/tasks/")
+                ? "V02"
+                : path.value.startsWith("/research/metrics")
+                  ? "R06"
+                  : "R01"),
       ),
   );
-  const data = reactive(JSON.parse(JSON.stringify(fixtures)));
+  const data = reactive(
+    JSON.parse(
+      JSON.stringify(
+        demoMode
+          ? fixtures
+          : Object.fromEntries(
+              Object.keys(fixtures).map((key) => [
+                key,
+                Array.isArray(fixtures[key]) ? [] : fixtures[key],
+              ]),
+            ),
+      ),
+    ),
+  );
   const search = ref(""),
     status = ref("All statuses"),
     source = ref("Reviewed Profiles");
@@ -104,8 +123,7 @@ export function createWorkspace() {
     timer = setTimeout(() => (toast.value = ""), 5000);
   }
   function go(url) {
-    history.pushState({}, "", url);
-    path.value = url;
+    router.push(url);
     search.value = "";
     status.value = "All statuses";
     tab.value = "Configuration";
@@ -119,7 +137,6 @@ export function createWorkspace() {
     window.scrollTo(0, 0);
   }
   const pop = () => {
-    path.value = location.pathname + location.search;
     drawer.value = null;
     tab.value = "Configuration";
     decision.value = "";
@@ -131,12 +148,12 @@ export function createWorkspace() {
     status.value = "All statuses";
     selected.value = [...(experiment.value?.subjectIds || [])];
   };
-  onMounted(() => window.addEventListener("popstate", pop));
-  onUnmounted(() => {
-    window.removeEventListener("popstate", pop);
-    clearTimeout(timer);
-  });
+  watch(() => route.fullPath, pop);
   function create() {
+    if (!demoMode)
+      return notify(
+        "This research action is not connected to a production API.",
+      );
     if (Object.values(form).some((v) => !v.trim())) {
       error.value = "Complete all seven required fields.";
       return;
@@ -162,6 +179,10 @@ export function createWorkspace() {
       : [...selected.value, id];
   }
   function submit() {
+    if (!demoMode)
+      return notify(
+        "This research action is not connected to a production API.",
+      );
     if (!task.value || task.value.status === "Submitted") return;
     if (
       !decision.value ||
@@ -191,6 +212,10 @@ export function createWorkspace() {
     };
   }
   function apply() {
+    if (!demoMode)
+      return notify(
+        "This research action is not connected to a production API.",
+      );
     const d = drawer.value;
     if (d.kind === "release") {
       if (d.next === "Active")

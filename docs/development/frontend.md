@@ -40,3 +40,7 @@ The frontend uses Vue and Vite. The backend JDK 17 requirement is unchanged.
 Edit a page in its own `views` file. Modify `components` only for behavior shared across pages. Shared demo records and actions belong in `state`; production API integration should use dedicated files under `api`, not inline network calls inside templates. Register new pages in both router files. See [page ownership guide](frontend-page-ownership.md).
 
 The standalone resume workspace uses ordered deferred scripts, with domain files under `public/resume-workspace/views`, transport under `services` and shared DOM/state under `core`. Its root `app.js` is startup wiring. These scripts share lexical state and must load in the order specified in `index.html`. The Java launcher copies the full asset directory recursively.
+
+## RuoYi integration
+
+See [RuoYi migration](ruoyi-migration.md) for identity endpoints, permissions, deployment modes and candidate resume routes. The authenticated shell is now `frontend/src/layout/index.vue`; `App.vue` delegates to Vue Router.

@@ -1,76 +1,83 @@
+# RuoYi owns identity, permissions, MyBatis and the Redis token store.
 server:
   port: ${JAVA_PORT:8080}
-  shutdown: graceful
-  error:
-    include-message: never
-    include-binding-errors: never
-    include-stacktrace: never
-
 spring:
   application:
-    name: simrecrut-backend
-  profiles:
-    default: local
+    name: simrecrut-ruoyi
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:10}
-      connection-timeout: 10000
+    druid:
+      master:
+        url: ${DB_URL}
+        username: ${DB_USERNAME}
+        password: ${DB_PASSWORD}
+      slave:
+        enabled: false
+      initialSize: 1
+      minIdle: 1
+      maxActive: 10
+      maxWait: 10000
+      connectTimeout: 10000
+      socketTimeout: 30000
+      timeBetweenEvictionRunsMillis: 60000
+      minEvictableIdleTimeMillis: 300000
+      maxEvictableIdleTimeMillis: 900000
+      validationQuery: SELECT 1
+      testWhileIdle: true
+      testOnBorrow: false
+      testOnReturn: false
+      statViewServlet:
+        enabled: false
   data:
     redis:
-      host: ${REDIS_HOST}
+      host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD}
+      password: ${REDIS_PASSWORD:}
       timeout: 2s
+  messages:
+    basename: i18n/messages
   flyway:
-    enabled: true
-    locations: classpath:db/migration
-    clean-disabled: true
-    validate-on-migrate: true
-  jackson:
-    time-zone: UTC
-  jmx:
     enabled: false
-
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+ruoyi:
+  name: SimRecrut
+  version: 3.9.2
+  copyrightYear: 2026
+  profile: ${RUOYI_PROFILE:runtime/ruoyi-files}
+  addressEnabled: false
+  captchaType: math
+token:
+  header: Authorization
+  secret: ${RUOYI_TOKEN_SECRET}
+  expireTime: 30
+user:
+  password:
+    maxRetryCount: 5
+    lockTime: 10
 mybatis:
-  mapper-locations: classpath*:mapper/**/*.xml
-  configuration:
-    map-underscore-to-camel-case: true
-    default-statement-timeout: 30
-
-management:
-  endpoints:
-    access:
-      default: none
-    web:
-      exposure:
-        include: health
-      discovery:
-        enabled: false
-  endpoint:
-    health:
-      access: read-only
-      show-details: never
-      show-components: never
-      probes:
-        enabled: true
-      group:
-        readiness:
-          include: readinessState,db,redis
-
+  typeAliasesPackage: com.ruoyi.**.domain
+  mapperLocations: classpath*:mapper/**/*Mapper.xml
+  configLocation: classpath:mybatis/mybatis-config.xml
+pagehelper:
+  helperDialect: mysql
+  supportMethodsArguments: true
+  params: count=countSql
+xss:
+  enabled: true
+  excludes: /system/notice
+  urlPatterns: /system/*,/monitor/*,/tool/*
+referer:
+  enabled: false
+  allowed-domains: localhost,127.0.0.1
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
 simrecrut:
-  ml:
-    base-url: ${ML_BASE_URL}
-    internal-token: ${ML_INTERNAL_TOKEN}
-    connect-timeout: 2s
-    read-timeout: 10s
-  extraction:
-    deepseek:
-      base-url: ${DEEPSEEK_BASE_URL}
-      api-key: ${DEEPSEEK_API_KEY}
-  storage:
-    case-workspace: ${CASE_WORKSPACE_PATH}
-    model-artifacts: ${MODEL_ARTIFACTS_PATH}
+  resumes:
+    directory: ${SIMRECRUT_DATA_DIR:runtime/resumes}
