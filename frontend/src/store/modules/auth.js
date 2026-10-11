@@ -21,6 +21,10 @@ export const useAuthStore = defineStore('auth', {
   },
   actions: {
     hasDemoRole(role) {
+      if (!demoMode) {
+        const roles = this.demoUser?.roles || []
+        return roles.includes('admin') || roles.some(value => String(value).toLowerCase() === role.toLowerCase())
+      }
       return this.demoUser?.role === role
     },
     // Connected identity comes from RuoYi; demo sessions never authorize API writes.
@@ -31,7 +35,10 @@ export const useAuthStore = defineStore('auth', {
       const { default: useUserStore } = await import('./user.js')
       const user = useUserStore()
       if (!user.loaded) await user.GetInfo()
-      this.demoUser = { username: user.name, displayName: user.name, role: 'Connected', roles: user.roles }
+      const labels = { admin: 'Admin', hr: 'HR', researcher: 'Researcher', candidate: 'Candidate' }
+      const role = user.roles.map(value => labels[String(value).toLowerCase()]).find(Boolean) || 'Connected'
+      const identity = { username: user.username, displayName: user.name, role, roles: user.roles }
+      if (JSON.stringify(this.demoUser) !== JSON.stringify(identity)) this.demoUser = identity
     },
     async login(credentials) {
       if (!demoMode) {
@@ -46,7 +53,12 @@ export const useAuthStore = defineStore('auth', {
     async logout() {
       if (!demoMode) {
         const { default: useUserStore } = await import('./user.js')
-        try { await useUserStore().LogOut() } finally { this.demoUser = null }
+        try { await useUserStore().LogOut() } finally {
+          useCasesStore().clearCases(); useHrJobsStore().clearJobs(); useHrCasesStore().clearCases()
+          useResearchModuleStore().clearResearch(); useReviewTasksStore().clearTasks()
+          useAdminUsersStore().clearUsers(); useAdminRolesStore().clearRoles(); useAdminModelsStore().clearModels()
+          this.demoUser = null
+        }
         return
       }
       useCasesStore().clearCases()

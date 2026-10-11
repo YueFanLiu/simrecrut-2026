@@ -151,14 +151,16 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 })
 
-// Server permissions remain authoritative; unsupported business pages stay in demo mode.
+// Server permissions remain authoritative; connected pages never use demo fixtures.
 router.beforeEach(async (to) => {
   const auth = useAuthStore(pinia)
   if (!demoMode) {
     try { await auth.restoreConnectedSession() } catch { auth.demoUser = null }
     if (to.meta.requiresDemoSession && !auth.isDemoSignedIn) return { name: 'Login' }
     if (to.name === 'Register') return { name: 'Login' }
-    if (auth.isDemoSignedIn && !to.meta.connected && !['Forbidden', 'NotFound', 'NotFoundFallback'].includes(to.name)) return { name: 'ConnectedResumes' }
+    if (to.meta.demoRole && !auth.hasDemoRole(to.meta.demoRole)) return { name: 'Forbidden' }
+    if (to.meta.demoRoles && !to.meta.demoRoles.some(role => auth.hasDemoRole(role))) return { name: 'Forbidden' }
+    if (to.name === 'Login' && auth.isDemoSignedIn) return { name: 'DemoDashboard' }
     return
   }
   if (to.meta.requiresDemoSession && !auth.isDemoSignedIn) return { name: 'Login' }

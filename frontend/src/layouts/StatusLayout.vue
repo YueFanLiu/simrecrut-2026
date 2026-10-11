@@ -7,8 +7,8 @@ import { useAuthStore } from '../store/modules/auth.js'
 const auth = useAuthStore()
 const router = useRouter()
 
-function signOut() {
-  auth.logout()
+async function signOut() {
+  await auth.logout()
   router.replace({ name: 'Login' })
 }
 </script>

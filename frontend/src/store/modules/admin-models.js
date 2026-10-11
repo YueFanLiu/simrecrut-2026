@@ -1,3 +1,5 @@
+// Connected mode uses server data; fixtures remain limited to explicit demos.
+import { demoMode } from '../../config/runtime.js'
 import { defineStore } from 'pinia'
 import { shareDemoModels } from '../../mock/shared-demo.js'
 import { recordDemoAudit } from '../../mock/admin-audit.js'
@@ -5,16 +7,27 @@ import { requireAdmin } from '../../mock/admin-users.js'
 import { checkModelPackage, checkRegistry, createAdminModels, modelProjection, offlinePackages, projectModels } from '../../mock/admin-models.js'
 const wait = () => new Promise(resolve => setTimeout(resolve, 500))
 export const useAdminModelsStore = defineStore('adminModels', {
-  state: () => createAdminModels(),
+  state: () => ({ ...(demoMode ? createAdminModels() : { models: [], slots: {} }), packages: demoMode ? offlinePackages() : [] }),
   actions: {
-    listModels(user) { return projectModels(this.models, user) },
+    listModels(user) {
+      if (!demoMode) { return this.models } return projectModels(this.models, user) },
     readModel(id, user) { const row = this.listModels(user).find(row => row.id === id); if (!row) throw new Error('This model version is unavailable.'); return row },
     async loadModels(user, scenario = 'normal') {
+      if (!demoMode) {
+        this.models = await (await import('../../api/administration.js')).models()
+        this.slots = Object.fromEntries(this.models.filter(row => row.status === 'ACTIVE').map(row => [row.type, row.id]))
+        return this.models
+      }
       requireAdmin(user); await wait()
       if (scenario === 'load-error') throw new Error('Unable to load model versions. Please try again.')
       return scenario === 'empty' ? [] : this.listModels(user)
     },
+    async loadPackages() {
+      if (!demoMode) this.packages = await (await import('../../api/administration.js')).modelPackages()
+      return this.packages
+    },
     async registerPackage(id, user, scenario = 'normal') {
+      if (!demoMode) { await (await import('../../api/administration.js')).registerModel(id); await this.loadModels(user); return }
       requireAdmin(user); const rows = this.models, source = offlinePackages().find(row => row.id === id)
       const check = () => {
         requireAdmin(user)
@@ -29,6 +42,7 @@ export const useAdminModelsStore = defineStore('adminModels', {
       shareDemoModels(this.models)
     },
     async release(id, revision, action, replacementId, user, scenario = 'normal') {
+      if (!demoMode) { const result = await (await import('../../api/administration.js')).releaseModel(id, revision, action, replacementId); await this.loadModels(user); return result }
       requireAdmin(user); const rows = this.models
       const initial = this.models.find(row => row.id === id), originalSlot = initial && this.slots[initial.type]
       const check = () => {

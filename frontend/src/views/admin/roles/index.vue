@@ -24,7 +24,7 @@ async function load() {
   const request = ++sequence, user = auth.demoUser
   const current = () => active && request === sequence && auth.demoUser === user
   loaded.value = false; loading.value = true; error.value = ''
-  try { await store.loadRoles(user, adminRolesScenario); if (current()) loaded.value = true }
+  try { await Promise.all([store.loadRoles(user, adminRolesScenario), users.loadUsers(user)]); if (current()) loaded.value = true }
   catch (failure) { if (current()) error.value = failure.message }
   finally { if (current()) loading.value = false }
 }

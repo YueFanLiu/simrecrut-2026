@@ -1,3 +1,4 @@
+<!-- Server access checks determine which case details are returned. -->
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -6,6 +7,7 @@ import HrLayout from '../../../layouts/HrLayout.vue'
 import { useAuthStore } from '../../../store/modules/auth.js'
 import { useHrJobsStore } from '../../../store/modules/hr-jobs.js'
 import { useHrCasesStore } from '../../../store/modules/hr-cases.js'
+import { demoMode } from '../../../config/runtime.js'
 import { hrDetailScenario } from '../../../config/demo.js'
 
 const route = useRoute()
@@ -20,7 +22,7 @@ const clock = ref(Date.now())
 let active = true
 let sequence = 0
 const timer = setInterval(() => { clock.value = Date.now() }, 1000)
-const accessible = computed(() => auth.hasDemoRole('HR') && cases.listCases(auth.demoUser, jobs.jobs, clock.value).some((entry) => entry.caseId === route.params.caseId))
+const accessible = computed(() => auth.hasDemoRole('HR') && (!demoMode || cases.listCases(auth.demoUser, jobs.jobs, clock.value).some((entry) => entry.caseId === route.params.caseId)))
 watch(accessible, (allowed) => { if (!allowed) { sequence += 1; data.value = null; loading.value = false; error.value = 'This case is unavailable or access is no longer authorised.' } })
 const resultSlots = computed(() => !data.value?.resultsVisible ? [] : [
   { title: 'Objective Rule', value: data.value.objective, scale: 'Professional fit / 100' },
@@ -45,7 +47,7 @@ async function loadDetail() {
     await new Promise((resolve) => setTimeout(resolve, 400))
     if (!current()) return
     if (hrDetailScenario === 'error') throw new Error('Unable to load case details. Please try again.')
-    data.value = cases.readDetail(auth.demoUser, jobs.jobs, caseId, hrDetailScenario)
+    data.value = await cases.readDetail(auth.demoUser, jobs.jobs, caseId, hrDetailScenario)
     clock.value = Date.now()
   } catch (failure) { if (current()) error.value = failure.message }
   finally { if (current()) loading.value = false }

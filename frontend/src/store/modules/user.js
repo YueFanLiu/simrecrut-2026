@@ -10,6 +10,7 @@ export default defineStore("user", {
     roles: [],
     permissions: [],
     name: "",
+    username: "",
     loaded: false,
   }),
   actions: {
@@ -34,6 +35,7 @@ export default defineStore("user", {
       this.permissions = response.permissions || [];
       this.name =
         response.user?.nickName || response.user?.userName || "Workspace user";
+      this.username = response.user?.userName || "";
       this.loaded = true;
     },
     async LogOut() {

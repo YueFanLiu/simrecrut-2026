@@ -1,3 +1,4 @@
+import { demoMode } from '../config/runtime.js'
 import { loadPublishedJobs } from './jobs.js'
 import { readDemoPublications } from './shared-demo.js'
 
@@ -78,6 +79,7 @@ export function selectPublicJobDetail(job, profile) {
 
 /** Resolve the current published version only; unknown or unavailable jobs return null. */
 export async function loadJobDetail(jobId, scenario = 'normal') {
+  if (!demoMode) return (await import('../api/jobs.js')).jobDetail(jobId)
   const jobs = await loadPublishedJobs(scenario === 'unavailable' ? 'empty' : 'normal')
   if (scenario === 'error') throw new Error('Unable to load job details. Please try again.')
   const job = jobs.find((entry) => entry.jobId === jobId)

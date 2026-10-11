@@ -53,7 +53,7 @@ async function submitLogin() {
     const saved = saveRememberedIdentifier(form.identifier, form.rememberMe)
     if (!saved) ElMessage.warning('Your browser could not save the Remember Me preference.')
     form.password = ''
-    await router.replace({ name: demoMode ? 'DemoDashboard' : 'ConnectedResumes' })
+    await router.replace({ name: 'DemoDashboard' })
   } catch (error) {
     await refreshCaptcha()
     loginError.value = error.message || 'Unable to sign in. Please try again.'

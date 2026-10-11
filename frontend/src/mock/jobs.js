@@ -1,3 +1,4 @@
+import { demoMode } from '../config/runtime.js'
 import { readDemoPublications } from './shared-demo.js'
 
 const jobVersions = [
@@ -82,6 +83,7 @@ export function selectPublishedJobSummaries(versions) {
 
 /** Local demo boundary; replace with the approved Candidate list API in a later phase. */
 export async function loadPublishedJobs(scenario = 'normal') {
+  if (!demoMode) return (await import('../api/jobs.js')).publishedJobs()
   await new Promise((resolve) => setTimeout(resolve, 350))
   if (scenario === 'error') throw new Error('Unable to load published jobs. Please try again.')
   if (scenario === 'empty') return []

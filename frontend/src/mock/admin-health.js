@@ -1,3 +1,4 @@
+import { demoMode } from '../config/runtime.js'
 import { requireAdmin } from './admin-users.js'
 
 export const healthFreshnessLimit = 60000
@@ -22,6 +23,7 @@ export function createHealthSummary(user, scenario = 'normal') {
   }
 }
 export async function loadHealthSummary(user, scenario = 'normal') {
+  if (!demoMode) { return (await import('../api/administration.js')).health() }
   const result = createHealthSummary(user, scenario)
   await new Promise(resolve => setTimeout(resolve, 400))
   if (scenario === 'load-error') throw new Error('Service health could not be loaded. Refresh to try again.')

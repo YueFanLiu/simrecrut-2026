@@ -20,7 +20,7 @@ async function signOut() {
     <header>
       <div class="header-content">
         <BrandMark />
-        <nav v-if="demoMode" aria-label="Candidate navigation">
+        <nav aria-label="Candidate navigation">
           <RouterLink class="jobs-link" :to="{ name: 'PublishedJobs' }"
             :class="{ 'current-link': ['PublishedJobs', 'JobDetail'].includes(route.name) }"
             :aria-current="['PublishedJobs', 'JobDetail'].includes(route.name) ? 'page' : undefined">Jobs</RouterLink>
@@ -28,10 +28,10 @@ async function signOut() {
             :class="{ 'current-link': ['MySimulations', 'CvUpload', 'CvReview', 'SimulationProgress', 'SimulationResults'].includes(route.name) }"
             :aria-current="['MySimulations', 'CvUpload', 'CvReview', 'SimulationProgress', 'SimulationResults'].includes(route.name) ? 'page' : undefined">My simulations</RouterLink>
         </nav>
-        <RouterLink v-else class="jobs-link" :to="{ name: 'ConnectedResumes' }">My CVs</RouterLink>
+        <RouterLink v-if="!demoMode" class="jobs-link" :to="{ name: 'ConnectedResumes' }">My CVs</RouterLink>
         <div class="session-controls">
           <span class="user-name">{{ auth.demoUser?.displayName }}</span>
-          <ElButton v-if="demoMode" @click="router.push({ name: 'DemoDashboard' })">Dashboard</ElButton>
+          <ElButton @click="router.push({ name: 'DemoDashboard' })">Dashboard</ElButton>
           <ElButton @click="signOut">Sign out</ElButton>
         </div>
       </div>

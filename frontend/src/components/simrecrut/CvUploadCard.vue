@@ -1,4 +1,5 @@
 <script setup>
+import { demoMode } from '../../config/runtime.js'
 import { onBeforeUnmount, ref } from 'vue'
 import { ElButton } from 'element-plus'
 import { formatCvSize, validateCvFile } from '../../utils/cv-validation.js'
@@ -22,7 +23,7 @@ async function chooseFiles(files) {
   checking.value = true
   try {
     const metadata = await validateCvFile(files[0])
-    if (current === selection) emit('select', metadata)
+    if (current === selection) emit('select', demoMode ? metadata : { ...metadata, file: files[0] })
   } catch (failure) {
     if (current === selection) error.value = failure.message
   } finally {

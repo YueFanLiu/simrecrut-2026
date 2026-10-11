@@ -30,7 +30,7 @@ async function load() {
   detailRequest += 1; drawer.value = false; selected.value = null
   loading.value = true; error.value = ''; rows.value = []
   try {
-    const result = listFrozenProtocols(user)
+    const result = await listFrozenProtocols(user)
     await delay()
     if (adminProtocolsScenario === 'load-error') throw new Error('Frozen protocols could not be loaded. Refresh to try again.')
     if (current()) { rows.value = adminProtocolsScenario === 'empty' ? [] : result; page.value = 1 }
@@ -42,7 +42,7 @@ async function viewProtocol(version) {
   const current = () => active && request === detailRequest && drawer.value && auth.demoUser === user
   selectedVersion.value = version; selected.value = null; detailError.value = ''; drawer.value = true; detailLoading.value = true
   try {
-    const result = readFrozenProtocol(version, user)
+    const result = await readFrozenProtocol(version, user)
     await delay()
     if (adminProtocolsScenario === 'detail-error') throw new Error('Protocol details could not be loaded. Refresh the details to try again.')
     if (current()) selected.value = result

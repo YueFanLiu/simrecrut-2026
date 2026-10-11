@@ -1,5 +1,7 @@
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { demoMode } from '../../../config/runtime.js'
+import { ElMessage } from 'element-plus'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElTag } from 'element-plus'
 import CandidateLayout from '../../../layouts/CandidateLayout.vue'
@@ -23,6 +25,27 @@ const methods = computed(() => entry.value?.assessment?.methods || ['Objective',
 const heading = computed(() => ready.value ? 'Ready to Run' : running.value ? 'Simulation in Progress' : complete.value ? 'Simulation Complete' : 'Simulation Failed')
 const tagType = (status) => status === 'Complete' ? 'success' : status === 'Failed' ? 'danger' : status === 'Running' ? 'primary' : 'info'
 const formatTime = (time) => new Intl.DateTimeFormat('en-GB', { timeStyle: 'medium', timeZone: 'Europe/Paris' }).format(new Date(time))
+
+async function runSimulation(caseId, scenario, retry = false) {
+  try { await cases.runSimulation(caseId, scenario, retry) } catch (error) { ElMessage.error(error.message) }
+}
+
+// Direct navigation must load the authorized case instead of requiring demo memory.
+let connectedRequest = 0, connectedActive = true
+async function refreshConnectedCase() {
+  if (demoMode) return
+  const request = ++connectedRequest, id = String(route.params.caseId)
+  try {
+    const row = await (await import('../../../api/cases.js')).caseDetail(id)
+    if (connectedActive && request === connectedRequest && route.params.caseId === id) cases.cases[id] = row
+  } catch (error) {
+    if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(error.message) }
+  }
+}
+watch(() => route.params.caseId, refreshConnectedCase)
+refreshConnectedCase()
+const connectedTimer = setInterval(() => { if (!demoMode && entry.value && !complete.value) refreshConnectedCase() }, 2000)
+onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterval(connectedTimer) })
 </script>
 
 <template>
@@ -58,8 +81,8 @@ const formatTime = (time) => new Intl.DateTimeFormat('en-GB', { timeStyle: 'medi
               <h3>{{ method.name }}</h3><ElTag :type="tagType(method.status)">{{ method.status }}</ElTag>
               <p>{{ method.status === 'Complete' ? 'Demo stage completed.' : method.status === 'Running' ? 'Demo stage running...' : method.status === 'Failed' ? 'No result was produced.' : 'Waiting for this stage.' }}</p>
             </article></div>
-            <ElButton v-if="ready" type="primary" @click="cases.runSimulation(entry.caseId, simulationScenario)">Run Simulation</ElButton>
-            <ElButton v-if="canRetry" type="primary" @click="cases.runSimulation(entry.caseId, simulationScenario, true)">Retry Simulation</ElButton>
+            <ElButton v-if="ready" type="primary" @click="runSimulation(entry.caseId, simulationScenario)">Run Simulation</ElButton>
+            <ElButton v-if="canRetry" type="primary" @click="runSimulation(entry.caseId, simulationScenario, true)">Retry Simulation</ElButton>
             <p v-if="failed && !canRetry">Retry is unavailable for this failure. Return to Jobs to start a new demo case.</p>
             <div v-if="complete" class="result-action"><ElButton type="primary" @click="router.push({ name: 'SimulationResults', params: { caseId: entry.caseId } })">View Results</ElButton><p>View the five result cards and their separate score scales.</p></div>
           </section>

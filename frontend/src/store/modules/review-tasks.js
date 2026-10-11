@@ -1,25 +1,34 @@
+// Connected mode uses server data; fixtures remain limited to explicit demos.
+import { demoMode } from '../../config/runtime.js'
 import { defineStore } from 'pinia'
 import { recordDemoAudit } from '../../mock/admin-audit.js'
 import { resolveReviewTask, validateReviewSubmission } from '../../mock/review-task-detail.js'
 import { createReviewTasks, researchAssignmentTasks, selectReviewTaskSummaries } from '../../mock/review-tasks.js'
 
 export const useReviewTasksStore = defineStore('reviewTasks', {
-  state: () => ({ tasks: createReviewTasks() }),
+  state: () => ({ tasks: demoMode ? createReviewTasks() : [], details: {} }),
   actions: {
-    listTasks(user, research, now = Date.now()) { return selectReviewTaskSummaries([...this.tasks, ...researchAssignmentTasks(research)], user, now) },
+    listTasks(user, research, now = Date.now()) {
+      if (!demoMode) { return this.tasks } return selectReviewTaskSummaries([...this.tasks, ...researchAssignmentTasks(research)], user, now) },
     async loadTasks(user, research, scenario = 'normal') {
+      if (!demoMode) { this.tasks = await (await import('../../api/reviews.js')).reviewTasks(); return this.tasks }
       if (!['HR', 'Researcher'].includes(user?.role)) throw new Error('An HR or Researcher demo session is required to view assigned review tasks.')
       await new Promise(resolve => setTimeout(resolve, 400))
       if (scenario === 'error') throw new Error('Unable to load review tasks. Please try again.')
       return scenario === 'empty' ? [] : this.listTasks(user, research)
     },
-    readDetail(id, user, research, now = Date.now()) { return resolveReviewTask(this.tasks, research, id, user, now).detail },
+    readDetail(id, user, research, now = Date.now()) {
+      if (!demoMode) return this.details[id]
+      return resolveReviewTask(this.tasks, research, id, user, now).detail
+    },
     async loadDetail(id, user, research, scenario = 'normal') {
+      if (!demoMode) { const row = await (await import('../../api/reviews.js')).reviewTask(id); this.details[id] = row; return row }
       await new Promise(resolve => setTimeout(resolve, 400))
       if (scenario === 'load-error') throw new Error('Unable to load this review task. Please try again.')
       return this.readDetail(id, user, research)
     },
     async submitReview(id, form, user, research, scenario = 'normal') {
+      if (!demoMode) { const row = await (await import('../../api/reviews.js')).submitReview(id, form); this.details[id] = row; return row }
       const failure = validateReviewSubmission(form)
       if (failure) throw new Error(failure)
       const payload = { decision: form.decision, reason: form.reason.trim() }

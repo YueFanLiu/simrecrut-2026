@@ -24,15 +24,16 @@ request.interceptors.response.use(
     }
     const message =
       body.msg || body.message || "The request could not be completed.";
-    ElMessage.error(message);
+    if (!response.config.silent) ElMessage.error(message);
     return Promise.reject(new Error(message));
   },
   (error) => {
+    if (axios.isCancel(error)) return Promise.reject(error);
     if (error.response?.status === 401) {
       removeToken();
       if (location.pathname !== "/login") location.assign("/login");
     }
-    ElMessage.error(
+    if (!error.config?.silent) ElMessage.error(
       error.response?.data?.message ||
         "The service is unavailable. Please retry.",
     );

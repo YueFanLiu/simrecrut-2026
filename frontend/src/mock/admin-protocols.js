@@ -1,3 +1,4 @@
+import { demoMode } from '../config/runtime.js'
 import { requireAdmin } from './admin-users.js'
 
 const protocol = Object.freeze({
@@ -17,8 +18,10 @@ export function protocolProjection(row) {
   const { version, name, status, schema, preprocessing, cutoff, description, matching, labels, inputs, encoding, threshold, frozenAt } = row
   return { version, name, status, schema, preprocessing, cutoff, description, matching, labels, inputs, encoding, threshold, frozenAt, modelTypes: [...row.modelTypes] }
 }
-export function listFrozenProtocols(user) { requireAdmin(user); return [protocolProjection(protocol)] }
+export function listFrozenProtocols(user) {
+  if (!demoMode) { return import('../api/administration.js').then(api => api.protocols()) } requireAdmin(user); return [protocolProjection(protocol)] }
 export function readFrozenProtocol(version, user) {
+  if (!demoMode) { return import('../api/administration.js').then(api => api.protocol(version)) }
   requireAdmin(user)
   if (version !== protocol.version) throw new Error('The frozen protocol was not found.')
   return protocolProjection(protocol)

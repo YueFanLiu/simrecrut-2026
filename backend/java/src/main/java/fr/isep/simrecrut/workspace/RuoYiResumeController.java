@@ -18,6 +18,9 @@ public class RuoYiResumeController {
     private final UserResumeServices users;
     public RuoYiResumeController(UserResumeServices users) { this.users = users; }
     private ResumeService service() throws Exception { return users.forUser(SecurityUtils.getUserId()); }
+    @DeleteMapping("/{id}") @PreAuthorize("@ss.hasPermi('simrecrut:resume:delete')")
+    @Log(title = "Resume deletion", businessType = BusinessType.DELETE, isSaveRequestData = false, isSaveResponseData = false)
+    public AjaxResult delete(@PathVariable String id) throws Exception { return AjaxResult.success(service().delete(id)); }
     @GetMapping @PreAuthorize("@ss.hasPermi('simrecrut:resume:list')")
     public AjaxResult list() throws Exception { return AjaxResult.success(service().list()); }
     @GetMapping("/{id}") @PreAuthorize("@ss.hasPermi('simrecrut:resume:list')")
@@ -31,7 +34,7 @@ public class RuoYiResumeController {
     }
     @PostMapping("/{id}/clean") @PreAuthorize("@ss.hasPermi('simrecrut:resume:edit')")
     public AjaxResult clean(@PathVariable String id, @RequestBody JsonNode body) throws Exception { return AjaxResult.success(service().clean(id, body)); }
-    @PostMapping("/{id}/save") @PreAuthorize("@ss.hasPermi('simrecrut:resume:edit')")
+    @PostMapping("/{id}/save") @PreAuthorize("@ss.hasPermi('simrecrut:resume:edit') and (!#body.path('confirmed').asBoolean() or @ss.hasPermi('simrecrut:resume:confirm'))")
     @Log(title = "Resume confirmation", businessType = BusinessType.UPDATE, isSaveRequestData = false, isSaveResponseData = false)
     public AjaxResult save(@PathVariable String id, @RequestBody JsonNode body) throws Exception { return AjaxResult.success(service().save(id, body)); }
     @PostMapping("/{id}/upload") @PreAuthorize("@ss.hasPermi('simrecrut:resume:confirm')")

@@ -1,4 +1,6 @@
 <script setup>
+import { demoMode } from '../../../config/runtime.js'
+import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElCheckbox, ElDialog, ElInput, ElSkeleton } from 'element-plus'
@@ -154,15 +156,18 @@ async function confirmFacts() {
   finally { if (route.params.caseId === caseId) busy.value = '' }
 }
 
-function deleteCase() {
-  cases.deleteCase(route.params.caseId)
-  confirmDelete.value = false
-  router.replace({ name: 'MySimulations' })
+async function deleteCase() {
+  try {
+    await cases.deleteCase(route.params.caseId)
+    confirmDelete.value = false
+    router.replace({ name: 'MySimulations' })
+  } catch (error) { actionError.value = error.message }
 }
 
 watch(() => route.params.caseId, () => { confirmDelete.value = false; loadDraft() }, { immediate: true })
 // Clear editable content immediately when a case is deleted, expires or loses access.
 watch(() => entry.value?.processingStatus, (status) => {
+  if (status === 'REVIEW_REQUIRED' && !demoMode && !draft.value) { loadDraft(); return }
   if (status !== 'REVIEW_REQUIRED') {
     loadSequence += 1
     draft.value = null
@@ -171,6 +176,23 @@ watch(() => entry.value?.processingStatus, (status) => {
   }
 })
 onBeforeUnmount(() => { loadSequence += 1; pageActive = false; clearInterval(expiryTimer) })
+
+// Direct navigation must load the authorized case instead of requiring demo memory.
+let connectedRequest = 0, connectedActive = true
+async function refreshConnectedCase() {
+  if (demoMode) return
+  const request = ++connectedRequest, id = String(route.params.caseId)
+  try {
+    const row = await (await import('../../../api/cases.js')).caseDetail(id)
+    if (connectedActive && request === connectedRequest && route.params.caseId === id) cases.cases[id] = row
+  } catch (error) {
+    if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(error.message) }
+  }
+}
+watch(() => route.params.caseId, refreshConnectedCase)
+refreshConnectedCase()
+const connectedTimer = null
+onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterval(connectedTimer) })
 </script>
 
 <template>

@@ -1,3 +1,4 @@
+import { demoMode } from '../config/runtime.js'
 const managedJobs = [
   { jobId: 'hr-job-008', owner: 'hr', title: 'Data Analyst', department: 'Data',
     createdAt: '2026-10-08', status: 'Published', publishedVersion: '1.0', draftVersion: null,
@@ -38,6 +39,7 @@ export function selectManagedJobSummaries(jobs, username) {
 export function createManagedJobs() { return structuredClone(managedJobs) }
 
 export async function loadHrJobs(user, scenario = 'normal', source = managedJobs) {
+  if (!demoMode) return (await import('../api/jobs.js')).managedJobs()
   if (user?.role !== 'HR') throw new Error('This demo workspace is available to HR accounts only.')
   await new Promise((resolve) => setTimeout(resolve, 350))
   if (scenario === 'error') throw new Error('Unable to load managed jobs. Please try again.')

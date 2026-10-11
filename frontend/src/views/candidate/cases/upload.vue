@@ -1,4 +1,6 @@
 <script setup>
+import { demoMode } from '../../../config/runtime.js'
+import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElDialog, ElEmpty } from 'element-plus'
@@ -25,21 +27,42 @@ const expiresAt = computed(() => entry.value ? new Intl.DateTimeFormat('en-GB', 
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris',
 }).format(new Date(entry.value.expiresAt)) : '')
 
-function upload() {
+async function upload() {
   if (!selected.value || !canChooseFile.value) return
   const metadata = selected.value
-  selected.value = null
-  cases.uploadCv(route.params.caseId, metadata, extractionScenario)
+  try { await cases.uploadCv(route.params.caseId, metadata, extractionScenario); selected.value = null } catch (error) { ElMessage.error(error.message) }
+}
+async function retryCase(caseId, scenario) {
+  try { await cases.retryCase(caseId, scenario) } catch (error) { ElMessage.error(error.message) }
 }
 
-function cancelAndDelete() {
-  cases.deleteCase(route.params.caseId)
-  confirmDelete.value = false
-  router.replace({ name: 'MySimulations' })
+async function cancelAndDelete() {
+  try {
+    await cases.deleteCase(route.params.caseId)
+    confirmDelete.value = false
+    router.replace({ name: 'MySimulations' })
+  } catch (error) { ElMessage.error(error.message) }
 }
 
 watch(() => route.params.caseId, () => { selected.value = null; confirmDelete.value = false })
 onBeforeUnmount(() => clearInterval(expiryTimer))
+
+// Direct navigation must load the authorized case instead of requiring demo memory.
+let connectedRequest = 0, connectedActive = true
+async function refreshConnectedCase() {
+  if (demoMode) return
+  const request = ++connectedRequest, id = String(route.params.caseId)
+  try {
+    const row = await (await import('../../../api/cases.js')).caseDetail(id)
+    if (connectedActive && request === connectedRequest && route.params.caseId === id) cases.cases[id] = row
+  } catch (error) {
+    if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(error.message) }
+  }
+}
+watch(() => route.params.caseId, refreshConnectedCase)
+refreshConnectedCase()
+const connectedTimer = null
+onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterval(connectedTimer) })
 </script>
 
 <template>
@@ -99,7 +122,7 @@ onBeforeUnmount(() => clearInterval(expiryTimer))
             <h3>{{ entry.stage === 'Upload' ? 'Demo upload failed' : 'Demo extraction failed' }}</h3>
             <p>{{ entry.failure }}</p>
             <ElButton v-if="entry.processingStatus === 'FAILED_RETRYABLE' && entry.retryCount < 1"
-              type="primary" @click="cases.retryCase(entry.caseId, extractionScenario)">
+              type="primary" @click="retryCase(entry.caseId, extractionScenario)">
               {{ entry.stage === 'Upload' ? 'Retry Upload' : 'Retry Extraction' }}
             </ElButton>
             <p v-else>Retry is unavailable for this failure. Choose a different PDF.</p>

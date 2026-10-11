@@ -1,3 +1,5 @@
+// Connected mode uses server data; fixtures remain limited to explicit demos.
+import { demoMode } from '../../config/runtime.js'
 import { defineStore } from 'pinia'
 import { publishDemoJob } from '../../mock/shared-demo.js'
 import { recordDemoAudit } from '../../mock/admin-audit.js'
@@ -8,7 +10,7 @@ import { createPublishedHistory, nextDraftVersion, publishedJobForm } from '../.
 const copy = (value) => JSON.parse(JSON.stringify(value))
 
 export const useHrJobsStore = defineStore('hrJobs', {
-  state: () => ({ jobs: createManagedJobs(), drafts: {}, published: createPublishedHistory(createManagedJobs()), nextId: 1 }),
+  state: () => ({ jobs: demoMode ? createManagedJobs() : [], drafts: {}, published: demoMode ? createPublishedHistory(createManagedJobs()) : {}, nextId: 1 }),
   actions: {
     ownedJob(user, jobId) {
       if (user?.role !== 'HR') throw new Error('An HR demo session is required.')
@@ -17,12 +19,14 @@ export const useHrJobsStore = defineStore('hrJobs', {
       return job
     },
     readDraft(user, jobId) {
+      if (!demoMode) { return import('../../api/jobs.js').then(api => api.jobDraft(jobId)) }
       const job = this.ownedJob(user, jobId)
       if (!job.draftVersion) throw new Error('Published versions are read-only. No editable draft is available.')
       if (!this.drafts[jobId]) this.drafts[jobId] = { revision: 1, form: createJobForm(job) }
       return copy(this.drafts[jobId])
     },
     createDraft(user, form) {
+      if (!demoMode) { return import('../../api/jobs.js').then(api => api.createJob(form)).then(row => row.jobId) }
       if (user?.role !== 'HR') throw new Error('An HR demo session is required.')
       const errors = validateDescription(form)
       if (errors.length) throw new Error(errors[0])
@@ -34,6 +38,7 @@ export const useHrJobsStore = defineStore('hrJobs', {
       return jobId
     },
     saveDraft(user, jobId, form, revision) {
+      if (!demoMode) { return import('../../api/jobs.js').then(api => api.saveJob(jobId, form, revision)).then(row => row.revision) }
       const draft = this.readDraft(user, jobId)
       if (draft.revision !== revision) throw new Error('This draft changed elsewhere. Reload the saved draft before trying again. Your unsaved inputs have been kept.')
       const job = this.ownedJob(user, jobId)
@@ -43,6 +48,7 @@ export const useHrJobsStore = defineStore('hrJobs', {
       return revision + 1
     },
     publishDraft(user, jobId, revision) {
+      if (!demoMode) { return import('../../api/jobs.js').then(api => api.publishJob(jobId, revision)) }
       const draft = this.readDraft(user, jobId)
       if (draft.revision !== revision) throw new Error('This draft changed elsewhere. Reload and validate the saved draft again.')
       const report = validateJob(draft.form)
@@ -62,6 +68,7 @@ export const useHrJobsStore = defineStore('hrJobs', {
       return copy(snapshot)
     },
     readVersions(user, jobId) {
+      if (!demoMode) { return import('../../api/jobs.js').then(api => api.jobVersions(jobId)) }
       const job = this.ownedJob(user, jobId)
       const versions = (this.published[jobId] || []).map((entry) => ({
         versionId: entry.versionId, version: entry.version, status: 'Published',
@@ -75,6 +82,7 @@ export const useHrJobsStore = defineStore('hrJobs', {
         draftVersion: job.draftVersion, versions: copy(versions) }
     },
     readVersion(user, jobId, versionId) {
+      if (!demoMode) { return import('../../api/jobs.js').then(api => api.jobVersion(jobId, versionId)) }
       const job = this.ownedJob(user, jobId)
       if (versionId === `${jobId}-draft` && job.draftVersion) {
         const draft = this.readDraft(user, jobId)
@@ -88,6 +96,7 @@ export const useHrJobsStore = defineStore('hrJobs', {
       return { ...copy(version), status: 'Published' }
     },
     cloneVersion(user, jobId, versionId) {
+      if (!demoMode) { return import('../../api/jobs.js').then(api => api.cloneJob(jobId, versionId)) }
       const job = this.ownedJob(user, jobId)
       if (job.draftVersion) {
         const error = new Error(`An editable draft (${job.draftVersion}) already exists. Open it instead of creating another draft.`)

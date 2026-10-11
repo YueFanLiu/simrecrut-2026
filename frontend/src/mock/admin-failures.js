@@ -1,3 +1,4 @@
+import { demoMode } from '../config/runtime.js'
 import { requireAdmin } from './admin-users.js'
 
 export const failureStages = ['Extraction', 'Matching', 'Neutral ML', 'Biased ML', 'Cleanup']
@@ -36,12 +37,14 @@ export function listFailures(user) {
   }))
 }
 export async function loadFailures(user, scenario = 'normal') {
+  if (!demoMode) { return (await import('../api/administration.js')).failures() }
   const rows = listFailures(user)
   await new Promise(resolve => setTimeout(resolve, 400))
   if (scenario === 'load-error') throw new Error('Failed tasks could not be loaded. Refresh to try again.')
   return scenario === 'empty' ? [] : rows
 }
 export async function readFailure(taskId, user, scenario = 'normal') {
+  if (!demoMode) { return (await import('../api/administration.js')).failure(taskId) }
   const row = listFailures(user).find(row => row.taskId === taskId)
   if (!row) throw new Error('The failed task was not found.')
   await new Promise(resolve => setTimeout(resolve, 400))

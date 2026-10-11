@@ -4,7 +4,7 @@ import { ElAlert, ElButton, ElDialog, ElDrawer, ElEmpty, ElOption, ElPagination,
 import AdminLayout from '../../../layouts/AdminLayout.vue'
 import { useAuthStore } from '../../../store/modules/auth.js'
 import { useAdminModelsStore } from '../../../store/modules/admin-models.js'
-import { filterAdminModels, modelStatuses, modelTypes, offlinePackages } from '../../../mock/admin-models.js'
+import { filterAdminModels, modelStatuses, modelTypes } from '../../../mock/admin-models.js'
 import { adminModelsScenario } from '../../../config/demo.js'
 
 const auth = useAuthStore(), store = useAdminModelsStore()
@@ -15,7 +15,7 @@ const rows = computed(() => loaded.value && auth.hasDemoRole('Admin') && adminMo
 const filtered = computed(() => filterAdminModels(rows.value, filters))
 const visible = computed(() => filtered.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value))
 const selected = computed(() => { try { return selectedId.value ? store.readModel(selectedId.value, auth.demoUser) : null } catch { return null } })
-const packages = computed(() => offlinePackages().filter(row => !rows.value.some(model => model.id === row.id)))
+const packages = computed(() => store.packages.filter(row => !rows.value.some(model => model.id === row.id)))
 const chosenPackage = computed(() => packages.value.find(row => row.id === packageId.value))
 const replacements = computed(() => rows.value.filter(row => row.type === releaseTarget.value?.type && row.status === 'APPROVED'))
 const slots = computed(() => modelTypes.map(type => ({ type, versions: rows.value.filter(row => row.type === type).length, active: rows.value.find(row => row.type === type && row.status === 'ACTIVE' && store.slots[type] === row.id) })))
@@ -30,7 +30,7 @@ async function load() {
   const request = ++sequence, user = auth.demoUser
   const current = () => active && sequence === request && auth.demoUser === user
   loaded.value = false; loading.value = true; error.value = ''; selectedId.value = null
-  try { await store.loadModels(user, adminModelsScenario); if (current()) loaded.value = true }
+  try { await Promise.all([store.loadModels(user, adminModelsScenario), store.loadPackages()]); if (current()) loaded.value = true }
   catch (failure) { if (current()) error.value = failure.message }
   finally { if (current()) loading.value = false }
 }

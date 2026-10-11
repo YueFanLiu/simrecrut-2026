@@ -15,7 +15,7 @@ const auth = useAuthStore(), research = useResearchModuleStore(), tasks = useRev
 const loading = ref(true), loaded = ref(false), error = ref(''), clock = ref(Date.now())
 const page = ref(1), pageSize = ref(5)
 const filters = reactive({ keyword: '', status: '', condition: '', purpose: '', sort: 'latest' })
-const rows = computed(() => loaded.value && ['HR', 'Researcher'].includes(auth.demoUser?.role) && reviewTasksScenario !== 'empty'
+const rows = computed(() => loaded.value && (auth.hasDemoRole('HR') || auth.hasDemoRole('Researcher')) && reviewTasksScenario !== 'empty'
   ? tasks.listTasks(auth.demoUser, research, clock.value) : [])
 const filtered = computed(() => filterReviewTasks(rows.value, filters))
 const visible = computed(() => filtered.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value))
@@ -30,7 +30,7 @@ watch(() => filtered.value.length, () => { page.value = Math.min(page.value, Mat
 function resetFilters() { Object.assign(filters, { keyword: '', status: '', condition: '', purpose: '', sort: 'latest' }) }
 async function loadTasks() {
   const request = ++sequence, username = auth.demoUser?.username
-  const current = () => active && request === sequence && auth.demoUser?.username === username && ['HR', 'Researcher'].includes(auth.demoUser?.role)
+  const current = () => active && request === sequence && auth.demoUser?.username === username && (auth.hasDemoRole('HR') || auth.hasDemoRole('Researcher'))
   loading.value = true; loaded.value = false; error.value = ''
   try { await tasks.loadTasks(auth.demoUser, research, reviewTasksScenario); if (current()) { loaded.value = true; clock.value = Date.now() } }
   catch (failure) { if (current()) error.value = failure.message }

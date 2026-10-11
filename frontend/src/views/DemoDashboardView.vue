@@ -7,8 +7,8 @@ import { useAuthStore } from '../store/modules/auth.js'
 const auth = useAuthStore()
 const router = useRouter()
 
-function logout() {
-  auth.logout()
+async function logout() {
+  await auth.logout()
   router.replace({ name: 'Login' })
 }
 </script>
@@ -27,7 +27,7 @@ function logout() {
       <el-button v-if="auth.hasDemoRole('Candidate')" @click="router.push({ name: 'PublishedJobs' })">Browse published jobs</el-button>
       <el-button v-if="auth.hasDemoRole('HR')" @click="router.push({ name: 'HrJobs' })">Manage HR jobs</el-button>
       <el-button v-if="auth.hasDemoRole('Researcher')" @click="router.push({ name: 'ResearchExperiments' })">Browse research experiments</el-button>
-      <el-button v-if="['HR', 'Researcher'].includes(auth.demoUser?.role)" @click="router.push({ name: 'MyReviewTasks' })">My Review Tasks</el-button>
+      <el-button v-if="auth.hasDemoRole('HR') || auth.hasDemoRole('Researcher')" @click="router.push({ name: 'MyReviewTasks' })">My Review Tasks</el-button>
       <el-button @click="router.push({ name: 'Forbidden' })">Preview access denied</el-button>
       <el-button @click="router.push({ name: 'NotFound' })">Preview page not found</el-button>
     </section>

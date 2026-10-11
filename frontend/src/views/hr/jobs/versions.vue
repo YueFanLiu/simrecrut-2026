@@ -53,7 +53,7 @@ async function loadVersions() {
   try {
     await waitForVersionDemo(hrVersionsScenario, 'load')
     if (!stillCurrent(request, username)) return
-    data.value = store.readVersions(auth.demoUser, jobId)
+    data.value = await store.readVersions(auth.demoUser, jobId)
     if (hrVersionsScenario === 'empty') data.value.versions = []
     page.value = 1
   } catch (failure) { if (stillCurrent(request, username)) error.value = failure.message }
@@ -73,7 +73,7 @@ async function viewVersion(versionId) {
   tab.value = 'basic'
   try {
     await waitForVersionDemo(hrVersionsScenario, 'detail')
-    if (stillCurrent(request, username)) detail.value = store.readVersion(auth.demoUser, jobId, versionId)
+    if (stillCurrent(request, username)) detail.value = await store.readVersion(auth.demoUser, jobId, versionId)
   } catch (failure) { if (stillCurrent(request, username)) detailError.value = failure.message }
   finally { if (stillCurrent(request, username)) busy.value = false }
 }
@@ -88,13 +88,13 @@ async function newDraft(versionId) {
   try {
     await waitForVersionDemo(hrVersionsScenario, 'clone')
     if (!stillCurrent(request, username)) return
-    store.cloneVersion(auth.demoUser, jobId, versionId)
+    await store.cloneVersion(auth.demoUser, jobId, versionId)
     await router.push({ name: 'HrJobEdit', params: { jobId } })
   } catch (failure) {
     if (stillCurrent(request, username)) {
       cloneError.value = failure.message
       draftConflict.value = failure.code === 'DRAFT_EXISTS'
-      if (draftConflict.value) data.value = store.readVersions(auth.demoUser, jobId)
+      if (draftConflict.value) data.value = await store.readVersions(auth.demoUser, jobId)
     }
   } finally { if (stillCurrent(request, username)) busy.value = false }
 }

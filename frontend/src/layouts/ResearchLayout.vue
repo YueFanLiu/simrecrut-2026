@@ -3,11 +3,18 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElButton } from 'element-plus'
 import BrandMark from '../components/simrecrut/BrandMark.vue'
 import { useAuthStore } from '../store/modules/auth.js'
+import { computed } from 'vue'
+import { useResearchModuleStore } from '../store/modules/research-module.js'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
-function signOut() { auth.logout(); router.replace({ name: 'Login' }) }
+const research = useResearchModuleStore()
+// Preserve the selected experiment instead of navigating to a fixed demo ID.
+const metricsTarget = computed(() => ({ name: 'ResearchMetrics', query: {
+  experimentId: route.params.experimentId || route.query.experimentId || research.experiments[0]?.id,
+} }))
+async function signOut() { await auth.logout(); router.replace({ name: 'Login' }) }
 </script>
 
 <template>
@@ -20,7 +27,7 @@ function signOut() { auth.logout(); router.replace({ name: 'Login' }) }
       <RouterLink :to="{ name: 'ResearchExperimentCreate' }" :aria-current="route.name === 'ResearchExperimentCreate' ? 'page' : undefined">Create Experiment</RouterLink>
       <RouterLink :to="{ name: 'ResearchSubjects' }" :aria-current="route.name === 'ResearchSubjects' ? 'page' : undefined">Research Subjects</RouterLink>
       <RouterLink :to="{ name: 'ResearchModels' }" :aria-current="route.name === 'ResearchModels' ? 'page' : undefined">Models</RouterLink>
-      <RouterLink :to="{ name: 'ResearchMetrics', query: { experimentId: 'EXP-001' } }" :aria-current="route.name === 'ResearchMetrics' ? 'page' : undefined">Metrics</RouterLink>
+      <RouterLink :to="metricsTarget" :aria-current="route.name === 'ResearchMetrics' ? 'page' : undefined">Metrics</RouterLink>
       <RouterLink :to="{ name: 'MyReviewTasks' }" :aria-current="['MyReviewTasks', 'ReviewTaskDetail'].includes(route.name) ? 'page' : undefined">My Review Tasks</RouterLink>
     </nav><p>Browse authorised demo experiments and their frozen versions.</p></aside><main><slot /></main></div>
     <footer>SimRecrut - Research workspace - Frontend demonstration</footer>

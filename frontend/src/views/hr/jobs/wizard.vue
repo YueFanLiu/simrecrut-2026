@@ -1,4 +1,6 @@
+<!-- Keep the existing wizard UI; connected actions wait for server responses. -->
 <script setup>
+import { demoMode } from '../../../config/runtime.js'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElCheckbox, ElInput, ElInputNumber, ElMessageBox, ElOption, ElSelect, ElSkeleton, ElTag } from 'element-plus'
@@ -62,9 +64,9 @@ async function loadDraft() {
   errors.value = []
   report.value = null
   published.value = null
-  const task = run(() => {
+  const task = run(async () => {
     if (hrWizardScenario === 'load-error') throw new Error('Unable to load the draft. Please try again.')
-    const draft = isNew.value ? { revision: 0, form: createJobForm() } : store.readDraft(auth.demoUser, jobId.value)
+    const draft = isNew.value ? { revision: 0, form: createJobForm() } : await store.readDraft(auth.demoUser, jobId.value)
     form.value = draft.form
     revision.value = draft.revision
     saved.value = JSON.stringify(form.value)
@@ -81,12 +83,12 @@ watch(() => route.name, (name) => {
   if (name === 'HrJobEdit') step.value = 0
 })
 
-function saveCurrent() {
+async function saveCurrent() {
   const descriptionErrors = validateDescription(form.value)
   if (descriptionErrors.length) throw new Error(descriptionErrors.join(' '))
   if (hrWizardScenario === 'save-error') throw new Error('Unable to save the draft. Your inputs have been kept. Please try again.')
   if (hrWizardScenario === 'conflict') throw new Error('This draft changed elsewhere. Reload the saved draft before trying again. Your unsaved inputs have been kept.')
-  revision.value = store.saveDraft(auth.demoUser, jobId.value, form.value, revision.value)
+  revision.value = await store.saveDraft(auth.demoUser, jobId.value, form.value, revision.value)
   saved.value = JSON.stringify(form.value)
 }
 async function createDraft() {
@@ -94,23 +96,23 @@ async function createDraft() {
   if (issues.length) { errors.value = issues; return }
   await run(async () => {
     if (hrWizardScenario === 'save-error') throw new Error('Unable to create the draft. Your inputs have been kept. Please try again.')
-    const id = store.createDraft(auth.demoUser, form.value)
+    const id = await store.createDraft(auth.demoUser, form.value)
     saved.value = JSON.stringify(form.value)
     await router.replace({ name: 'HrJobEdit', params: { jobId: id } })
   })
 }
 async function saveDraft() {
-  await run(() => { saveCurrent(); notice.value = 'Draft saved in this demo session.' })
+  await run(async () => { await saveCurrent(); notice.value = 'Draft saved in this demo session.' })
 }
 async function extract() {
-  await run(() => {
+  await run(async () => {
     if (hrWizardScenario === 'extraction-error' && !extractionFailed) {
       extractionFailed = true
       throw new Error('Mock extraction failed. Your saved draft is safe. Please retry extraction.')
     }
     if (form.value.requirements.length) throw new Error('Remove the existing requirements before extracting again. This protects your reviewed edits.')
-    saveCurrent()
-    form.value.requirements = extractMockRequirements(form.value.description)
+    await saveCurrent()
+    form.value.requirements = demoMode ? extractMockRequirements(form.value.description) : (await (await import('../../../api/jobs.js')).extractJob(jobId.value)).requirements
     form.value.extractedDescription = form.value.description
     report.value = null
     step.value = 2
@@ -141,19 +143,19 @@ function next() {
   goStep(step.value + 1)
 }
 async function validate() {
-  await run(() => {
-    saveCurrent()
+  await run(async () => {
+    await saveCurrent()
     if (hrWizardScenario === 'validation-error') throw new Error('Mock validation is unavailable. Publication remains disabled. Please retry.')
-    report.value = validateJob(store.readDraft(auth.demoUser, jobId.value).form)
+    report.value = demoMode ? validateJob((await store.readDraft(auth.demoUser, jobId.value)).form) : await (await import('../../../api/jobs.js')).validateJob(jobId.value)
     errors.value = report.value.errors
     if (report.value.valid) notice.value = 'The local mock validation passed. This does not certify real backend validation.'
   })
 }
 async function publish() {
   if (!canPublish.value) return
-  await run(() => {
+  await run(async () => {
     if (hrWizardScenario === 'publish-error') throw new Error('Unable to publish the mock version. The saved draft is still editable. Please retry.')
-    published.value = store.publishDraft(auth.demoUser, jobId.value, revision.value)
+    published.value = await store.publishDraft(auth.demoUser, jobId.value, revision.value)
     notice.value = `Version ${published.value.version} published in this demo session.`
   })
 }

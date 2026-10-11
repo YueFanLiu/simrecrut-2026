@@ -1,3 +1,4 @@
+import { demoMode } from '../config/runtime.js'
 import { requireAdmin } from './admin-users.js'
 
 export const auditActions = ['ACCOUNT_STATUS_CHANGED', 'ROLE_ASSIGNED', 'MODEL_APPROVED', 'MODEL_ACTIVATED', 'JOB_PUBLISHED', 'REVIEW_SUBMITTED', 'CLEANUP_RECORDED']
@@ -77,6 +78,7 @@ export function queryAuditEvents(user, filters = {}, page = 1, pageSize = 5) {
   return { items: rows.slice((currentPage - 1) * pageSize, currentPage * pageSize), total: rows.length, page: currentPage }
 }
 export async function loadAuditEvents(user, filters, page, pageSize, scenario = 'normal') {
+  if (!demoMode) { return (await import('../api/administration.js')).audit(filters, page, pageSize) }
   const query = { ...filters }, result = queryAuditEvents(user, query, page, pageSize)
   await new Promise(resolve => setTimeout(resolve, 400))
   if (scenario === 'load-error') throw new Error('Audit logs could not be loaded. Refresh to try again.')
