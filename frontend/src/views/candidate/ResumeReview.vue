@@ -45,13 +45,29 @@ async function publish() {
       draft: { professional, warnings: record.value.draft?.warnings || [] },
       confirmed: true,
     });
-    await resumeAction(route.params.id, "upload");
+    const result = await resumeAction(route.params.id, "upload");
     await refresh();
-    ElMessage.success("Confirmed JSON published. Temporary original removed.");
+    // Cloud commit and temporary-file deletion can succeed independently.
+    if (result.data.originalRemoved)
+      ElMessage.success("Confirmed JSON published. Temporary original removed.");
+    else
+      ElMessage.warning("JSON published. Temporary-file cleanup is pending; retry cleanup.");
   } catch {
     ElMessage.error(
       "Publication failed. Check the facts and cloud configuration; the original is retained until publication succeeds.",
     );
+  } finally {
+    busy.value = false;
+  }
+}
+async function retryCleanup() {
+  busy.value = true;
+  try {
+    await resumeAction(route.params.id, "cleanup");
+    await refresh();
+    if (!record.value.originalAvailable) ElMessage.success("Temporary original removed.");
+  } catch {
+    ElMessage.error("Cleanup could not finish. Your published JSON remains saved.");
   } finally {
     busy.value = false;
   }
@@ -82,6 +98,12 @@ async function publish() {
             v-model="editors[group]"
             type="textarea"
             :rows="15" /></el-tab-pane></el-tabs
+      ><el-button
+        v-if="record.originalAvailable && record.cloud_revision === record.revision"
+        v-hasPermi="['simrecrut:resume:confirm']"
+        :loading="busy"
+        @click="retryCleanup"
+        >Retry temporary-file cleanup</el-button
       ><el-checkbox v-model="confirmed"
         >I have reviewed these professional facts.</el-checkbox
       ><el-button
