@@ -1,0 +1,128 @@
+{
+  "repository": "https://github.com/YueFanLiu/simrecrut-2026",
+  "branch": "WANG",
+  "commit": "dbd345cd4b2816ffbd02d06d84b111ae4812d719",
+  "purpose": "Unmodified frontend reference source; not connected to the active application.",
+  "files": [
+    {
+      "path": "index.html",
+      "sha256": "1b838c23d3f249ec3ac184d9128122efc0ed764709475280cd0214379228ec1b"
+    },
+    {
+      "path": "package.json",
+      "sha256": "23b106175feb532a62a0b2a52e8c382383148fd46d9bd3228c48082c176ee48a"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "22e9b76fb5bc9d194c3e3c766a9febfd54dcd4ea347649ad39e0f5f3f1ddc3b8"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "sha256": "ac02d96368617c760f093cfe61fdec64b6244007ab3553e0d6621f706f54a353"
+    },
+    {
+      "path": "src/App.vue",
+      "sha256": "bd1e16dc8b3a4210d1e6d9d83fbfb8b6318acb00ef829a3bfb01c9400dd89fa4"
+    },
+    {
+      "path": "src/api/demoFixtures.js",
+      "sha256": "1a5ac46aed737f2225eeee06dd2b9c5f38d61894f83c28eae38929c365e03cbb"
+    },
+    {
+      "path": "src/components/RecordDrawer.vue",
+      "sha256": "4731da176531f0d7219dc861f9ccf1de060e853f26f6e134f303f2d608153880"
+    },
+    {
+      "path": "src/components/RecordTable.vue",
+      "sha256": "c86d679c0f310e2ac2a6ddf1e896235f3654934f7fd29f4c3c161a3f62a140a8"
+    },
+    {
+      "path": "src/components/WorkspaceNavigation.vue",
+      "sha256": "54de005b5c02e8bafb6ab7984bf786afb5253a1c1532cfa5dbfac657ab5bcc38"
+    },
+    {
+      "path": "src/main.js",
+      "sha256": "51dc642992f255a62185e6d248f47ab4deb6d50ebf41c8db71c8f202516c8377"
+    },
+    {
+      "path": "src/router/pageComponents.js",
+      "sha256": "f1c34bd4af8549d3f1ffc1fa371377dd284ab4884dc3dc4ec8330f188fea4de8"
+    },
+    {
+      "path": "src/router/pages.js",
+      "sha256": "74e4d8291db3a9ef1b9fbeeea50a52833528aa2373a1330784b9e038441a270c"
+    },
+    {
+      "path": "src/state/workspace.js",
+      "sha256": "ea924e1f9842f34c0d60bf96bb2d5822ff8b5c952f644f1d7fff7fb03eb5aef4"
+    },
+    {
+      "path": "src/style.css",
+      "sha256": "dfb484d72006ba56274d87d13b793e124ccc7a2fdbc8e8242f8156eca47b7331"
+    },
+    {
+      "path": "src/views/admin/AdminRoles.vue",
+      "sha256": "3450749efb79903a3807ca2db4b9b33696ea53fd1adffd547e8a1514a3fc1560"
+    },
+    {
+      "path": "src/views/admin/AdminUsers.vue",
+      "sha256": "5b464d07c0c4e34977e18ec502a10107ed84f4a35ec8bed1b1470211e5438747"
+    },
+    {
+      "path": "src/views/admin/AuditLogs.vue",
+      "sha256": "393f9559957a4993b00192f80502386f8b9e840a4e3bc38377b031384539b7e6"
+    },
+    {
+      "path": "src/views/admin/FrozenProtocols.vue",
+      "sha256": "272c38870cb1bacddf1f473861a31c9915f65b68c9c1b479c7933e39ec71c2d9"
+    },
+    {
+      "path": "src/views/admin/ModelReleases.vue",
+      "sha256": "8ff5f76a4f8f1dc84ab0e1cbd81315adceee1af324a8348f336dd12da000f97b"
+    },
+    {
+      "path": "src/views/admin/ProcessingFailures.vue",
+      "sha256": "07562855ee31c7a045c697d416394713943113eb21687f29f2c548b6f7a555d5"
+    },
+    {
+      "path": "src/views/admin/ServiceHealth.vue",
+      "sha256": "33a52a41839dd186536eb1ad217b2602dc57a6ceca9e2e9210d2278eee7d305a"
+    },
+    {
+      "path": "src/views/research/ExperimentCreate.vue",
+      "sha256": "8bb35db57bde1279777cfbd73ab181b0c5e17121ca1f907a7734b8a5a901a178"
+    },
+    {
+      "path": "src/views/research/ExperimentDetails.vue",
+      "sha256": "dd31460386acfe5aa41e3bb2161c2168a89534e9dcc2d5b99007e83f5267f900"
+    },
+    {
+      "path": "src/views/research/ExperimentList.vue",
+      "sha256": "0dfcf9e7861eb6ada25ae0ca252d0a9bc2bf3aefda31ba3832d28d3619ef690a"
+    },
+    {
+      "path": "src/views/research/ResearchMetrics.vue",
+      "sha256": "99da684638785c8dc7a742c21f9a435ea1429751ea7fdaf403bdcb0adf190d36"
+    },
+    {
+      "path": "src/views/research/ResearchModels.vue",
+      "sha256": "5f9cd8d2aea10bc573d6e769ec57aa9e837864ced19beb542c2217667b64d25a"
+    },
+    {
+      "path": "src/views/research/ResearchSubjects.vue",
+      "sha256": "d28c4727b9eece38e361cbbf93be5340501472bbd407358e6f6c7d45a82ecab0"
+    },
+    {
+      "path": "src/views/reviewer/ReviewTaskDetails.vue",
+      "sha256": "b64ce72ad256527e602bde2d2ee4d5808c3f7e4997644e67b2bfb45a75cb5cc7"
+    },
+    {
+      "path": "src/views/reviewer/ReviewTasks.vue",
+      "sha256": "09fd7bdd7ae694d90798673bbc5ab122935d52f3cfc08139297ec90ab5ef33d1"
+    },
+    {
+      "path": "vite.config.js",
+      "sha256": "1ed815404b2d935d9ce5c02c4b9dce2a096d0ffb20dbe722ae4153b2a77cf5cf"
+    }
+  ]
+}

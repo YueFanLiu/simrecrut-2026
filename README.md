@@ -7,9 +7,43 @@ authorized views. Matching is an intermediate calculation used by the rules and
 models.
 
 This repository currently contains the initial directory layout, contribution
-rules, configuration examples, and a Java build bootstrap. Product workflows,
-frontend pages, inference endpoints, training programs, database migrations, and
-the deployment stack are developed incrementally in their designated locations.
+rules, configuration examples, a Java build bootstrap, and frontend Login and
+Register demos, the Access Denied and Page Not Found pages, and a Candidate
+Published Jobs list with local filtering and pagination, plus public Job Detail
+pages with unavailable-job recovery, and a CV upload/extraction demonstration
+with local PDF validation and memory-only cases, plus professional fact review
+with short mock evidence, local saves and confirmation locking. Simulation Progress
+now displays three automated mock stages with safe duplicate-run and retry behavior.
+Simulation Results adds five read-only result cards, separate score scales, human
+status refresh and local deletion. My Simulations adds owned retained case
+history, state-aware continuation, pagination and deletion. HR Job Management
+now provides managed-job search, status filtering, sorting and pagination using
+a separate HR demo account. The shared HR Job Wizard adds seven-step draft
+configuration, local extraction/review, mandatory conditions, exact percentage
+weights, validation and a read-only mock publication. HR Job Versions adds
+immutable history, read-only configuration details and new drafts copied from
+published versions. HR Authorized Cases lists permitted mock cases, processing
+and human-review statuses, local filters and retention-aware visibility. HR Case
+Details adds read-only professional snapshots, version references, matching
+contributions, five outcome slots and blind-review projection. Research Experiments
+now uses adapted WANG R01-R06 pages: authorised experiments, compatible
+configuration, subject selection, controlled demo pairs, read-only models and
+unavailable evaluation metrics under a Researcher demo session. My Review Tasks
+lists the current HR/Researcher account's assigned reviews with blind summaries,
+filters, pagination and live Research assignment connections. Review Task Details
+adds anonymised professional facts, public job requirements, Accept/Reject and
+a validated reason, with confirmation and immutable mock submission. User Management
+adds an Admin-only mock directory, filters, account details, Add/Edit and confirmed
+status changes. Roles & Permissions adds fixed role configurations, menu/action
+trees, a permission matrix and mock directory role assignments. Directory changes
+do not modify login credentials. Model Versions and Release adds a synthetic
+offline package registry, separate approval/activation and compatible replacement
+retirement with retained historical metadata. Login uses mock
+credentials and opens a temporary dashboard;
+Register creates a temporary in-memory Candidate account. Neither provides real
+authentication. Other product workflows, inference endpoints,
+training programs, database migrations, and the deployment stack are developed
+incrementally in their designated locations.
 
 All project-owned content must be in English, including documentation, comments,
 identifiers, interface text, logs, errors, examples, and commit messages. Java
