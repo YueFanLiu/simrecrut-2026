@@ -8,7 +8,7 @@ models.
 
 This repository currently contains the initial directory layout, contribution
 rules, configuration examples, and a Java build bootstrap. Product workflows,
-frontend pages, inference endpoints, training programs, database migrations, and
+frontend pages, inference endpoints, training programs, and
 the deployment stack are developed incrementally in their designated locations.
 
 All project-owned content must be in English, including documentation, comments,
@@ -94,6 +94,10 @@ with `.gitkeep` files; they are not implementations. Compose files, Dockerfiles,
 component dependency manifests, and public/internal API contracts are added with
 the corresponding working component. They must not imply an operational stack
 before that stack exists.
+
+The initial 36-table business migration is available for review and controlled
+installation. See [initial schema](docs/database/initial-schema.md) for its
+scope, identity boundary, remaining business rules and execution checks.
 
 The planned frontend feature clients are `candidateJobs.js`, `candidateCases.js`,
 `hrJobs.js`, `hrCases.js`, `researchExperiments.js`, `reviewerTasks.js`, and

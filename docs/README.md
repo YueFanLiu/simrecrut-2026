@@ -24,6 +24,11 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
 - [Repository checks](development/repository-checks.md): automated scaffold,
   language, and documentation checks.
 
+## Database
+
+- [Initial business schema](database/initial-schema.md): the 36-table baseline,
+  logical reference inventory, implementation choices and Flyway verification.
+
 ## Reserved topics
 
 | Location | Content added with the corresponding implementation |
