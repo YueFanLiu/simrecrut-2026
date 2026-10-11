@@ -1,13 +1,13 @@
-// Install the RuoYi frontend services before mounting the application.
-import { createApp } from "vue";
-import ElementPlus from "element-plus";
-import "element-plus/dist/index.css";
-import App from "./App.vue";
-import store from "./store";
-import router from "./router";
-import directive from "./directive";
-import "./style.css";
-const app = createApp(App);
-app.use(store).use(router).use(ElementPlus);
-directive(app);
-app.mount("#app");
+import { createApp } from 'vue'
+import ElementPlus from 'element-plus'
+import directive from './directive/index.js'
+import 'element-plus/dist/index.css'
+import './assets/styles.css'
+import App from './App.vue'
+import { pinia } from './store/index.js'
+import router from './router/index.js'
+
+// Share the page design while registering RuoYi forms and permission directives.
+const app = createApp(App).use(pinia).use(router).use(ElementPlus)
+directive(app)
+app.mount('#app')

@@ -1,5 +1,6 @@
 <!-- C03: Keep uploads temporary until the user confirms the professional facts. -->
 <script setup>
+import CandidateLayout from "../../layouts/CandidateLayout.vue";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
@@ -41,6 +42,7 @@ async function upload(file) {
 }
 </script>
 <template>
+  <CandidateLayout>
   <el-card
     ><h2>Upload your CV</h2>
     <p>PDF only · Up to 10 MB · Up to 20 pages · Unencrypted</p>
@@ -75,4 +77,5 @@ async function upload(file) {
       ></el-table
     ></el-card
   >
+  </CandidateLayout>
 </template>

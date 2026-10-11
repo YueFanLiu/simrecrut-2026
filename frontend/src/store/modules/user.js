@@ -2,7 +2,8 @@
 import { defineStore } from "pinia";
 import { login, getInfo, logout } from "@/api/login";
 import { getToken, setToken, removeToken } from "@/utils/auth";
-export const demoMode = import.meta.env.VITE_APP_DEMO_MODE === "true";
+import { demoMode } from "../../config/runtime.js";
+export { demoMode };
 export default defineStore("user", {
   state: () => ({
     token: getToken() || "",

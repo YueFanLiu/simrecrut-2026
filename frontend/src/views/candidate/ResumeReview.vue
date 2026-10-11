@@ -1,5 +1,6 @@
 <!-- C04: Review five professional fact groups without editing identity fields. -->
 <script setup>
+import CandidateLayout from "../../layouts/CandidateLayout.vue";
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
@@ -57,6 +58,7 @@ async function publish() {
 }
 </script>
 <template>
+  <CandidateLayout>
   <el-card
     ><h2>Review professional facts</h2>
     <p v-if="!record">No connected resume is loaded.</p>
@@ -92,4 +94,5 @@ async function publish() {
       ></template
     ></el-card
   >
+  </CandidateLayout>
 </template>

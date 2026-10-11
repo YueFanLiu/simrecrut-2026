@@ -20,6 +20,43 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
   naming, decisions, sources, and maintenance.
 - [Local setup](development/local-setup.md): authoritative environment and
   configuration instructions.
+- [Frontend Login](development/frontend-login.md): P01 implementation structure
+  and frontend-only demo scope.
+- [Frontend Register](development/frontend-register.md): P02 Candidate demo
+  registration, form rules, success and unavailable states.
+- [Frontend Access Denied](development/frontend-forbidden.md): P03 explanation,
+  safe recovery and separation from unauthenticated navigation.
+- [Frontend Page Not Found](development/frontend-not-found.md): P04 public
+  missing-route handling and session-aware recovery.
+- [Frontend Published Jobs](development/frontend-published-jobs.md): C01 current
+  public job summaries, local search, filters, sorting and pagination.
+- [Frontend Job Detail](development/frontend-job-detail.md): C02 public details,
+  published-version consistency, loading and unavailable-job recovery.
+- [Frontend CV Upload](development/frontend-cv-upload.md): C03 local PDF checks,
+  memory-only cases, simulated extraction, retry and deletion.
+- [Frontend CV Fact Review](development/frontend-cv-review.md): C04 professional
+  corrections, short mock evidence, saves and confirmation locking.
+- [Frontend Simulation Progress](development/frontend-simulation-progress.md): C05 mock method states, retries and confirmation locks.
+- [Frontend Simulation Results](development/frontend-simulation-results.md): C06 five result cards, separate score scales, human status refresh and local deletion.
+- [Frontend My Simulations](development/frontend-my-simulations.md): C07 owned case history, state-aware continuation, expiry and deletion.
+- [Frontend HR Jobs](development/frontend-hr-jobs.md): H01 managed-job list, filters, pagination and HR demo role.
+- [Frontend HR Job Wizard](development/frontend-hr-job-wizard.md): H02 shared seven-step editor, reviewed requirements, exact weights and local publication.
+- [Frontend HR Job Versions](development/frontend-hr-job-versions.md): H03 immutable history, read-only detail and single-draft cloning.
+- [Frontend HR Authorized Cases](development/frontend-hr-cases.md): H04 managed/granted case summaries, query filtering and privacy-aware visibility.
+- [Frontend HR Case Details](development/frontend-hr-case-detail.md): H05 read-only snapshots, contributions, five outcomes and blind visibility.
+- [Integrated Research frontend](development/frontend-research-module.md): adapted WANG R01-R06, review findings, repaired interactions and verification.
+- [Previous Research Experiments](development/frontend-research-experiments.md): archived standalone R01 implementation history.
+- [WANG frontend import](development/wang-frontend-import.md): source snapshot, Research view locations and integration boundary.
+- [Frontend My Review Tasks](development/frontend-my-review-tasks.md): V01 assigned HR/Researcher tasks, blind summaries, filters and Research assignment connections.
+- [Frontend Review Task Details](development/frontend-review-task-detail.md): V02 blind detail projection, validated independent review and confirmation locking.
+- [Frontend User Management](development/frontend-admin-users.md): A01 Admin mock directory, account metadata, validation and confirmed status changes.
+- [Frontend Roles and Permissions](development/frontend-admin-roles.md): A02 fixed roles, menu/action trees, permission matrix and mock account assignment.
+- [Frontend Model Versions and Release](development/frontend-admin-models.md): A03 synthetic offline metadata registration, checked lifecycle transitions and active-slot replacement.
+- [Frontend Frozen Protocols](development/frontend-admin-protocols.md): A04 read-only protocol metadata, frozen configuration summaries and missing-data states.
+- [Frontend Service Health](development/frontend-admin-health.md): A05 unknown runtime health, check freshness, model slots and workspace metadata.
+- [Frontend Failed Jobs and Errors](development/frontend-admin-failures.md): A06 safe task metadata, combined filters, technical details and unavailable manual retry.
+- [Frontend Audit Logs](development/frontend-admin-audit.md): A07 safe read-only events, applied queries, pagination and nullable metadata.
+- [Frontend Overall Review](development/frontend-overall-review.md): 31-unit workflow verification, Candidate route repair and explicit mock integration boundaries.
 - [Java setup](development/java-setup.md): Java 17 build and runtime prerequisites.
 - [Repository checks](development/repository-checks.md): automated scaffold,
   language, and documentation checks.
