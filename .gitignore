@@ -1,6 +1,7 @@
 # Local credentials and service configuration.
 .local/
 .env
+*.private.env
 .env.*
 !.env.example
 **/.env

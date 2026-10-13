@@ -1,11 +1,13 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElCheckbox, ElDialog, ElForm, ElFormItem, ElInput } from 'element-plus'
 import AuthLayout from '../../layouts/AuthLayout.vue'
 import FieldIcon from '../../components/simrecrut/FieldIcon.vue'
 import PasswordInput from '../../components/simrecrut/PasswordInput.vue'
-import { registrationEnabled } from '../../config/demo.js'
+import { registrationEnabled as demoRegistrationEnabled } from '../../config/demo.js'
+import { demoMode } from '../../config/runtime.js'
+import { getCaptcha, getRegistrationOptions, register } from '../../api/login.js'
 import { registerDemo } from '../../mock/auth.js'
 import {
   validateUsername, validateEmail, validateRegistrationPassword,
@@ -19,6 +21,27 @@ const loading = ref(false)
 const registrationError = ref('')
 const createdUsername = ref('')
 const notice = ref('')
+// Server configuration and the existing RuoYi challenge govern connected registration.
+const registrationEnabled = ref(demoMode && demoRegistrationEnabled)
+const checking = ref(!demoMode), captcha = ref(''), captchaReady = ref(demoMode)
+form.code = ''; form.uuid = ''
+async function refreshCaptcha() {
+  if (demoMode) return
+  captchaReady.value = false
+  try {
+    const result = await getCaptcha()
+    captcha.value = result.captchaEnabled === false ? '' : `data:image/png;base64,${result.img}`
+    form.uuid = result.uuid || ''; form.code = ''; captchaReady.value = true
+  } catch { registrationError.value = 'Unable to load the verification challenge. Please retry.' }
+}
+onMounted(async () => {
+  if (demoMode) return
+  try {
+    registrationEnabled.value = (await getRegistrationOptions()).registrationEnabled === true
+    if (registrationEnabled.value) await refreshCaptcha()
+  } catch { registrationError.value = 'Unable to load registration settings. Please reload.' }
+  finally { checking.value = false }
+})
 const rules = {
   username: [{ validator: validateUsername, trigger: 'blur' }],
   email: [{ validator: validateEmail, trigger: 'blur' }],
@@ -39,18 +62,24 @@ function passwordChanged() {
 }
 
 async function submitRegistration() {
-  if (loading.value || !registrationEnabled || createdUsername.value) return
+  if (loading.value || !registrationEnabled.value || checking.value || !captchaReady.value || createdUsername.value) return
   registrationError.value = ''
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid || loading.value) return
   loading.value = true
   try {
-    const account = await registerDemo(form)
-    createdUsername.value = account.username
+    if (demoMode) createdUsername.value = (await registerDemo(form)).username
+    else {
+      if (captcha.value && !form.code.trim()) throw new Error('Enter the verification code.')
+      await register({ username: form.username.trim(), email: form.email.trim(), password: form.password,
+        confirmation: form.confirmation, agreedToTerms: form.agreedToTerms, code: form.code, uuid: form.uuid })
+      createdUsername.value = form.username.trim()
+    }
     form.password = ''
     form.confirmation = ''
   } catch (error) {
-    registrationError.value = error.message || 'Unable to create your demo account. Please try again.'
+    if (!demoMode) await refreshCaptcha()
+    registrationError.value = error.message || 'Unable to create your account. Please try again.'
   } finally {
     loading.value = false
   }
@@ -63,20 +92,23 @@ function goToLogin() {
 
 <template>
   <AuthLayout title-id="register-title">
-    <div v-if="!registrationEnabled" class="result-state">
+    <div v-if="checking" class="result-state" role="status"><p>Loading registration settings...</p></div>
+    <div v-else-if="!registrationEnabled" class="result-state">
       <div class="result-icon unavailable" aria-hidden="true">×</div>
       <h1 id="register-title">Registration unavailable</h1>
-      <p>Demo registration is currently disabled.</p>
-      <p>Please use the existing demo account.</p>
+      <p>Registration is currently disabled or unavailable.</p>
+      <p>Please use an existing account.</p>
+      <ElAlert v-if="registrationError" :title="registrationError" type="error" :closable="false" />
       <ElButton type="primary" size="large" @click="goToLogin">Back to login</ElButton>
     </div>
 
     <div v-else-if="createdUsername" class="result-state" role="status">
       <div class="result-icon success" aria-hidden="true">✓</div>
       <h1 id="register-title">Account created successfully</h1>
-      <p>Your Candidate demo account <strong>{{ createdUsername }}</strong> is ready.</p>
+      <p>Your Candidate account <strong>{{ createdUsername }}</strong> is ready.</p>
       <p>You can now sign in with your username or email.</p>
-      <p class="result-note">This account exists only until you refresh or close this browser tab.</p>
+      <p v-if="demoMode" class="result-note">This account exists only until you refresh or close this browser tab.</p>
+      <p v-else class="result-note">Your account is saved. Signing in does not grant administrator or reviewer permissions.</p>
       <ElButton type="primary" size="large" @click="goToLogin">Go to sign in</ElButton>
     </div>
 
@@ -111,17 +143,21 @@ function goToLogin() {
           <PasswordInput v-model="form.password" placeholder="Create a password" :disabled="loading"
             aria-describedby="password-hint" @input="passwordChanged" />
         </ElFormItem>
-        <p id="password-hint" class="field-hint">At least 8 characters, including letters and numbers.</p>
+        <p id="password-hint" class="field-hint">8-20 characters, including letters and numbers.</p>
 
         <ElFormItem label="Confirm password" prop="confirmation">
           <PasswordInput v-model="form.confirmation" placeholder="Confirm your password"
             :disabled="loading" @input="registrationError = ''" />
         </ElFormItem>
 
+        <ElFormItem v-if="!demoMode && (captcha || !captchaReady)" label="Verification code">
+          <ElInput v-model="form.code" placeholder="Enter the code" autocomplete="off" />
+          <button type="button" aria-label="Refresh verification code" :disabled="loading" @click="refreshCaptcha"><img v-if="captcha" :src="captcha" alt="Verification challenge" /><span v-else>Retry verification challenge</span></button>
+        </ElFormItem>
         <ElFormItem prop="agreedToTerms" class="agreement-item">
           <div class="agreement-row">
-            <ElCheckbox v-model="form.agreedToTerms" aria-label="Agree to demo terms and privacy notice">
-              I agree to the
+            <ElCheckbox v-model="form.agreedToTerms" aria-label="Read registration and privacy notices">
+              I have read the
             </ElCheckbox>
             <button type="button" class="notice-link" :disabled="loading" @click="notice = 'terms'">
               Terms of Use
@@ -134,14 +170,14 @@ function goToLogin() {
         </ElFormItem>
 
         <ElButton class="full-width" type="primary" size="large" native-type="submit"
-          :loading="loading" :disabled="loading">
+          :loading="loading" :disabled="loading || !captchaReady">
           {{ loading ? 'Creating account...' : 'Create account' }}
         </ElButton>
       </ElForm>
 
       <div class="sign-in-divider"><span>Already have an account?</span></div>
       <ElButton class="full-width" size="large" :disabled="loading" @click="goToLogin">Sign in</ElButton>
-      <aside class="demo-note">
+      <aside v-if="demoMode" class="demo-note">
         <strong>Frontend demo only</strong>
         <p>Creates a temporary Candidate account. No email is sent and no data is sent to a server.</p>
         <p>The account is cleared when you refresh or close this tab. Use invented details and a demo password.</p>
@@ -149,9 +185,13 @@ function goToLogin() {
       </aside>
     </template>
 
-    <ElDialog :model-value="Boolean(notice)" :title="notice === 'terms' ? 'Demo Terms of Use' : 'Demo Privacy Policy'"
+    <ElDialog :model-value="Boolean(notice)" :title="notice === 'terms' ? 'Registration notice' : 'Privacy notice'"
       width="min(480px, calc(100vw - 32px))" @close="notice = ''">
-      <template v-if="notice === 'terms'">
+      <template v-if="!demoMode">
+        <p v-if="notice === 'terms'">This development service creates a persistent Candidate account for the SimRecrut project. This notice is not a finalized legal agreement.</p>
+        <template v-else><p>Your username, email and hashed password are stored in the configured project database. Your password is used for authentication and is not stored as readable text.</p><p>No verification email is sent. Remember Me stores only your sign-in identifier in this browser.</p></template>
+      </template>
+      <template v-else-if="notice === 'terms'">
         <p>This is a frontend demonstration for reviewing the SimRecrut interface.</p>
         <p>Registration creates a temporary Candidate demo account. It does not create a real account or grant real permissions.</p>
         <p>These are prototype notices. Final terms must be supplied before a real service is enabled.</p>

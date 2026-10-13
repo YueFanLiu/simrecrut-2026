@@ -23,8 +23,8 @@ export function validateEmail(_rule, value, callback) {
 export function validateRegistrationPassword(_rule, value, callback) {
   if (!value) {
     callback(new Error('Please create a password.'))
-  } else if (value.length < 8 || !/[A-Za-z]/.test(value) || !/[0-9]/.test(value)) {
-    callback(new Error('Use at least 8 characters, including letters and numbers.'))
+  } else if (value.length < 8 || value.length > 20 || !/[A-Za-z]/.test(value) || !/[0-9]/.test(value)) {
+    callback(new Error('Use 8-20 characters, including letters and numbers.'))
   } else {
     callback()
   }
@@ -37,5 +37,5 @@ export function validatePasswordConfirmation(password, confirmation) {
 }
 
 export function validateAgreement(_rule, value, callback) {
-  callback(value ? undefined : new Error('Please agree to the demo terms and privacy notice.'))
+  callback(value ? undefined : new Error('Please read the registration and privacy notices.'))
 }

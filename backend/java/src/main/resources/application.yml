@@ -2,6 +2,18 @@
 server:
   port: ${JAVA_PORT:8080}
 spring:
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
   application:
     name: simrecrut-ruoyi
   datasource:
@@ -79,5 +91,9 @@ springdoc:
   swagger-ui:
     enabled: false
 simrecrut:
+  mail:
+    from: ${SMTP_FROM:${SMTP_USERNAME:}}
+  registration:
+    enabled: ${SIMRECRUT_REGISTRATION_ENABLED:true}
   resumes:
     directory: ${SIMRECRUT_DATA_DIR:runtime/resumes}

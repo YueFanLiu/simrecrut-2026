@@ -22,14 +22,14 @@ test('registration rules reject missing fields and malformed values', () => {
   assert.match(errorMessage(validateEmail, 'user@example'), /valid email/)
   assert.equal(errorMessage(validateEmail, ' student@example.test '), undefined)
   assert.match(errorMessage(validateRegistrationPassword, ''), /create a password/)
-  for (const value of ['abc123', 'abcdefgh', '12345678']) {
-    assert.match(errorMessage(validateRegistrationPassword, value), /8 characters/)
+  for (const value of ['abc123', 'abcdefgh', '12345678', 'Student123!'.repeat(3)]) {
+    assert.match(errorMessage(validateRegistrationPassword, value), /8-20 characters/)
   }
   assert.equal(errorMessage(validateRegistrationPassword, 'Student123!'), undefined)
   assert.match(validatePasswordConfirmation('Student123!', ''), /confirm/)
   assert.match(validatePasswordConfirmation('Student123!', 'Student124!'), /do not match/)
   assert.equal(validatePasswordConfirmation('Student123!', 'Student123!'), '')
-  assert.match(errorMessage(validateAgreement, false), /agree/)
+  assert.match(errorMessage(validateAgreement, false), /read/)
   assert.equal(errorMessage(validateAgreement, true), undefined)
 })
 

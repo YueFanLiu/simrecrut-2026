@@ -8,7 +8,7 @@ import PasswordInput from '../../components/simrecrut/PasswordInput.vue'
 import { registrationEnabled } from '../../config/demo.js'
 import { useAuthStore } from '../../store/modules/auth.js'
 import { demoMode } from '../../config/runtime.js'
-import { getCaptcha } from '../../api/login.js'
+import { getCaptcha, getRegistrationOptions } from '../../api/login.js'
 import { demoAccount } from '../../mock/auth.js'
 import { readRememberedIdentifier, saveRememberedIdentifier } from '../../utils/remembered-account.js'
 import { validateIdentifier, validatePassword } from '../../utils/login-validation.js'
@@ -35,7 +35,13 @@ async function refreshCaptcha() {
     form.uuid = result.uuid || ''; form.code = ''
   } catch { loginError.value = 'Unable to load the login challenge.' }
 }
-onMounted(refreshCaptcha)
+const canRegister = ref(demoMode && registrationEnabled)
+onMounted(async () => {
+  await refreshCaptcha()
+  if (!demoMode) {
+    try { canRegister.value = (await getRegistrationOptions()).registrationEnabled === true } catch { canRegister.value = false }
+  }
+})
 const rules = {
   identifier: [{ validator: validateIdentifier, trigger: 'blur' }],
   password: [{ validator: validatePassword, trigger: 'blur' }],
@@ -95,6 +101,7 @@ async function submitLogin() {
         <el-checkbox v-model="form.rememberMe">Remember Me</el-checkbox>
         <span>Username only</span>
       </div>
+      <el-button v-if="!demoMode" link :disabled="loading" @click="router.push({ name: 'ForgotPassword' })">Forgot password?</el-button>
 
       <el-button class="sign-in-button" type="primary" size="large" native-type="submit"
         :loading="loading" :disabled="loading">
@@ -103,9 +110,9 @@ async function submitLogin() {
     </el-form>
 
     <div class="registration-divider"><span>or</span></div>
-    <el-button class="register-button" size="large" :disabled="loading || !demoMode || !registrationEnabled"
+    <el-button class="register-button" size="large" :disabled="loading || !canRegister"
       @click="router.push({ name: 'Register' })">Create a new account</el-button>
-    <p v-if="!demoMode || !registrationEnabled" class="registration-note">Registration is not currently available.</p>
+    <p v-if="!canRegister" class="registration-note">Registration is not currently available.</p>
 
     <aside v-if="demoMode" class="demo-note" aria-label="Demo account">
       <strong>Frontend demo only</strong>

@@ -20,7 +20,8 @@ export default defineStore("user", {
         throw new Error("The identity service did not return a token.");
       this.token = response.token;
       setToken(response.token);
-      await this.GetInfo();
+      try { await this.GetInfo(); }
+      catch (error) { removeToken(); this.$reset(); throw error; }
     },
     async GetInfo() {
       if (demoMode) {
