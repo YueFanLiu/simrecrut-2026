@@ -18,6 +18,8 @@ jobs:
           java-version: '17'
           cache: maven
           cache-dependency-path: backend/java/pom.xml
+      - name: Install pinned RuoYi modules
+        run: bash scripts/dev/bootstrap-ruoyi.sh
       - name: Verify the Java bootstrap
         working-directory: backend/java
         run: bash mvnw --batch-mode verify
