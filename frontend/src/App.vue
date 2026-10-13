@@ -5,6 +5,7 @@ import en from 'element-plus/es/locale/lang/en'
 
 <template>
   <ElConfigProvider :locale="en">
-    <RouterView />
+    <!-- Remount pages when their route changes to avoid stale review state. -->
+    <RouterView :key="$route.path" />
   </ElConfigProvider>
 </template>

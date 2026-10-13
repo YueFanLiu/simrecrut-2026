@@ -1,5 +1,6 @@
 <!-- C04: Review five professional fact groups without editing identity fields. -->
 <script setup>
+import ResumeFactsTable from "../../components/simrecrut/ResumeFactsTable.vue";
 import CandidateLayout from "../../layouts/CandidateLayout.vue";
 import { onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -12,6 +13,8 @@ const route = useRoute(),
   confirmed = ref(false);
 const groups = ["skills", "experience", "education", "languages", "projects"];
 const editors = ref({});
+const activeGroup = ref("skills");
+const groupLabels = { skills: "Skills", experience: "Experience", education: "Education", languages: "Languages", projects: "Projects" };
 const router = useRouter();
 async function removeResume() {
   const id = route.params.id;
@@ -36,7 +39,7 @@ let timer,
   stopped = false;
 let readController;
 async function refresh() {
-  if (demoMode || stopped) return;
+  if (demoMode || stopped || !route.params.id) return;
   try {
     const id = route.params.id;
     readController?.abort(); readController = new AbortController();
@@ -46,11 +49,7 @@ async function refresh() {
     if (record.value.status === "EXTRACTING") timer = setTimeout(refresh, 2000);
     else
       for (const group of groups)
-        editors.value[group] = JSON.stringify(
-          record.value.draft?.professional?.[group] || [],
-          null,
-          2,
-        );
+        editors.value[group] = JSON.parse(JSON.stringify(record.value.draft?.professional?.[group] || []));
   } catch (error) {
     if (stopped || error.code === "ERR_CANCELED") return;
     clearTimeout(timer); record.value = null; editors.value = {};
@@ -70,7 +69,7 @@ async function publish() {
   busy.value = true;
   try {
     const professional = Object.fromEntries(
-      groups.map((group) => [group, JSON.parse(editors.value[group])]),
+      groups.map((group) => [group, editors.value[group] || []]),
     );
     if (!record.value.confirmed) await resumeAction(id, "confirm", {
       draft: { professional, warnings: record.value.draft?.warnings || [] },
@@ -102,11 +101,11 @@ async function saveDraft() {
   busy.value = true;
   const id = route.params.id;
   try {
-    const professional = Object.fromEntries(groups.map(group => [group, JSON.parse(editors.value[group])]));
+    const professional = Object.fromEntries(groups.map(group => [group, editors.value[group] || []]));
     await resumeAction(id, "save", { draft: { professional, warnings: record.value.draft?.warnings || [] }, confirmed: false, expectedRevision: record.value.revision });
     if (stopped || route.params.id !== id) return;
     await refresh(); ElMessage.success("Draft saved. Facts remain editable.");
-  } catch { if (!stopped && route.params.id === id) ElMessage.error("Draft was not saved. Check the JSON and reload if another revision exists."); }
+  } catch { if (!stopped && route.params.id === id) ElMessage.error("Draft was not saved. Check the fields and reload if another revision exists."); }
   finally { busy.value = false; }
 }
 async function retryCleanup() {
@@ -142,17 +141,13 @@ async function retryCleanup() {
         type="error"
         :closable="false"
       /><p v-for="warning in record.draft?.warnings || []" :key="warning">{{ warning }}</p>
-      <el-tabs v-if="record.status !== 'EXTRACTING'"
-        ><el-tab-pane v-for="group in groups" :key="group" :label="group"
+      <el-tabs v-model="activeGroup" v-if="record.status !== 'EXTRACTING'"
+        ><el-tab-pane v-for="group in groups" :key="group" :label="groupLabels[group]" :name="group"
           ><p>
             Check every fact and its evidence. EXTRACTED values come from the CV;
             USER_SUPPLIED values contain your corrections. UNKNOWN values need review.
           </p>
-          <el-input
-            v-model="editors[group]"
-            :readonly="!!record.confirmed"
-            type="textarea"
-            :rows="15" /></el-tab-pane></el-tabs
+          <ResumeFactsTable v-model="editors[group]" :group="group" :locked="!!record.confirmed || busy" /></el-tab-pane></el-tabs
       ><el-button
         v-if="record.originalAvailable && record.cloud_revision === record.revision"
         v-hasPermi="['simrecrut:resume:confirm']"
