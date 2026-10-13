@@ -10,6 +10,25 @@ import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
 
 /** Evaluate explicit professional labels using synthetic English and French fixtures. */
 class ProfessionalExtractionTest {
+    @Test void linksCompanyDatesAndSkillsWithoutLeakingAcrossJobs() throws Exception {
+        String text = "Work Experience\nDatabricks 2025/06 - Present\nMember of Technical Staff, Storage Team\n"
+            + "Neon 2024/02 - 2025/06\nSystems Software Engineer, Storage Team\nBuild Postgres storage\n"
+            + "Neon, Software Engineering Intern 2023/05 - 2023/08\nRocksDB and Web-Assembly SQL driver\n"
+            + "RisingWave Labs, Database System R&D Intern 2021/08 - 2022/07\nRust streaming database\n"
+            + "Open-Source Contributions\nPersonal Projects\nJava Docker";
+        var result = new LocalResumeCleaner().clean("fixture.txt", text.getBytes(StandardCharsets.UTF_8));
+        var rows = result.path("professional").path("experience");
+        assertEquals(4, rows.size());
+        assertEquals("2025-06", rows.get(0).path("startMonth").asText());
+        assertTrue(rows.get(0).path("isCurrent").asBoolean());
+        assertTrue(rows.get(0).path("endMonth").isNull());
+        assertEquals("2024-02", rows.get(1).path("startMonth").asText());
+        assertEquals("2025-06", rows.get(1).path("endMonth").asText());
+        assertEquals("[\"PostgreSQL\"]", rows.get(1).path("supportedSkillCodes").toString());
+        assertTrue(rows.get(2).path("supportedSkillCodes").toString().contains("SQL"));
+        assertEquals("[\"Rust\"]", rows.get(3).path("supportedSkillCodes").toString());
+        assertTrue(rows.get(3).path("reviewedRelevantYears").isNull());
+    }
     @Test void evaluatesFiveGroupsAgainstKnownLabels() throws Exception {
         int matched = 0, expected = 0;
         for (String text : new String[]{
