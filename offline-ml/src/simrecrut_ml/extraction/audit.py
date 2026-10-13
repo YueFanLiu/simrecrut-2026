@@ -163,6 +163,8 @@ def compare_extraction(audit_dir: Path, run_path: Path, output_path: Path) -> di
             quality.append("SOURCE_ISSUES_REMAIN")
         if entry["status"] != "REVIEW_REQUIRED":
             quality.append("EXTRACTION_HELD")
+        if draft.get("unresolved_repairs"):
+            quality.append("SOURCE_CORRECTIONS_RETAIN_UNKNOWN_FIELDS")
         if entry["kind"] == "job" and not draft.get("original_text"):
             quality.append("AUDIT_COMPARISON_PENDING_SOURCE_FIELDS")
         rows.append({
@@ -170,6 +172,7 @@ def compare_extraction(audit_dir: Path, run_path: Path, output_path: Path) -> di
             "draft_content": ("VALIDATED_FULL" if draft.get("facts") is not None else
                               "SUPPORTED_PARTIAL" if facts is not None else "NONE"),
             "held_field_count": len(draft.get("held_fields", [])),
+            "unresolved_repair_count": len(draft.get("unresolved_repairs", [])),
             "represented_spans": len(expected) - len(missing),
             "unrepresented_spans": missing, "accepted_evidence_fields": len(evidence),
             "unlocated_audit_spans": unlocated,
@@ -187,6 +190,7 @@ def compare_extraction(audit_dir: Path, run_path: Path, output_path: Path) -> di
         totals["unrepresented_spans"] += len(missing)
         totals["unlocated_audit_spans"] += len(unlocated)
         totals["accepted_evidence_fields"] += len(evidence)
+        totals["unresolved_repair_fields"] += len(draft.get("unresolved_repairs", []))
     result = {
         "schema_version": "extraction-evidence-comparison-v1", "run_id": run["run_id"],
         "counts": dict(totals), "records": rows, "human_approved": 0,

@@ -7,7 +7,8 @@ synthetic inputs; they do not establish dataset quality or hiring accuracy.
 
 This work follows [Lark revision 221](https://ijppwkmdd5yg.jp.larksuite.com/docx/UGOYdlnb5or8prxDdtrjKzyvpwd)
 and the [unchanged source snapshot](lark-specification-source.md). The source
-was checked again on 2026-10-10. Re-read its relevant sections before changing
+was checked again on 2026-10-13 and still matches revision 221. Re-read its
+sections before changing
 cleaning, training or evaluation, and refresh the snapshot if Lark changes.
 Follow the [coding and comment rules](../development/coding-standards.md).
 MouZheng LI owns this offline work.
@@ -84,9 +85,13 @@ Every inspected pilot PDF has usable embedded text. PDF reading and the optional
 OCR boundary are separate from the provider. Correct JSON does not establish
 correct qualifications, resolve contradictory dates or prove completeness.
 The [preparation guide](dataset-preparation.md) owns setup, commands, cache
-behavior and the completed 40-record extraction cross-check. All 120 coverage
-warnings and 23 held fields now have source-check proposals in the existing
-local mapping review. These proposals do not approve facts or mappings. Real-data training still
+behavior and the completed 40-record extraction cross-check. The original
+120 coverage warnings and 23 held fields have source-check proposals in the
+existing local mapping review. Source corrections on 2026-10-13 closed the
+14 technical extraction failures without changing their history or making
+new provider calls. All 40 derived drafts validate; six jobs retain explicit
+unknown language fields. Original source conflicts remain unresolved.
+These proposals do not approve facts or mappings. Real-data training still
 requires the reviewed-data and frozen-label stages.
 
 ## Prepared training components

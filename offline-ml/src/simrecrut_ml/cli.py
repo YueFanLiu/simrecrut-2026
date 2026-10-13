@@ -68,6 +68,14 @@ def _parser() -> argparse.ArgumentParser:
     recheck.add_argument("--audit-dir", type=Path, required=True)
     recheck.add_argument("--run", type=Path, required=True)
     recheck.add_argument("--schema", type=Path, required=True)
+    repair = commands.add_parser(
+        "repair-extraction", help="Apply a bound local source-correction plan without API calls.",
+    )
+    repair.add_argument("--manifest", type=Path, required=True)
+    repair.add_argument("--audit-dir", type=Path, required=True)
+    repair.add_argument("--run", type=Path, required=True)
+    repair.add_argument("--schema", type=Path, required=True)
+    repair.add_argument("--plan", type=Path, required=True)
     return parser
 
 
@@ -135,6 +143,13 @@ def main(argv: list[str] | None = None) -> int:
 
             summary = recheck_saved_batch(
                 arguments.manifest, arguments.audit_dir, arguments.run, arguments.schema,
+            )
+        elif arguments.command == "repair-extraction":
+            from .extraction.repairs import repair_saved_batch
+
+            summary = repair_saved_batch(
+                arguments.manifest, arguments.audit_dir, arguments.run, arguments.schema,
+                arguments.plan,
             )
         else:
             summary = inspect_preparation(arguments.audit_dir, arguments.settings)

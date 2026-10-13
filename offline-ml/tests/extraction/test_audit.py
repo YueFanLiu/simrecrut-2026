@@ -35,6 +35,8 @@ def test_unrepresented_evidence_remains_a_local_review_task(
     run_path.write_text(json.dumps(run), encoding="utf-8")
     draft = {
         **entry, "original_text": {"pdf_page_1": "C++ Java", "pdf_page_2": "C++ Java"},
+        "unresolved_repairs": [{"path": "$.professional.languages[0].level",
+                                "rationale": "No ordered level is supported."}],
         "facts": {"wording": {"value": "C++", "status": "OBSERVED", "evidence": [
             {"source_field": f"pdf_page_{evidence_page}", "excerpt": "C++",
              "locations": [{"start": 0,
@@ -50,6 +52,9 @@ def test_unrepresented_evidence_remains_a_local_review_task(
     result = json.loads(report.read_text(encoding="utf-8"))
     assert "Java" in [row["excerpt"] for row in result["records"][0]["unrepresented_spans"]]
     assert "SOURCE_ISSUES_REMAIN" in result["records"][0]["quality_codes"]
+    assert "SOURCE_CORRECTIONS_RETAIN_UNKNOWN_FIELDS" in result["records"][0]["quality_codes"]
+    assert result["records"][0]["unresolved_repair_count"] == 1
+    assert summary["counts"]["unresolved_repair_fields"] == 1
 
 
 def test_job_years_are_not_covered_by_a_language_level(tmp_path):

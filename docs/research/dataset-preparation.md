@@ -266,12 +266,52 @@ has valid evidence. Use the new receipt when running `audit-extraction`.
 ### Current pilot result
 
 The first batch processed the 20 accepted pilot CVs and all 20 jobs on
-2026-10-10. Local revalidation made no additional API calls: 26 records have
-full validated, unconfirmed drafts; 14 failed records retain independently
-supported partial facts. Their failure states remain 13 `FAILED_FINAL` and
-one `FAILED_RETRYABLE`, with 23 held fields across those records.
-Full validation means the draft structure and cited evidence passed checks;
-it does not mean all qualifications were extracted or correctly classified.
+2026-10-10. Its local recheck produced 26 validated drafts and 14 failed
+records with partial facts: 13 `FAILED_FINAL`, one `FAILED_RETRYABLE` and
+23 held fields. Those historical receipts remain unchanged.
+
+On 2026-10-13, all 14 records were checked against the original sources again.
+The existing 15 literal correction proposals were applied. Two descriptions
+were shortened to literal source phrases while keeping separate page or bullet
+fragments; they were not joined into invented contiguous quotes. One job's
+three area summaries were corrected from its retained observations. Five
+header-derived language fields and one unsupported language level remain
+explicitly unknown. Publisher headers and raw labels stay separate metadata.
+
+Derived run `20261013T163816059723Z` contains 40 validated, unconfirmed drafts.
+Six jobs still carry the unresolved language corrections. Validation failures
+are closed at this derived stage; factual uncertainty, original source issues,
+mapping review and human approval remain separate. No new API call, approved
+fact or training row was created. The unchanged validator still checks every
+quote and schema field. Passing it does not establish completeness or truth.
+
+### Local source corrections
+
+Use `repair-extraction` after checking a saved reply against its original source:
+
+```powershell
+./offline-ml/.venv/Scripts/python.exe -m simrecrut_ml repair-extraction --manifest offline-ml/datasets/manifests/acquisition-manifest.json --audit-dir offline-ml/datasets/clean/pilot-audit --run offline-ml/datasets/clean/pilot-audit/extraction/runs/RUN_ID.json --schema contracts/fact-schemas/extraction-v1.json --plan offline-ml/datasets/clean/pilot-audit/verification/REPAIR_PLAN.json
+```
+
+The [repair module](../../offline-ml/src/simrecrut_ml/extraction/repairs.py)
+accepts a local `extraction-repair-plan-v1` file. Bind it to the run, fact schema,
+privacy receipt and every input draft using SHA-256. Each record has an actions
+list, including an empty list for unchanged records. Each action records its
+path, exact `before` value, `replacement` and rationale. Corrections may replace
+an evidence field or downgrade requirement source use to `UNRESOLVED`.
+They cannot assign codes, HR flags, inferred values or resolve a conflict.
+Area summaries are derived from retained observations.
+
+The command checks current publisher rows, PDF bytes and privacy masks, then
+validates all proposed drafts before writing a new derived run. It never changes
+provider responses, content caches or earlier failures. Repaired facts are local
+proposals, not new provider replies. `unresolved_repairs` keeps the paths and
+reasons for fields deliberately left unknown; unknown is not confirmed absence.
+Run `audit-extraction` against the derived run and use a new output filename
+when preserving an earlier comparison. `recheck-extraction` checks provider
+replies; it does not replay a source-correction plan.
+
+### Evidence coverage and review
 
 The initial comparison represents 530 of 650 unique audited source spans.
 The other 120 were coverage warnings, not confirmed extraction errors. All
@@ -292,10 +332,14 @@ for this source-check step, and no additional API calls were made.
 
 The local `pilot-audit/mapping-review.md` owns the per-record table and triage
 summary. `verification/extraction-coverage.json` preserves the original warning
-counts, while `verification/extraction-triage.json` binds the classifications
-and quotes to current source/run/privacy/draft hashes. Source-check proposals
-are not approved facts or reviewed mappings. Human approvals and training
-rows remain zero.
+counts, while `verification/extraction-triage.json` binds the original source-check
+classifications and quotes. The new comparison, `extraction-coverage-20261013.json`,
+represents 537 of the same 650 spans, with 113 remaining coverage warnings and
+six unresolved repair fields. Coverage is not an accuracy score. The bound
+repair plan, original replies and before/after receipts explain every change.
+Accepted policies 1-5 cover conservative handling, so these repairs need no
+new owner choice. Source-check proposals are not approved facts or mappings.
+Human approvals and training rows remain zero.
 
 ## Continue to PyTorch preparation
 
