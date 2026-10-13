@@ -28,6 +28,8 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
 
 - [Initial business schema](database/initial-schema.md): the 36-table baseline,
   logical reference inventory, implementation choices and Flyway verification.
+- [Review and active model uniqueness](database/review-model-uniqueness.md):
+  V2 constraints, preflight checks and concurrent-write acceptance for A009.
 
 ## Reserved topics
 

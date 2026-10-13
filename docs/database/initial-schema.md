@@ -67,9 +67,12 @@ This migration preserves the requested original baseline. It does not include
 identity tables, seed users, name-study fields, task leases or the later fixes
 described in Word section 5.8. Implement those as subsequent migrations.
 
-The retained nullable composite review key does not prevent all duplicate
-assignments. Primary human-review slots and active core model slots have no
-conditional unique keys yet. ML result status permits FAILED in this baseline,
+In V1 alone, the retained nullable composite review key does not prevent all
+duplicate assignments, and primary human-review slots and active core model
+slots have no conditional unique keys. The subsequent
+[V2 uniqueness migration](review-model-uniqueness.md) adds these constraints;
+its MySQL execution and concurrent-write acceptance remain pending.
+ML result status permits FAILED in this baseline,
 but scores are required: services must insert successful predictions only and
 record technical failures in tasks/cases. Subject deduplication, active criteria,
 published-weight totals, training membership, generated-sample identity, metric
@@ -113,12 +116,16 @@ by the application's datasource.
    .\scripts\dev\java.ps1 -Action run
    ```
 
-   Flyway should apply `V1__create_initial_business_schema.sql` once and create
-   its history table. No manual copying of this SQL into the cloud console is
+   Flyway applies all pending migrations, including V1 and then V2 on an empty
+   schema, and creates its history table. Run the V2 preflight described in the
+   [uniqueness guide](review-model-uniqueness.md) before starting against an
+   existing V1 schema. No manual copying of this SQL into the cloud console is
    necessary. Redis readiness is separate from successful schema migration.
 5. Run the [read-only verification SQL](verify-initial-schema.sql) in the same
-   target schema. It must report the initial constraint counts, no missing
-   expected tables and no unindexed reference columns. There should be 36
+   target schema. Its initial constraint counts apply to V1 alone; after V2,
+   expect 37 additional unique keys rather than 34 and also run the V2
+   verification script. Expect no missing tables or unindexed reference columns.
+   There should be 36
    business tables plus Flyway history in an otherwise empty schema.
 
 MySQL DDL does not make a multi-table migration atomic. If application fails,
