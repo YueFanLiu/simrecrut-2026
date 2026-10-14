@@ -1,7 +1,7 @@
 // Send authenticated local Java API requests and handle action errors.
-async function api(path, body, method) {
+async function api(path, body) {
   const r = await fetch(path, {
-    method: method || (body === undefined ? "GET" : "POST"),
+    method: body === undefined ? "GET" : "POST",
     headers: { "X-App-Token": token, "Content-Type": "application/json" },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });

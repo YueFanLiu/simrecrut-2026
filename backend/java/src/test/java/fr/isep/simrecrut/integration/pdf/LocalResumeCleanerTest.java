@@ -19,14 +19,13 @@ class LocalResumeCleanerTest {
     }
 
     @Test
-    void rejectsUnsupportedFilesAndEmptyOrUnavailableOcr() throws Exception {
+    void rejectsUnsupportedFilesAndScannedPdf() throws Exception {
         var cleaner = new LocalResumeCleaner();
         assertThrows(IllegalArgumentException.class, () -> cleaner.clean("resume.exe", new byte[]{1}));
         try (var pdf = new PDDocument(); var bytes = new java.io.ByteArrayOutputStream()) {
             pdf.addPage(new PDPage());
             pdf.save(bytes);
-            Exception failure = assertThrows(Exception.class, () -> cleaner.clean("scan.pdf", bytes.toByteArray()));
-            assertTrue(failure instanceof java.io.IOException || failure instanceof IllegalArgumentException);
+            assertThrows(IllegalArgumentException.class, () -> cleaner.clean("scan.pdf", bytes.toByteArray()));
         }
     }
     @Test
