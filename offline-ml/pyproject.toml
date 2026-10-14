@@ -5,21 +5,23 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "simrecrut-ml"
 version = "0.1.0"
-description = "Offline data review and PyTorch development tools for SimRecrut"
+description = "Offline CV and job fact extraction for SimRecrut"
 requires-python = ">=3.12"
 dependencies = ["pyarrow==24.0.0"]
 
 [project.optional-dependencies]
 dev = ["pytest==9.0.2"]
-training = ["torch==2.10.0"]
-extraction = ["jsonschema==4.26.0", "pypdf==6.8.0"]
-
-[project.scripts]
-simrecrut-ml = "simrecrut_ml.cli:main"
+extraction = [
+    "jsonschema==4.26.0", "pypdf==6.8.0", "pdfplumber==0.11.9",
+    "pypdfium2==5.14.0", "pillow==12.1.1",
+]
+ocr = ["tesserocr==2.11.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["simrecrut_ml*"]
+include = ["simrecrut_ml", "simrecrut_ml.extraction",
+           "simrecrut_ml.extraction.*"]
+namespaces = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

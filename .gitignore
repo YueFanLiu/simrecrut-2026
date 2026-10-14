@@ -27,9 +27,9 @@
 /offline-ml/datasets/**
 !/offline-ml/datasets/**/
 !/offline-ml/datasets/**/.gitkeep
-!/offline-ml/datasets/**/data-notes.md
 /offline-ml/runs/*
 !/offline-ml/runs/.gitkeep
+/offline-ml/runtime/
 /offline-ml/reports/validation/*
 !/offline-ml/reports/validation/.gitkeep
 /offline-ml/reports/final-test/*

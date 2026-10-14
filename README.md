@@ -7,21 +7,17 @@ authorized views. Matching is an intermediate calculation used by the rules and
 models.
 
 This repository provides the project layout, development rules, configuration
-examples and a Java build setup. Offline tools download and clean datasets,
-then prepare review drafts with source evidence. DeepSeek handles structured
-extraction through a replaceable provider. PyTorch tools encode features,
-split data by person and run development training on prepared numeric inputs.
-Actual data still requires human review before training.
+examples and a Java build setup. The offline ML area contains restored extraction
+methods and two operation scripts. Other offline source modules remain empty
+scaffolds. Source modules separate shared methods from operation scripts; local
+data and the previous implementation guides remain outside the checkout.
 
 Product workflows, frontend pages, inference endpoints, final ML evaluation
 and packaging, database migrations and deployment are developed in their
 designated modules.
 
-See [Dataset preparation](docs/research/dataset-preparation.md) to download the
-sources, create local review drafts, and check the required training protocol.
-See [Pilot review and PyTorch preparation](docs/research/pilot-review-and-training.md)
-for the inspected 20-CV/20-job pilot, local mapping questions and remaining
-real-data training prerequisites.
+See the [original Lark specification](docs/research/lark-specification-source.md)
+for the data preparation, extraction and training requirements.
 
 All project-owned content must be in English, including documentation, comments,
 identifiers, interface text, logs, errors, examples, and commit messages. Java
@@ -72,11 +68,18 @@ caches. Durable case, task, result, and deletion state belongs in MySQL.
 |       `-- tests/{contracts,features,prediction}/
 |-- offline-ml/
 |   |-- configs/
-|   |-- src/simrecrut_ml/{data,extraction,features,models,training,evaluation,packaging}/
+|   |-- src/simrecrut_ml/
+|   |   |-- data/{methods,scripts}/
+|   |   |-- extraction/{methods,scripts}/
+|   |   |-- features/{methods,scripts}/
+|   |   |-- models/{methods,scripts}/
+|   |   |-- training/{methods,scripts}/
+|   |   |-- evaluation/{methods,scripts}/
+|   |   `-- packaging/{methods,scripts}/
 |   |-- datasets/{raw,clean,manifests}/
 |   |-- runs/
 |   |-- reports/{validation,final-test}/
-|   `-- tests/{data,extraction,features,training,evaluation}/
+|   `-- tests/{data,extraction,features,models,training,evaluation,packaging}/
 |-- contracts/
 |   |-- api/
 |   |-- fact-schemas/
@@ -186,9 +189,11 @@ no application database credentials and expose no training endpoint.
 `offline-ml/` owns source manifests, data cleaning, pairing, grouped splits,
 training, validation, held-out evaluation, and model export. Live Candidate
 uploads do not automatically become training samples.
-Data preparation, extraction and a development training runner are implemented.
-Reviewed pairing, label calibration, final evaluation and release packaging
-remain unfinished.
+Each source module has `methods/` for reusable functions and `scripts/` for
+operation scripts with explicit paths and settings. Extraction has two shared
+method files and two operation scripts; other modules remain empty. The restored
+scripts have not been run, and local datasets and the Python environment have
+not been restored.
 
 Shared contracts belong in `contracts/`. Planned model releases will use
 `model_artifacts/{neutral,biased}/{version}/` with weights, schema, preprocessing,
@@ -220,15 +225,16 @@ in English, current, and proportional to the code.
 ## Local configuration and verification
 
 Copy `.env.example` to the root `.env` and fill in local values. The local `.env`
-is ignored by Git. Native Spring Boot does not automatically read this file; the
-development helper loads it before invoking Java. Future Compose configuration
+is ignored by Git. Native Spring Boot does not automatically read this file;
+configure backend variables in the IDE or shell environment. Future Compose configuration
 must inject only each service's required variables. Frontend configuration must
 contain public values only.
 
 ```powershell
 Copy-Item .env.example .env
-# Set JAVA_HOME in .env to the local JDK 17 directory, then fill in dependencies.
-.\scripts\dev\java.ps1 -Action verify
+$env:JAVA_HOME = 'D:/Java/jdk-17'
+$env:PATH = "$env:JAVA_HOME/bin;$env:PATH"
+.\backend\java\mvnw.cmd -f backend/java/pom.xml --batch-mode verify
 python scripts/maintenance/check_repository.py
 ```
 

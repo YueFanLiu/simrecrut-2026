@@ -1,4 +1,4 @@
-"""Check dataset-note exceptions without admitting local research payloads."""
+"""Check central documentation without admitting local research payloads."""
 
 import importlib.util
 import json
@@ -29,7 +29,7 @@ def repository(tmp_path):
     return tmp_path
 
 
-def test_nested_payloads_ignored_but_small_notes_checked(repository):
+def test_nested_payloads_and_local_notes_are_ignored(repository):
     directory = repository / "offline-ml/datasets/raw/example/nested"
     directory.mkdir(parents=True)
     (directory / "records.jsonl").write_bytes(b"\xff private data")
@@ -44,16 +44,17 @@ def test_nested_payloads_ignored_but_small_notes_checked(repository):
     errors, _ = checker.check(repository)
     assert errors == []
     visible = checker.repository_files(repository)
-    assert note.relative_to(repository) in visible
+    assert note.relative_to(repository) not in visible
     assert not any(path.suffix in {".jsonl", ".parquet"} for path in visible)
 
 
-def test_dataset_note_size_limit(repository):
+def test_force_added_dataset_note_is_not_project_documentation(repository):
     note = repository / "offline-ml/datasets/clean/data-notes.md"
     note.parent.mkdir(parents=True)
-    note.write_text("# Notes\n" + "a" * 4096 + "\n", encoding="utf-8", newline="\n")
+    note.write_text("# Local notes\n", encoding="utf-8", newline="\n")
+    subprocess.run(["git", "add", "--force", str(note)], cwd=repository, check=True)
     errors, _ = checker.check(repository)
-    assert any("within 4096 bytes" in error for error in errors)
+    assert any("move project documentation under docs/" in error for error in errors)
 
 
 def test_exception_does_not_allow_other_module_documents(repository):
@@ -66,9 +67,9 @@ def test_exception_does_not_allow_other_module_documents(repository):
     assert any("move project documentation under docs/" in error for error in errors)
 
 
-def test_dataset_note_language_and_links_still_checked(repository):
-    note = repository / "offline-ml/datasets/manifests/data-notes.md"
-    note.parent.mkdir(parents=True)
+def test_authored_document_language_and_links_are_checked(repository):
+    note = repository / "docs/research/dataset-preparation.md"
+    note.parent.mkdir(parents=True, exist_ok=True)
     note.write_text("# \u4e2d\u6587\n\n[Guide](missing.md)\n", encoding="utf-8", newline="\n")
     errors, _ = checker.check(repository)
     assert any("Han characters" in error for error in errors)

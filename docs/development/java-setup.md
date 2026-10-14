@@ -21,9 +21,9 @@ MySQL Connector/J, and the other Spring dependencies.
 
 ## Build
 
-Use the repository development script described in [local setup](local-setup.md).
-It loads the root `.env`, validates JDK 17, and invokes the committed wrapper.
-Spring Boot does not load a dotenv file automatically.
+Use the committed Maven Wrapper after selecting JDK 17 in the IDE or shell.
+Configure backend variables as described in [local setup](local-setup.md).
+Maven and native Spring Boot do not load a dotenv file automatically.
 
 To build directly from the repository root in PowerShell, select a JDK for the
 current process only:
@@ -61,10 +61,12 @@ it does not replace Maven's backend module configuration.
 ## Runtime prerequisites
 
 Configure a reachable MySQL database and Redis service before starting the
-backend. Supply their settings through the root `.env` locally, or through
-explicit service environment variables when deployed. Do not put credentials in
+backend. Supply their settings through the IDE run configuration or shell
+environment, and use explicit service environment variables when deployed. Keep
+the root `.env` as a local reference; it is not loaded automatically. Do not put credentials in
 the application YAML files. See [local setup](local-setup.md) for the shared
-variable definitions.
+variable definitions. Set the application's working directory to the repository
+root for relative workspace and model paths.
 
 Flyway is enabled, with migrations kept in
 `backend/java/src/main/resources/db/migration/`. No business schema migrations

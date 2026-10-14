@@ -11,7 +11,7 @@ The source specification is [SimRecrut - Third Meeting Preparation](https://ijpp
 | `frontend/` | Vue 3 pages, permitted user actions, request handling, and progress polling | Browser application served through Nginx |
 | `backend/java/` | JDK 17 Spring Boot API, authentication, authorization, business rules, persistence, and background work | One Java business service |
 | `backend/inference/` | FastAPI input validation, feature encoding, model loading, and prediction | Separate internal Python process/container |
-| `offline-ml/` | Data preparation, training, evaluation, and release-package export | Independent offline commands; excluded from the default online deployment |
+| `offline-ml/` | Data preparation, training, evaluation, and release-package export | Extraction source restored; other modules remain empty; source modules separate `methods/` and `scripts/`; excluded from the default online deployment |
 
 The three source components are frontend, backend, and offline ML. The backend contains two runtimes with separate dependencies and health checks. Cloud MySQL is external infrastructure. Redis supports temporary runtime data; MySQL stores durable business state. Restricted storage holds temporary case files and versioned model artifacts.
 

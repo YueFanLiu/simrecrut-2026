@@ -26,12 +26,13 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
 
 ## Research
 
-- [Dataset preparation](research/dataset-preparation.md): local downloads,
-  filtering, private structured extraction, duplicate provenance and review import.
-- [Pilot review and PyTorch preparation](research/pilot-review-and-training.md):
-  training protocol, implemented controls and the categorized local review files.
 - [Original Lark specification](research/lark-specification-source.md): complete
   Markdown source fetched at revision 221; source references are retained.
+
+The offline implementation guides are temporarily stored outside the checkout
+with the preserved data. Four extraction source files have been restored in
+`methods/` and `scripts/`; other offline modules remain empty. Detailed
+implementation guidance has not been restored.
 
 ## Reserved topics
 
