@@ -19,7 +19,7 @@ BINARY_SUFFIXES = {
     ".bin", ".docx", ".gif", ".ico", ".jar", ".jpeg", ".jpg", ".npz",
     ".onnx", ".pdf", ".png", ".pt", ".pth", ".safetensors", ".webp", ".zip",
 }
-ROOT_MARKDOWN = {"README.md"}
+MARKDOWN_EXCEPTIONS = {"README.md", "offline-ml/datasets/raw/data-sources.md"}
 
 
 def repository_files(root: Path) -> list[Path]:
@@ -114,7 +114,7 @@ def check(root: Path) -> tuple[list[str], int]:
         if relative.suffix.lower() == ".md":
             if (
                 relative.parts[0] not in {"docs", ".github"}
-                and label not in ROOT_MARKDOWN
+                and label not in MARKDOWN_EXCEPTIONS
             ):
                 errors.append(f"{label}: move project documentation under docs/")
             errors.extend(local_link_errors(root, relative, text))

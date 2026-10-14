@@ -27,9 +27,11 @@ to the central documentation instead of duplicating policies.
 
 Dataset folder descriptions, download instructions and processing procedures
 belong under `docs/research/` with the corresponding implementation.
-Do not add project Markdown files inside dataset directories. Downloaded
-publisher cards remain original source material. Raw, derived and cached data,
-including source metadata, remain ignored by Git.
+The single `offline-ml/datasets/raw/data-sources.md` file is an exception: it
+briefly identifies the sources and their local folders. Other project Markdown
+files stay outside dataset directories. Downloaded publisher cards remain
+original source material. Raw, derived and cached data, including source
+metadata, remain ignored by Git.
 
 Keep source specifications separate from implementation guides. Update guides
 with their code and remove stale commands and links when an implementation is

@@ -27,6 +27,7 @@
 /offline-ml/datasets/**
 !/offline-ml/datasets/**/
 !/offline-ml/datasets/**/.gitkeep
+!/offline-ml/datasets/raw/data-sources.md
 /offline-ml/runs/*
 !/offline-ml/runs/.gitkeep
 /offline-ml/runtime/

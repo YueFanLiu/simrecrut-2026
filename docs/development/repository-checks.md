@@ -10,8 +10,9 @@ The checker uses Git's tracked and unignored file list. It verifies that require
 directories in `.github/project-layout.json` exist, project-owned text files and
 paths contain no Han characters, text files use UTF-8, and local Markdown links
 resolve within the repository. Documentation pages live in `docs/`, except the
-root README and repository templates under `.github/`. Dataset instructions
-also live in `docs/`; there is no dataset-note exception. The checker does not
+root README, repository templates under `.github/`, and the short raw-source
+summary at `offline-ml/datasets/raw/data-sources.md`. Dataset instructions
+also live in `docs/`; there is no general dataset-note exception. The checker does not
 follow symlinks or fetch external links.
 Binary files and ignored private data are not treated as authored text.
 
