@@ -31,12 +31,14 @@ public class ResumeService {
   final Path data;
   final ObjectMapper json = Facts.JSON;
   final Set<String> processing = ConcurrentHashMap.newKeySet();
+  final Map<String, Future<?>> tasks = new ConcurrentHashMap<>();
   final ExecutorService executor = Executors.newFixedThreadPool(2);
   static final Set<String> VISUAL = Set.of(".pdf", ".png", ".jpg", ".jpeg", ".webp");
-  static final String SCHEMA = "simrecrut-professional-v1", PROMPT = "local-rules-v1";
+  static final String SCHEMA = "simrecrut-professional-v1", PROMPT = "local-rules-v2";
 
-  static String now() {
-    return Instant.now().toString();
+  Clock clock = Clock.systemUTC();
+  String now() {
+    return clock.instant().toString();
   }
 
   @Autowired
@@ -61,9 +63,24 @@ public class ResumeService {
         while (columns.next()) if (columns.getString("name").equals("temporary_original")) hasPolicy = true;
       }
       if (!hasPolicy) s.execute("ALTER TABLE resumes ADD COLUMN temporary_original INTEGER NOT NULL DEFAULT 0");
+      Set<String> names = new HashSet<>();
+      try (ResultSet columns = s.executeQuery("PRAGMA table_info(resumes)")) {
+        while (columns.next()) names.add(columns.getString("name"));
+      }
+      for (String column : List.of("expires_at", "confirmed_at", "deletion_reason"))
+        if (!names.contains(column)) s.execute("ALTER TABLE resumes ADD COLUMN " + column + " TEXT");
+      if (!names.contains("publication_attempted")) s.execute("ALTER TABLE resumes ADD COLUMN publication_attempted INTEGER NOT NULL DEFAULT 0");
+      s.execute("CREATE TABLE IF NOT EXISTS deletion_receipts(id TEXT PRIMARY KEY,reason TEXT NOT NULL,deleted_at TEXT NOT NULL)");
+      s.execute("CREATE TABLE IF NOT EXISTS repeat_operations(operation_key TEXT PRIMARY KEY,action TEXT NOT NULL,target TEXT NOT NULL,request_hash TEXT NOT NULL,expires_at TEXT NOT NULL,response TEXT)");
+      s.execute("CREATE INDEX IF NOT EXISTS repeat_operations_expiry ON repeat_operations(expires_at)");
+      s.execute("CREATE INDEX IF NOT EXISTS repeat_operations_target ON repeat_operations(target)");
+      // Preserve research originals and migrate temporary records from their original timestamps.
+      s.executeUpdate("UPDATE resumes SET expires_at=strftime('%Y-%m-%dT%H:%M:%fZ',CASE WHEN confirmed=1 THEN updated_at ELSE created_at END,CASE WHEN confirmed=1 THEN '+30 days' ELSE '+1 day' END) WHERE temporary_original=1 AND expires_at IS NULL");
+      s.executeUpdate("UPDATE resumes SET status='UPLOADED' WHERE status='IMPORTED'");
+      s.executeUpdate("UPDATE resumes SET status='EXTRACTING' WHERE status='PROCESSING'");
       s.executeUpdate(
           "UPDATE resumes SET status='FAILED',error='The previous process was interrupted. Try"
-              + " cleaning again.' WHERE status='PROCESSING'");
+              + " cleaning again.' WHERE status='EXTRACTING'");
     }
   }
 
@@ -73,7 +90,9 @@ public class ResumeService {
   }
 
   Connection db() throws SQLException {
-    return DriverManager.getConnection("jdbc:sqlite:" + data.resolve("index.sqlite"));
+    Connection connection = DriverManager.getConnection("jdbc:sqlite:" + data.resolve("index.sqlite"));
+    try (Statement statement = connection.createStatement()) { statement.execute("PRAGMA secure_delete=ON"); }
+    return connection;
   }
 
   List<ObjectNode> query(String sql, Object... params) throws SQLException {
@@ -104,17 +123,28 @@ public class ResumeService {
   List<ObjectNode> list() throws SQLException {
     List<ObjectNode> rows = query(
         "SELECT"
-            + " id,filename,extension,bytes,pages,status,confirmed,revision,cloud_revision,created_at,updated_at,error,temporary_original"
-            + " FROM resumes ORDER BY created_at DESC");
+            + " id,filename,extension,bytes,pages,status,confirmed,revision,cloud_revision,created_at,updated_at,error,temporary_original,expires_at,confirmed_at"
+            + " FROM resumes WHERE status<>'PURGING' AND (expires_at IS NULL OR expires_at>?) ORDER BY created_at DESC", now());
     for (ObjectNode item : rows) item.put("originalAvailable", originalAvailable(item));
     return rows;
   }
 
-  ObjectNode row(String id) throws SQLException {
+  ObjectNode storedRow(String id) throws SQLException {
     Facts.require(id.matches("[a-f0-9]{32}"), "Invalid resume ID.");
     List<ObjectNode> rows = query("SELECT * FROM resumes WHERE id=?", id);
     Facts.require(!rows.isEmpty(), "Local resume not found.");
     return rows.get(0);
+  }
+
+  ObjectNode row(String id) throws SQLException {
+    ObjectNode record = storedRow(id);
+    Facts.require(!record.path("status").asText().equals("PURGING") && !expired(record), "This resume has expired or is pending deletion.");
+    return record;
+  }
+
+  boolean expired(ObjectNode record) {
+    String deadline = record.path("expires_at").asText("");
+    return !deadline.isBlank() && !clock.instant().isBefore(Instant.parse(deadline));
   }
 
   ObjectNode detail(String id) throws Exception {
@@ -284,6 +314,9 @@ public class ResumeService {
         Facts.require(!pdf.isEncrypted(), "Encrypted PDFs are not supported.");
         pages = pdf.getNumberOfPages();
         Facts.require(pages >= 1 && pages <= 20, "PDFs must contain 1–20 pages.");
+      } catch (java.io.IOException error) {
+        // Invalid input is a file error, not a temporary service failure.
+        throw new IllegalArgumentException("The PDF is invalid or password-protected. Choose a readable, unencrypted PDF.");
       }
     } else if (VISUAL.contains(ext)) {
       BufferedImage image = ImageIO.read(new ByteArrayInputStream(bytes));
@@ -320,8 +353,10 @@ public class ResumeService {
     Facts.require(text.length() <= 60000, "Resume text exceeds 60,000 characters.");
     String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
     List<ObjectNode> exists = query("SELECT id FROM resumes WHERE sha256=?", hash);
-    if (!exists.isEmpty())
+    if (!exists.isEmpty()) {
+      row(exists.get(0).path("id").asText());
       return Map.of("id", exists.get(0).get("id").asText(), "duplicate", true);
+    }
     String id = UUID.randomUUID().toString().replace("-", "");
     Path file = data.resolve("originals").resolve(id + ext);
     Files.write(file, bytes);
@@ -338,11 +373,11 @@ public class ResumeService {
           pages,
           text,
           redact(text),
-          "IMPORTED",
+          "UPLOADED",
           Facts.empty().toString(),
           now(),
           now());
-      patch(id, fields("temporary_original", 1));
+      patch(id, fields("temporary_original", 1, "expires_at", clock.instant().plus(Duration.ofHours(24)).toString()));
     } catch (Exception e) {
       Files.deleteIfExists(file);
       throw e;
@@ -406,7 +441,14 @@ public class ResumeService {
     Facts.require(
         !processing.contains(id), "The resume is being processed. Wait until it finishes.");
     ObjectNode draft = Facts.validate(body.get("draft"));
+    FactProvenance.markCorrections(draft, json.readTree(r.path("draft").asText()));
+    if (body.has("expectedRevision")) Facts.require(body.path("expectedRevision").asInt(-1) == r.path("revision").asInt(), "The resume changed. Reload before saving.");
     boolean confirm = body.path("confirmed").asBoolean();
+    Facts.require(!confirm || Set.of("REVIEW_REQUIRED", "CONFIRMED").contains(r.path("status").asText()), "Save a review draft before confirmation.");
+    if (r.path("confirmed").asInt() == 1) {
+      Facts.require(confirm && draft.equals(json.readTree(r.path("draft").asText())), "Confirmed facts are immutable. Import a new resume to make changes.");
+      return Map.of("saved", true);
+    }
     Facts.require(
         !confirm || Facts.hasFacts(draft),
         "An empty resume cannot be confirmed. Add a professional fact.");
@@ -423,6 +465,8 @@ public class ResumeService {
             confirm ? "CONFIRMED" : "REVIEW_REQUIRED",
             "error",
             null,
+            "confirmed_at", confirm ? now() : null,
+            "expires_at", confirm ? clock.instant().plus(Duration.ofDays(30)).toString() : r.path("expires_at").asText(null),
             "reference_month",
             confirm ? YearMonth.now(ZoneOffset.UTC).toString() : null));
     return Map.of("saved", true);
@@ -430,22 +474,29 @@ public class ResumeService {
 
   synchronized Object clean(String id, JsonNode body) throws Exception {
     ObjectNode row=row(id);
+    Facts.require(Set.of("UPLOADED", "REVIEW_REQUIRED", "FAILED").contains(row.path("status").asText()), "Extraction cannot start in the current state.");
+    Facts.require(row.path("confirmed").asInt() == 0, "Confirmed facts are immutable.");
     Facts.require(originalAvailable(row), "The temporary original was removed after cloud confirmation.");
     Facts.require(!processing.contains(id),"The resume is being processed.");
-    patch(id,fields("status","PROCESSING","confirmed",0,"revision",row.path("revision").asInt()+1,"error",null,"model_name","local-rules-v1"));
+    patch(id,fields("status","EXTRACTING","confirmed",0,"revision",row.path("revision").asInt()+1,"error",null,"model_name","local-rules-v2"));
     processing.add(id);
-    executor.submit(()->{
+    FutureTask<Void> task = new FutureTask<>(()->{
       try {
         ObjectNode draft = new fr.isep.simrecrut.integration.pdf.LocalResumeCleaner().clean(
             row.path("filename").asText(), Files.readAllBytes(originalPath(row)));
         draft.remove(List.of("schemaVersion", "cleanerVersion", "status"));
         draft = Facts.validate(draft);
         String text = row.path("redacted_text").asText();
-        patch(id,fields("redacted_text",redact(text),"draft",draft.toString(),"status","REVIEW_REQUIRED","confirmed",0,"error",null));
+        synchronized (this) {
+          row(id); // Recheck retention before an asynchronous task writes its result.
+          patch(id,fields("redacted_text",redact(text),"draft",draft.toString(),"status","REVIEW_REQUIRED","confirmed",0,"error",null));
+        }
       } catch(Exception e) {
-        try{patch(id,fields("status","FAILED","error",e instanceof IllegalArgumentException?e.getMessage():"Local parsing failed. Try manual entry."));}catch(Exception ignored){}
-      } finally{processing.remove(id);}
-    });
+        try { synchronized (this) { row(id); patch(id,fields("status","FAILED","error",e instanceof IllegalArgumentException?e.getMessage():"Local parsing or OCR failed. Check the local OCR installation or use manual entry.")); } } catch(Exception ignored){}
+      } finally{processing.remove(id); tasks.remove(id);}
+    }, null);
+    tasks.put(id, task);
+    executor.execute(task);
     return Map.of("processing",true);
   }
 
@@ -464,11 +515,14 @@ public class ResumeService {
         !processing.contains(id) && r.path("confirmed").asInt() == 1,
         "Save and confirm the structured data first.");
     ObjectNode d = Facts.validate(json.readTree(r.path("draft").asText()));
+    // Persist intent before the remote commit so crash recovery can remove an orphaned publication.
+    patch(id, fields("publication_attempted", 1));
     try (Connection c = cloud()) {
       c.setAutoCommit(false);
       try (Statement s = c.createStatement()) {
         s.execute(DDL);
       }
+      Facts.require(!expired(r), "This resume expired before publication could finish.");
       try (PreparedStatement s =
           c.prepareStatement(
               "INSERT INTO"
@@ -485,12 +539,13 @@ public class ResumeService {
           d.get("professional").toString(),
           d.get("warnings").toString(),
           r.path("reference_month").asText(),
-          Timestamp.from(Instant.parse(r.path("updated_at").asText())),
+          Timestamp.from(Instant.parse(r.path("confirmed_at").asText(r.path("updated_at").asText()))),
           Timestamp.from(Instant.now())
         };
         for (int i = 0; i < args.length; i++) s.setObject(i + 1, args[i]);
         s.executeUpdate();
       }
+      if (expired(r)) { c.rollback(); throw new IllegalArgumentException("This resume expired before publication could finish."); }
       c.commit();
     }
     patch(id, fields("cloud_revision", r.path("revision").asInt()));
@@ -522,4 +577,62 @@ public class ResumeService {
       return false;
     }
   }
+
+  /** Block access before deleting original files and every published revision. */
+  synchronized Object delete(String id) throws Exception {
+    storedRow(id);
+    patch(id, fields("status", "PURGING", "deletion_reason", "USER_REQUEST"));
+    cancel(id);
+    return purge(id);
+  }
+
+  synchronized Object purge(String id) throws Exception {
+    ObjectNode record = storedRow(id);
+    if (processing.contains(id)) return Map.of("deleted", false, "pending", true);
+    try {
+      if (record.hasNonNull("cloud_revision") || record.path("publication_attempted").asInt() == 1) {
+        try (Connection connection = cloud(); PreparedStatement statement = connection.prepareStatement("DELETE FROM sim_cv_cleaned WHERE resume_id=?")) {
+          statement.setString(1, id); statement.executeUpdate();
+        } catch (SQLException missingTable) {
+          if (missingTable.getErrorCode() != 1146) throw missingTable;
+        }
+      }
+      Files.deleteIfExists(originalPath(record));
+      try (Connection connection = db()) {
+        connection.setAutoCommit(false);
+        try (PreparedStatement receipt = connection.prepareStatement("INSERT OR IGNORE INTO deletion_receipts(id,reason,deleted_at) VALUES(?,?,?)");
+             PreparedStatement deletion = connection.prepareStatement("DELETE FROM resumes WHERE id=?");
+             PreparedStatement operations = connection.prepareStatement("DELETE FROM repeat_operations WHERE target=? AND action<>'delete'")) {
+          receipt.setString(1, id); receipt.setString(2, record.path("deletion_reason").asText("EXPIRED")); receipt.setString(3, now()); receipt.executeUpdate();
+          operations.setString(1, id); operations.executeUpdate();
+          deletion.setString(1, id); deletion.executeUpdate(); connection.commit();
+        }
+      }
+      return Map.of("deleted", true, "pending", false);
+    } catch (Exception error) {
+      patch(id, fields("error", "Deletion pending. Access is blocked; cleanup will retry."));
+      return Map.of("deleted", false, "pending", true);
+    }
+  }
+
+  synchronized void sweep() throws Exception {
+    execute("DELETE FROM repeat_operations WHERE expires_at<=?", now());
+    for (ObjectNode record : query("SELECT * FROM resumes WHERE temporary_original=1 OR status='PURGING'")) {
+      String id = record.path("id").asText();
+      if (expired(record) || record.path("status").asText().equals("PURGING")) {
+        if (!record.path("status").asText().equals("PURGING")) patch(id, fields("status", "PURGING", "deletion_reason", "EXPIRED"));
+        cancel(id);
+        purge(id);
+      } else if (record.path("confirmed").asInt() == 1 && record.path("cloud_revision").asInt(-1) == record.path("revision").asInt()) cleanupOriginal(id);
+    }
+  }
+
+  private void cancel(String id) {
+    Future<?> task = tasks.remove(id);
+    if (task != null) task.cancel(true);
+    processing.remove(id);
+  }
+
+  @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 60000, initialDelay = 10000)
+  public void sweepLocalWorkspace() throws Exception { sweep(); }
 }

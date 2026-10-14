@@ -1,5 +1,7 @@
 # Local credentials and service configuration.
+.local/
 .env
+*.private.env
 .env.*
 !.env.example
 **/.env
@@ -49,3 +51,15 @@ Thumbs.db
 Desktop.ini
 
 /runtime/resume-workspace/
+
+# Private local credentials, service output and user-scoped resume indexes.
+/runtime/local-logs/
+/runtime/resumes/
+/runtime/ruoyi-files/
+
+# Public frontend mode flags contain no secrets.
+!frontend/.env.development
+!frontend/.env.production
+
+# Local OCR models are installed separately.
+/runtime/ocr/
