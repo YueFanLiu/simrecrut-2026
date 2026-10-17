@@ -49,3 +49,7 @@ Thumbs.db
 Desktop.ini
 
 /runtime/resume-workspace/
+
+/tmp/
+
+/out/
