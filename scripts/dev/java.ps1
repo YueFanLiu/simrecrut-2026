@@ -31,14 +31,6 @@ if (Test-Path -LiteralPath $localEnvPath) {
     }
 }
 
-# Resolve redirected Windows desktops, including OneDrive, without exposing mail credentials.
-if ([string]::IsNullOrWhiteSpace($env:SIMRECRUT_MAIL_FILE)) {
-    $desktopDirectory = [Environment]::GetFolderPath('DesktopDirectory')
-    if (-not [string]::IsNullOrWhiteSpace($desktopDirectory)) {
-        $env:SIMRECRUT_MAIL_FILE = Join-Path $desktopDirectory 'simrecrut-gmail.private.env'
-    }
-}
-
 $selectedJdk = [Environment]::GetEnvironmentVariable('JAVA_HOME', 'Process')
 if ([string]::IsNullOrWhiteSpace($selectedJdk)) {
     throw 'Set JAVA_HOME to an installed JDK 17 in the root .env or environment.'

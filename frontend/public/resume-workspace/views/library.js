@@ -74,14 +74,6 @@ function renderList() {
     const b = el("button", "Open →", "row-open");
     b.onclick = () => action(b, () => openResume(r.id));
     td.append(b);
-    const remove = el("button", "Delete", "row-open");
-    remove.onclick = () => action(remove, async () => {
-      if (!confirm("Delete this CV, its original and published JSON? This cannot be undone.")) return;
-      const result = await api(`/api/v1/resumes/${r.id}`, undefined, "DELETE");
-      toast(result.deleted ? "CV deleted." : "Access blocked. Deletion will retry automatically.");
-      await refresh();
-    });
-    td.append(remove);
     tr.append(td);
     $("#resumeRows").append(tr);
   }

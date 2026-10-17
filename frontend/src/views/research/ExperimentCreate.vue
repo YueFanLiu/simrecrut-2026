@@ -1,6 +1,6 @@
 <!-- R02: Collect seven required settings before creating a draft. -->
 <script>
-import { useWorkspace } from "../../composables/useResearchWorkspace.js";
+import { useWorkspace } from "../../state/workspace.js";
 export default { setup: useWorkspace };
 </script>
 
@@ -10,7 +10,7 @@ export default { setup: useWorkspace };
       <h2>Experiment configuration</h2>
       <span>All seven fields are required</span>
     </div>
-    <form novalidate @submit.prevent="create">
+    <form @submit.prevent="create">
       <div class="form-grid">
         <label class="full"
           >Name <em>*</em
@@ -32,7 +32,8 @@ export default { setup: useWorkspace };
           >Job version <em>*</em
           ><select v-model="form.job" required>
             <option disabled value="">Select published version</option>
-            <option v-for="row in researchJobs" :key="row.id">{{ row.id }}</option>
+            <option>Software Engineer v3</option>
+            <option>Data Analyst v2</option>
           </select></label
         >
         <label
@@ -53,14 +54,14 @@ export default { setup: useWorkspace };
           >Neutral model <em>*</em
           ><select v-model="form.neutral" required>
             <option disabled value="">Select compatible model</option>
-            <option v-for="model in data.models.filter(row => row.name === 'Neutral ML' && row.status === 'Active')" :key="model.id">{{ model.id }} / {{ model.version }}</option>
+            <option>N-2026.01 / 1.0.0</option>
           </select></label
         >
         <label
           >Biased model <em>*</em
           ><select v-model="form.biased" required>
             <option disabled value="">Select compatible model</option>
-            <option v-for="model in data.models.filter(row => row.name === 'Biased ML' && row.status === 'Active')" :key="model.id">{{ model.id }} / {{ model.version }}</option>
+            <option>B-2026.01 / 1.0.0</option>
           </select></label
         >
       </div>

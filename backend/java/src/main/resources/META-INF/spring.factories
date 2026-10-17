@@ -1,2 +1,0 @@
-# Read the private desktop SMTP file for Maven, IDE and packaged application launches.
-org.springframework.boot.env.EnvironmentPostProcessor=fr.isep.simrecrut.config.DesktopMailEnvironment

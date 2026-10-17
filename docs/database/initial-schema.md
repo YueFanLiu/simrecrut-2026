@@ -55,8 +55,9 @@ No identity table is required to execute this migration because there are no
 SQL foreign keys. Creating business tables therefore does not provide accounts,
 password authentication, role assignment or permission enforcement.
 
-The project has selected RuoYi identity management. The integrated account target is `sys_user.user_id`. Before business writes
-are implemented, validate the RuoYi user target and align account-deletion behavior. Do not invent an account
+The project has selected independent identity management. Before business writes
+are implemented, replace the documented identity target with the approved user
+table and align ID types and account-deletion behavior. Do not invent an account
 ID in a request and treat it as an authenticated user. Referencing services must
 validate the parent, access and state inside the write transaction.
 
@@ -66,9 +67,12 @@ This migration preserves the requested original baseline. It does not include
 identity tables, seed users, name-study fields, task leases or the later fixes
 described in Word section 5.8. Implement those as subsequent migrations.
 
-The retained nullable composite review key does not prevent all duplicate
-assignments. Primary human-review slots and active core model slots have no
-conditional unique keys yet. ML result status permits FAILED in this baseline,
+In V1 alone, the retained nullable composite review key does not prevent all
+duplicate assignments, and primary human-review slots and active core model
+slots have no conditional unique keys. The subsequent
+[V2 uniqueness migration](review-model-uniqueness.md) adds these constraints;
+its MySQL execution and concurrent-write acceptance remain pending.
+ML result status permits FAILED in this baseline,
 but scores are required: services must insert successful predictions only and
 record technical failures in tasks/cases. Subject deduplication, active criteria,
 published-weight totals, training membership, generated-sample identity, metric
@@ -79,35 +83,55 @@ order, explicit child cleanup and permission-limited response fields must be
 implemented by services. MySQL does not cascade deletion. The baseline alone is
 not a working login or assessment application.
 
-## Apply in the integrated RuoYi runtime
+## Apply with Flyway
 
-The WANG runtime disables automatic Flyway migration. The original V1 remains
-unchanged as Zheng's reviewed business baseline. Do not enable automatic Flyway
-or baseline an existing RuoYi schema just to suppress migration errors.
+Use a dedicated empty project schema on MySQL 8.0.16 or newer, with enforced
+CHECK constraints. MySQL 8.x is the intended dialect; this is not a MariaDB or
+SQLite migration. This file contains no CREATE DATABASE, USE, DROP, baseline
+operation, password or connection address. It operates in the schema selected
+by the application's datasource.
 
-1. Inspect `SELECT VERSION(), DATABASE();` and `SHOW FULL TABLES;` using the
-   intended database connection. MySQL 8.0.16 or newer is required. Check for
-   existing business tables and migration history before making any changes.
-2. Initialize the official RuoYi system and Quartz tables in the selected empty
-   application schema according to [RuoYi migration](../development/ruoyi-migration.md).
-   The upstream initialization contains DROP statements; never run it against
-   an existing populated schema without reviewing every affected table.
-3. Apply the unchanged business SQL through a database client to the same schema,
-   only after confirming that none of its 36 tables already exists. This is an
-   explicit deployment step and has not been performed by the local integration.
-   Manual execution does not create a Flyway history record.
-4. Run [verification SQL](verify-initial-schema.sql). Inspect partial tables and
-   the failed statement if execution fails: MySQL multi-table DDL is not atomic.
-   Later changes belong in new migrations, not edits to an applied baseline.
-5. Apply the SimRecrut permission menu after RuoYi system initialization. Configure
-   the backend database, Redis and token secret, then test real login and resume
-   confirmation. A frontend build does not verify this deployment path.
+1. Inspect the target database before changing anything:
 
-The resume adapter currently publishes JSON to its existing `sim_cv_cleaned`
-table and uses a per-user SQLite temporary index. These are separate from the
-36 business tables. Converting uploaded resumes into frozen assessment cases
-requires a business service, version validation and transaction rules; this
-integration does not invent rows or identifiers in Zheng's baseline.
+   ```sql
+   SELECT VERSION(), DATABASE();
+   SHOW FULL TABLES;
+   ```
+
+   If `flyway_schema_history` already exists, inspect its versions and checksum
+   history. Do not assume V1 is available or modify an applied migration.
+
+2. Follow [local setup](../development/local-setup.md) to point `DB_URL`,
+   `DB_USERNAME` and `DB_PASSWORD` at the intended schema in the ignored `.env`.
+   Retain the appropriate TLS connection settings. Never paste credentials into
+   SQL or tracked documentation.
+3. Flyway is already enabled in the application YAML. If a local environment
+   override disables it, set `SPRING_FLYWAY_ENABLED=true`. Do not set
+   `baseline-on-migrate=true` to bypass an unexplained non-empty schema. An
+   existing `defaultdb` with unknown objects must be inspected first. In
+   particular, a default baseline at version 1 would skip this V1 migration.
+4. Start the backend from the repository root:
+
+   ```powershell
+   .\scripts\dev\java.ps1 -Action run
+   ```
+
+   Flyway applies all pending migrations, including V1 and then V2 on an empty
+   schema, and creates its history table. Run the V2 preflight described in the
+   [uniqueness guide](review-model-uniqueness.md) before starting against an
+   existing V1 schema. No manual copying of this SQL into the cloud console is
+   necessary. Redis readiness is separate from successful schema migration.
+5. Run the [read-only verification SQL](verify-initial-schema.sql) in the same
+   target schema. Its initial constraint counts apply to V1 alone; after V2,
+   expect 37 additional unique keys rather than 34 and also run the V2
+   verification script. Expect no missing tables or unindexed reference columns.
+   There should be 36
+   business tables plus Flyway history in an otherwise empty schema.
+
+MySQL DDL does not make a multi-table migration atomic. If application fails,
+inspect the failed statement, partial tables and Flyway history before retrying.
+Do not drop tables or repair history without understanding the partial state.
+Once V1 has been applied, keep its contents unchanged and add later versions.
 
 ## Validation status
 

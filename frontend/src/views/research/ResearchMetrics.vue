@@ -1,17 +1,73 @@
-<!-- Adapted R06: Keep missing evaluation metrics explicit and validate experiment selection. -->
+<!-- R06: Keep missing evaluation metrics explicit instead of inventing values. -->
 <script>
-import { useWorkspace } from '../../composables/useResearchWorkspace.js'
-export default { setup: useWorkspace }
+import { useWorkspace } from "../../state/workspace.js";
+export default { setup: useWorkspace };
 </script>
+
 <template>
-  <div class="toolbar panel"><label>Experiment<select :value="experiment.id" @change="go('/research/metrics?experimentId=' + $event.target.value)"><option v-for="row in data.experiments" :key="row.id" :value="row.id">{{ row.name }}</option></select></label><span class="badge">{{ experiment.outputs?.length ? 'Synthetic demo metrics available' : 'Held-out metrics unavailable' }}</span></div>
-  <section v-if="experiment.outputs?.length" class="panel panel-body">
-    <h2>Synthetic Demo Metrics</h2>
-    <p>Computed from deterministic teaching fixtures and synthetic labels. These are not held-out model evaluation results. Undefined denominators remain Unavailable.</p>
-    <div class="table-wrap"><table><thead><tr><th>Method</th><th>Evaluated N</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>TP / TN / FP / FN</th><th>Valid pairs / Flips</th></tr></thead>
-      <tbody><tr v-for="(name, key) in { objective: 'Objective Rule', neutral: 'Neutral ML', biased: 'Biased ML' }" :key="key"><td>{{ name }}</td><td>{{ resultSummary[key].sampleCount }}</td><td v-for="metric in ['accuracy', 'precision', 'recall', 'f1']" :key="metric">{{ resultSummary[key][metric] === null ? 'Unavailable' : (resultSummary[key][metric] * 100).toFixed(1) + '%' }}</td><td>{{ resultSummary[key].tp }} / {{ resultSummary[key].tn }} / {{ resultSummary[key].fp }} / {{ resultSummary[key].fn }}</td><td>{{ resultSummary[key].pairs }} / {{ resultSummary[key].flips }}</td></tr></tbody></table></div>
+  <div class="toolbar panel">
+    <label
+      >Experiment<select
+        :value="path.split('=')[1] || 'EXP-001'"
+        @change="go('/research/metrics?experimentId=' + $event.target.value)"
+      >
+        <option v-for="e in data.experiments" :value="e.id">
+          {{ e.name }}
+        </option>
+      </select></label
+    ><span class="badge">Real metrics unavailable</span>
+  </div>
+  <div class="metrics-grid">
+    <section class="panel" v-for="m in ['Neutral ML', 'Biased ML']">
+      <div class="panel-title">
+        <h2>{{ m }}</h2>
+        <span>Held-out evaluation</span>
+      </div>
+      <div class="panel-body">
+        <div class="mini-stats">
+          <div v-for="v in ['Accuracy', 'Precision', 'Recall', 'F1']">
+            <small>{{ v }}</small
+            ><b>—</b>
+          </div>
+        </div>
+        <h3>Confusion matrix</h3>
+        <div class="matrix">
+          <span></span><span>Predicted reject</span><span>Predicted accept</span
+          ><span>Actual reject</span><b>—<small>True negative</small></b
+          ><b>—<small>False positive</small></b
+          ><span>Actual accept</span><b>—<small>False negative</small></b
+          ><b>—<small>True positive</small></b>
+        </div>
+        <p class="muted">Sample size and evaluation provenance unavailable.</p>
+      </div>
+    </section>
+  </div>
+  <section class="panel">
+    <div class="panel-title">
+      <h2>Group fairness & ranking</h2>
+      <span>Explicit denominators required</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Group</th>
+          <th>Eligible N</th>
+          <th>Evaluated N</th>
+          <th>Acceptance rate</th>
+          <th>Top-K</th>
+          <th>Flip rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="g in ['Category A', 'Category B', 'Unknown']">
+          <td>{{ g }}</td>
+          <td>—</td>
+          <td>—</td>
+          <td>Unavailable</td>
+          <td>Unavailable</td>
+          <td>Unavailable</td>
+        </tr>
+      </tbody>
+    </table>
   </section>
-  <section class="panel panel-body"><h2>Frozen Evaluation Context</h2><p>{{ experiment.id }} · {{ experiment.job }} · {{ experiment.weight }} · {{ experiment.protocol }}</p><p>Neutral: {{ experiment.neutral }} · Biased: {{ experiment.biased }}</p><p>Model cutoff: 0.5 for both mock versions. Real evaluation sample counts, provenance and demographic group denominators are unavailable.</p></section>
-  <div class="metrics-grid"><section v-for="method in ['Neutral ML', 'Biased ML']" :key="method" class="panel"><div class="panel-title"><h2>{{ method }}</h2><span>Held-out evaluation</span></div><div class="panel-body"><div class="mini-stats"><div v-for="metric in ['Accuracy', 'Precision', 'Recall', 'F1']" :key="metric"><small>{{ metric }}</small><b>Unavailable</b></div></div><h3>Confusion matrix</h3><div class="matrix"><span></span><span>Predicted reject</span><span>Predicted accept</span><span>Actual reject</span><b>—<small>True negative</small></b><b>—<small>False positive</small></b><span>Actual accept</span><b>—<small>False negative</small></b><b>—<small>True positive</small></b></div><p>Sample size, evaluation provenance and score distributions are unavailable. Missing data is not zero.</p></div></section></div>
-  <section class="panel"><div class="panel-title"><h2>Group Fairness and Ranking</h2><span>Compare methods on their own scales</span></div><div class="table-wrap"><table><thead><tr><th>Group</th><th>Eligible N</th><th>Evaluated N</th><th>Acceptance / TPR / Gap</th><th>Top-K</th><th>Valid pairs / Flip rate</th></tr></thead><tbody><tr v-for="group in ['Category A', 'Category B', 'Unknown']" :key="group"><td>{{ group }}</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr></tbody></table></div></section>
 </template>

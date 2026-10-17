@@ -20,11 +20,6 @@ BINARY_SUFFIXES = {
     ".onnx", ".pdf", ".png", ".pt", ".pth", ".safetensors", ".webp", ".zip",
 }
 ROOT_MARKDOWN = {"README.md"}
-# User-facing integration reports are intentionally written in Chinese.
-CHINESE_REPORTS = {
-    "docs/development/page-api-integration.md",
-    "docs/development/page-buttons-business-test.md",
-}
 
 
 def repository_files(root: Path) -> list[Path]:
@@ -113,7 +108,7 @@ def check(root: Path) -> tuple[list[str], int]:
         if "\r" in text:
             errors.append(f"{label}: use LF line endings")
         for number, line in enumerate(text.splitlines(), 1):
-            if HAN.search(line) and label not in CHINESE_REPORTS:
+            if HAN.search(line):
                 # Report the location without echoing potentially sensitive text.
                 errors.append(f"{label}:{number}: text contains Han characters")
         if relative.suffix.lower() == ".md":

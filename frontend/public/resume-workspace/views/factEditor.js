@@ -35,7 +35,6 @@ let editing = null;
 const originalRender = renderFacts;
 renderFacts = function (draft) {
   originalRender(draft);
-  if (current?.confirmed) return;
   Object.keys(groupLabels).forEach((group, gi) => {
     const card = $("#factCards").children[gi];
     const header = el("div", undefined, "fact-heading");

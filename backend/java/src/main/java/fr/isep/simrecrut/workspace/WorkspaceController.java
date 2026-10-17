@@ -49,9 +49,6 @@ public class WorkspaceController {
     return envelope(service.list());
   }
 
-  @DeleteMapping("/api/v1/resumes/{id}")
-  Object delete(@PathVariable String id) throws Exception { return envelope(service.delete(id)); }
-
   @GetMapping("/api/v1/resumes/{id}")
   Object resume(@PathVariable String id) throws Exception {
     return envelope(service.detail(id));
