@@ -5,9 +5,8 @@ spring:
   application:
     name: simrecrut-resume-workspace
   autoconfigure:
-    # The local adapter uses SQLite directly and must not create a RuoYi pool.
+    # The local adapter uses SQLite directly and does not use a shared database pool.
     exclude:
-      - com.alibaba.druid.spring.boot3.autoconfigure.DruidDataSourceAutoConfigure
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration

@@ -63,3 +63,6 @@ Desktop.ini
 
 # Local OCR models are installed separately.
 /runtime/ocr/
+
+/tmp/
+/out/

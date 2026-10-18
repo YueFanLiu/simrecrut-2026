@@ -24,7 +24,7 @@ public class BusinessResponseFilter extends OncePerRequestFilter {
             chain.doFilter(request, wrapped);
             if (wrapped.getContentType() != null && wrapped.getContentType().contains("application/json")) {
                 var body = Facts.JSON.readTree(wrapped.getContentAsByteArray());
-                // Controller responses already follow the contract; only adapt RuoYi errors.
+                // Controller responses already follow the contract; adapt authentication and infrastructure errors.
                 if (body.has("message") && body.has("requestId") && body.has("data")) {
                     response.setHeader("X-Request-Id", body.path("requestId").asText());
                     return;

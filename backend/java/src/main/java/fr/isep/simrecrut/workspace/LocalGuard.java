@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Local single-user protection. Replace with the existing RuoYi identity layer for shared
+ * Local single-user protection. Use application account authentication for shared
  * deployment.
  */
 @Component

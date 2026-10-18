@@ -66,9 +66,12 @@ This migration preserves the requested original baseline. It does not include
 identity tables, seed users, name-study fields, task leases or the later fixes
 described in Word section 5.8. Implement those as subsequent migrations.
 
-The retained nullable composite review key does not prevent all duplicate
-assignments. Primary human-review slots and active core model slots have no
-conditional unique keys yet. ML result status permits FAILED in this baseline,
+In V1 alone, the retained nullable composite review key does not prevent all
+duplicate assignments, and primary human-review slots and active core model
+slots have no conditional unique keys. The subsequent
+[V2 uniqueness migration](review-model-uniqueness.md) adds these constraints;
+its MySQL execution and concurrent-write acceptance remain pending.
+ML result status permits FAILED in this baseline,
 but scores are required: services must insert successful predictions only and
 record technical failures in tasks/cases. Subject deduplication, active criteria,
 published-weight totals, training membership, generated-sample identity, metric
@@ -108,6 +111,16 @@ table and uses a per-user SQLite temporary index. These are separate from the
 36 business tables. Converting uploaded resumes into frozen assessment cases
 requires a business service, version validation and transaction rules; this
 integration does not invent rows or identifiers in Zheng's baseline.
+
+## Apply the retained V2 changes
+
+Zheng's V2 uniqueness migration is retained alongside the integrated runtime.
+Automatic Flyway execution remains disabled. After V1 exists, run the
+[uniqueness preflight and verification](review-model-uniqueness.md), then apply
+the V2 SQL explicitly through the database client. The startup instructions
+in that guide describe the earlier Flyway-enabled backend and do not apply
+to the integrated RuoYi configuration. Neither merging these files nor
+starting the backend applies V2 to the database.
 
 ## Validation status
 

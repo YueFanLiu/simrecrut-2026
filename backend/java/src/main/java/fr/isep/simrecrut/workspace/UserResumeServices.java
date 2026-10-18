@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/** Keep temporary originals and indexes isolated by authenticated RuoYi user ID. */
+/** Keep temporary originals and indexes isolated by authenticated application account ID. */
 @Service
 @org.springframework.context.annotation.Profile("!resume-workspace")
 public class UserResumeServices {
