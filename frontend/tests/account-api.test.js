@@ -7,8 +7,9 @@ import { fileURLToPath } from 'node:url'
 test('account APIs use public RuoYi adapters and discard incomplete login state', async () => {
   const previousLocation = globalThis.location
   globalThis.location = { protocol: 'http:', pathname: '/login' }
-  const server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)),
-    server: { middlewareMode: true }, appType: 'custom' })
+  // Exercise connected identity rather than the development demo shortcut.
+  const server = await createServer({ mode: 'production', root: fileURLToPath(new URL('../', import.meta.url)),
+    server: { middlewareMode: true, hmr: false }, appType: 'custom' })
   try {
     const { default: request } = await server.ssrLoadModule('/src/utils/request.js')
     const api = await server.ssrLoadModule('/src/api/login.js')

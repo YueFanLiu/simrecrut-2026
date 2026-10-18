@@ -49,7 +49,7 @@ export default { setup: useWorkspace };
           <p>{{ task.reason }}</p>
           <p class="muted">Confirmed submissions cannot be edited.</p></template
         >
-        <form v-else @submit.prevent="submit">
+        <form v-else novalidate @submit.prevent="submit">
           <div class="decision-options">
             <label v-for="d in ['Accept', 'Reject']"
               ><input type="radio" v-model="decision" :value="d" required />{{

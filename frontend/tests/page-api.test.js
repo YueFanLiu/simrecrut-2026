@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 test('connected page APIs paginate RuoYi data and surface missing endpoints', async () => {
   const server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)),
-    server: { middlewareMode: true }, appType: 'custom' })
+    server: { middlewareMode: true, hmr: false }, appType: 'custom' })
   try {
     const { default: request } = await server.ssrLoadModule('/src/utils/request.js')
     const admin = await server.ssrLoadModule('/src/api/administration.js')

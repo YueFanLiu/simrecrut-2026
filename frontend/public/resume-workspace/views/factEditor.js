@@ -90,7 +90,12 @@ function openFact(group, index) {
     const label = el("label", title);
     const field = el("input");
     field.name = key;
-    field.type = type === "list" ? "text" : type;
+    field.type = type === "list" || type === "month" ? "text" : type;
+    if (type === "month") {
+      field.placeholder = "YYYY-MM";
+      field.pattern = "[0-9]{4}-(0[1-9]|1[0-2])";
+      field.title = "Enter a month as YYYY-MM, for example 2026-10.";
+    }
     field.required = !!required;
     if (type === "checkbox") {
       field.checked = !!item[key];
@@ -113,6 +118,7 @@ function openFact(group, index) {
 }
 $("#factForm").onsubmit = (e) => {
   e.preventDefault();
+  if (!validateForm(e.currentTarget)) return;
   try {
     const draft = JSON.parse($("#jsonEditor").value);
     const form = $("#factForm"),

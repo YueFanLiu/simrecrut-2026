@@ -61,7 +61,7 @@ export default { setup: useWorkspace };
             </select></label
           >
           <div class="callout">
-            Production changes require RuoYi permissions.
+            Production changes require authorization from the server.
           </div>
           <button class="primary" @click="apply">Save demo role</button
           ><button

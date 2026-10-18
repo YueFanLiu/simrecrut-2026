@@ -8,6 +8,7 @@ import PasswordInput from '../../components/simrecrut/PasswordInput.vue'
 import { getCaptcha, passwordResetOptions, sendPasswordCode, resetPassword } from '../../api/login.js'
 import { validateEmail, validateRegistrationPassword, validatePasswordConfirmation } from '../../utils/registration-validation.js'
 import { removeToken } from '../../utils/auth.js'
+import { demoMode } from '../../config/runtime.js'
 
 const router=useRouter(), formRef=ref()
 const form=reactive({ email:'', code:'', uuid:'', requestId:'', emailCode:'', password:'', confirmation:'' })
@@ -23,6 +24,7 @@ async function challenge() {
   catch { if(active) error.value='Unable to load verification. Please retry.' }
 }
 onMounted(async()=>{
+  if (demoMode) { checking.value=false; return }
   try { enabled.value=(await passwordResetOptions()).emailEnabled===true; if(enabled.value) await challenge() }
   catch { error.value='Unable to load email verification settings.' }
   finally { checking.value=false }
@@ -36,7 +38,7 @@ async function send() {
   try {
     const response=await sendPasswordCode({email:form.email.trim(),code:form.code,uuid:form.uuid})
     if(!active) return
-    form.requestId=response.requestId; form.emailCode=''; feedback.value=response.msg
+    form.requestId=response.requestId; form.emailCode=''; feedback.value='If this email address is registered, a verification code has been sent.'
     cooldown.value=60; clearInterval(timer); timer=setInterval(()=>{ cooldown.value-=1; if(cooldown.value<=0) clearInterval(timer) },1000)
   } catch(failure) { if(active) error.value=failure.message||'Unable to request an email code.' }
   finally { if(active) { await challenge(); loading.value=false } }
@@ -59,7 +61,7 @@ onBeforeUnmount(()=>{active=false;clearInterval(timer);form.password='';form.con
     <p v-else>Verify your registered email address to set a new password.</p>
     <ElAlert v-if="error" :title="error" type="error" :closable="false" />
     <p v-if="checking" role="status">Loading email settings...</p>
-    <ElAlert v-else-if="!enabled" title="Email verification is not configured. Contact the administrator." type="info" :closable="false" />
+    <ElAlert v-else-if="!enabled" :title="demoMode ? 'Password recovery is unavailable in the frontend demo. Use a built-in demo account to sign in.' : 'Email verification is not configured. Contact the administrator.'" type="info" :closable="false" />
     <template v-else-if="!done">
       <ElAlert v-if="feedback" :title="feedback" type="success" :closable="false" />
       <ElForm ref="formRef" :model="form" :rules="rules" label-position="top" :disabled="loading" @submit.prevent="submit">

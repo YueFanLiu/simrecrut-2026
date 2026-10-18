@@ -51,8 +51,7 @@ export default {
       </div>
     </div>
     <div class="notice" v-else>
-      Connected RuoYi session. Research simulations remain a prototype; resume
-      and identity APIs use the backend.
+      Connected workspace. Feature availability depends on the configured backend APIs.
     </div>
     <div v-if="missingRecord" class="panel panel-body">
       <h2>Record not found</h2>

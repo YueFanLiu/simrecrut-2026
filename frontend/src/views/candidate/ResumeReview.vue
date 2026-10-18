@@ -7,6 +7,7 @@ import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { getResume, resumeAction, deleteResume } from "@/api/resumes";
 import { demoMode } from "@/store/modules/user";
+import { uiMessage } from "../../utils/ui-message.js";
 const route = useRoute(),
   record = ref(null),
   busy = ref(false),
@@ -19,7 +20,7 @@ const router = useRouter();
 async function removeResume() {
   const id = route.params.id;
   try {
-    await ElMessageBox.confirm("Delete this CV, its original and published JSON? This cannot be undone.", "Delete CV", { type: "warning" });
+    await ElMessageBox.confirm("Delete this CV, its original and published JSON? This cannot be undone.", "Delete CV", { type: "warning", confirmButtonText: "Delete CV", cancelButtonText: "Cancel" });
     busy.value = true;
     const result = await deleteResume(id);
     if (stopped || route.params.id !== id) return;
@@ -127,7 +128,7 @@ async function retryCleanup() {
   <CandidateLayout>
   <el-card
     ><h2>Review professional facts</h2>
-    <p v-if="record?.expires_at">Expires: {{ new Date(record.expires_at).toLocaleString() }}. Confirmed facts are locked.</p>
+    <p v-if="record?.expires_at">Expires: {{ new Date(record.expires_at).toLocaleString('en-GB') }}. Confirmed facts are locked.</p>
     <p v-if="!record">No connected resume is loaded.</p>
     <template v-else
       ><el-alert
@@ -137,10 +138,10 @@ async function retryCleanup() {
         :closable="false"
       /><el-alert
         v-if="record.error"
-        :title="record.error"
+        :title="uiMessage(record.error, 'Extraction failed. Please retry or upload another CV.')"
         type="error"
         :closable="false"
-      /><p v-for="warning in record.draft?.warnings || []" :key="warning">{{ warning }}</p>
+      /><p v-for="warning in record.draft?.warnings || []" :key="warning">{{ uiMessage(warning, 'Some extracted facts need review. Check the facts and evidence before confirming.') }}</p>
       <el-tabs v-model="activeGroup" v-if="record.status !== 'EXTRACTING'"
         ><el-tab-pane v-for="group in groups" :key="group" :label="groupLabels[group]" :name="group"
           ><p>

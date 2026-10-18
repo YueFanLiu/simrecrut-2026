@@ -55,7 +55,7 @@ async function importFiles(files) {
       last = r.id;
       ok++;
     } catch (e) {
-      errors.push(`${file.name}：${e.message}`);
+      errors.push(`${file.name}: ${uiMessage(e.message)}`);
     }
   }
   busy = false;

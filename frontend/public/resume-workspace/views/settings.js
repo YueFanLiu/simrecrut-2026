@@ -19,6 +19,7 @@ function settingsOpen() {
 }
 async function saveConfig() {
   const form = $("#settingsForm");
+  if (!validateForm(form)) throw new Error("Check the connection settings before continuing.");
   const body = Object.fromEntries(new FormData(form));
   await api("/api/v1/settings", body);
   form.elements.password.value = "";
@@ -34,6 +35,7 @@ document
   .forEach((b) => (b.onclick = () => $("#" + b.dataset.close).close()));
 $("#settingsForm").onsubmit = (e) => {
   e.preventDefault();
+  if (!validateForm(e.currentTarget)) return;
   action(e.submitter, saveConfig);
 };
 $("#testCloud").onclick = (e) =>

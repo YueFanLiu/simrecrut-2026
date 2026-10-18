@@ -171,7 +171,8 @@ router.beforeEach(async (to) => {
   }
 })
 
-router.afterEach((to) => {
+router.afterEach((to, _from, failure) => {
+  if (failure) return
   document.title = `${to.meta.title || 'SimRecrut'} | SimRecrut`
 })
 
