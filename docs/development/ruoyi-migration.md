@@ -1,5 +1,7 @@
 # RuoYi migration
 
+Historical reference only: the current independent backend no longer depends on RuoYi. The setup and verification details below describe the previous integration and must not be used as current backend setup instructions.
+
 The 2026-10-10 user decision replaces the independent identity backend with RuoYi for both frontend and backend. Java remains JDK 17. Existing research pages retain their independent files and visual design.
 
 ## Official dependencies
@@ -16,7 +18,7 @@ Use a dedicated empty MySQL schema. Upstream `sql/ry_20260417.sql` and `sql/quar
 
 Configure `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `REDIS_HOST`, `REDIS_PORT`, optional `REDIS_PASSWORD`, and a unique `RUOYI_TOKEN_SECRET` of at least 32 random characters in the server environment. Keep verified TLS enabled for Aiven. Rotate the upstream initial administrator password after initialization. RuoYi requires Redis for tokens and captcha challenges; Aiven MySQL alone is insufficient to start the identity service.
 
-Apply [simrecrut-menu.sql](../../backend/java/src/main/resources/db/ruoyi/simrecrut-menu.sql) after the official system schema exists. Assign the new menu permissions to the intended roles in RuoYi. Menu permissions do not grant ownership of another user's resume.
+The previous integration used a dedicated menu-permission SQL script. That script was removed with the backend RuoYi integration. The independent backend will enforce its own account, permission and resume-access rules.
 
 ## Resume business module
 
