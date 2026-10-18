@@ -1,7 +1,7 @@
 package fr.isep.simrecrut.workspace;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import fr.isep.simrecrut.security.authentication.PasswordAuthenticationService.AccountPrincipal;
+import fr.isep.simrecrut.security.currentuser.AccountPrincipal;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.*;

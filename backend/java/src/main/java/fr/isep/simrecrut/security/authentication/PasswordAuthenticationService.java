@@ -12,19 +12,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class PasswordAuthenticationService {
 
-    /** Internal identity supplied by the server authentication layer. */
-    public record AccountPrincipal(long userId) implements java.security.Principal {
-        public AccountPrincipal {
-            if (userId < 1) {
-                throw new IllegalArgumentException("A valid account ID is required.");
-            }
-        }
-
-        @Override
-        public String getName() {
-            return Long.toString(userId);
-        }
+    public record VerifiedAccount(
+        long userId,
+        long securityVersion) {
     }
+
 
 
     private final UserAccountMapper accounts;
@@ -47,7 +39,7 @@ public class PasswordAuthenticationService {
      * The caller must enforce rate limits before invoking this method.
      * Successful verification does not establish an authenticated session.
      */
-    public long verify(String identifier, String password) {
+    public VerifiedAccount verifyAccount(String identifier, String password) {
         if (password == null
             || password.isEmpty()
             || password.codePointCount(0, password.length()) > 128) {
@@ -72,11 +64,18 @@ public class PasswordAuthenticationService {
         if (account == null
             || !matches
             || account.getStatus() != AccountStatus.ACTIVE
-            || account.getEmailVerifiedAt() == null) {
+            || account.getEmailVerifiedAt() == null
+            || account.getSecurityVersion() == null) {
             throw invalidCredentials();
         }
 
-        return account.getId();
+        return new VerifiedAccount(
+            account.getId(),
+            account.getSecurityVersion());
+    }
+
+    public long verify(String identifier, String password) {
+        return verifyAccount(identifier, password).userId();
     }
 
     private BadCredentialsException invalidCredentials() {

@@ -15,6 +15,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import fr.isep.simrecrut.service.identity.AuthenticationFlowException;
+import org.springframework.security.core.AuthenticationException;
 
 @Profile("!resume-workspace")
 @RestControllerAdvice(assignableTypes = AuthenticationController.class)
@@ -68,5 +70,30 @@ public class IdentityExceptionHandler {
             response.header(HttpHeaders.RETRY_AFTER, Long.toString(retryAfterSeconds));
         }
         return response.body(ApiResponse.failure(status, message, retryable));
+    }
+
+    @ExceptionHandler(AuthenticationFlowException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> authenticationFlow(
+        AuthenticationFlowException exception) {
+
+        int status = switch (exception.reason()) {
+            case RATE_LIMITED -> 429;
+            case UNAVAILABLE -> 503;
+        };
+
+        return error(
+            status,
+            exception.getMessage(),
+            true,
+            exception.retryAfterSeconds());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> authenticationFailed() {
+        return error(
+            401,
+            "Invalid username/email or password.",
+            false,
+            0);
     }
 }

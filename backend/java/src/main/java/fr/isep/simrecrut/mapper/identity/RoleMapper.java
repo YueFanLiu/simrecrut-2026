@@ -13,6 +13,9 @@ public interface RoleMapper {
 
     List<Role> findByUserId(@Param("userId") long userId);
 
+    List<String> findPermissionCodesByUserId(
+        @Param("userId") long userId);
+
     int insertUserRole(
         @Param("userId") long userId,
         @Param("roleId") long roleId);
