@@ -4,6 +4,15 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $repository = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+# Load only runtime selections; never evaluate assignments as PowerShell code.
+$runtimeEnv = Join-Path $repository '.env'
+if (Test-Path -LiteralPath $runtimeEnv) {
+    foreach ($line in [IO.File]::ReadAllLines($runtimeEnv)) {
+        if ($line -match '^(JAVA_HOME|TESSERACT_EXECUTABLE|TESSDATA_PATH|TESSERACT_LANGUAGES)=(.*)$') {
+            [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2].Trim().Trim('"').Trim("'"), 'Process')
+        }
+    }
+}
 if (-not $InputDirectory) { $InputDirectory = Join-Path $repository 'offline-ml/datasets/raw' }
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $repository 'offline-ml/datasets/clean' }
 Push-Location (Join-Path $repository 'backend/java')

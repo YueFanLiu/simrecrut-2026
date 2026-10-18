@@ -32,6 +32,17 @@ spring:
     validate-on-migrate: true
   jackson:
     time-zone: UTC
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
   jmx:
     enabled: false
 
@@ -62,6 +73,8 @@ management:
           include: readinessState,db,redis
 
 simrecrut:
+  mail:
+    from: ${SMTP_FROM:}
   ml:
     base-url: ${ML_BASE_URL}
     internal-token: ${ML_INTERNAL_TOKEN}

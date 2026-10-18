@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
+@org.springframework.context.annotation.Profile("!resume-workspace")
+@org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfig {
 

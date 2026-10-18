@@ -1,7 +1,7 @@
 <!-- R01: List authorized demo experiments and summarize their status. -->
 <script>
-import { useWorkspace } from "../../state/workspace.js";
-import RecordTable from "../../components/RecordTable.vue";
+import { useWorkspace } from "../../composables/useResearchWorkspace.js";
+import RecordTable from "../../components/research/RecordTable.vue";
 export default { components: { RecordTable }, setup: useWorkspace };
 </script>
 
@@ -16,7 +16,7 @@ export default { components: { RecordTable }, setup: useWorkspace };
       ><b>{{
         data.experiments.filter((e) => e.status === "Completed").length
       }}</b
-      ><span>Frozen results available</span>
+      ><span>Stored examples; outputs may be unavailable</span>
     </article>
     <article>
       <small>DRAFTS</small

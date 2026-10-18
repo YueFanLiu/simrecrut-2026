@@ -12,6 +12,21 @@ import org.springframework.stereotype.Service;
 @Service
 public class PasswordAuthenticationService {
 
+    /** Internal identity supplied by the server authentication layer. */
+    public record AccountPrincipal(long userId) implements java.security.Principal {
+        public AccountPrincipal {
+            if (userId < 1) {
+                throw new IllegalArgumentException("A valid account ID is required.");
+            }
+        }
+
+        @Override
+        public String getName() {
+            return Long.toString(userId);
+        }
+    }
+
+
     private final UserAccountMapper accounts;
     private final AccountInputValidator inputs;
     private final PasswordEncoder passwords;

@@ -8,15 +8,15 @@ let resumes = [],
   toastTimer,
   busy = false;
 const labels = {
-  IMPORTED: "Imported",
-  PROCESSING: "Cleaning",
+  UPLOADED: "Imported",
+  EXTRACTING: "Cleaning",
   REVIEW_REQUIRED: "Needs review",
   CONFIRMED: "Confirmed",
   FAILED: "Failed",
 };
 const colors = {
-  IMPORTED: "",
-  PROCESSING: "blue",
+  UPLOADED: "",
+  EXTRACTING: "blue",
   REVIEW_REQUIRED: "amber",
   CONFIRMED: "green",
   FAILED: "red",

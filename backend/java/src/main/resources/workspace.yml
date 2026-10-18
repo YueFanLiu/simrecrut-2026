@@ -5,6 +5,7 @@ spring:
   application:
     name: simrecrut-resume-workspace
   autoconfigure:
+    # The local adapter uses SQLite directly and does not use a shared database pool.
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration

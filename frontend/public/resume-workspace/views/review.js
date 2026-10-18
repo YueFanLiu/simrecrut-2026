@@ -18,15 +18,18 @@ function setCurrent(row) {
   $("#jsonEditor").value = JSON.stringify(row.draft, null, 2);
   $("#factsChecked").checked = !!row.confirmed;
   renderFacts(row.draft);
-  $("#uploadCloud").disabled = !row.confirmed || row.status === "PROCESSING";
-  $("#cleanButton").disabled = row.status === "PROCESSING";
+  $("#uploadCloud").disabled = !row.confirmed || row.status === "EXTRACTING";
+  $("#cleanButton").disabled = !!row.confirmed || row.status === "EXTRACTING";
+  $("#jsonEditor").readOnly = !!row.confirmed;
+  $("#saveDraft").disabled = !!row.confirmed;
+  $("#confirmDraft").disabled = !!row.confirmed;
 }
 const originalSetCurrent = setCurrent;
 setCurrent = function (row) {
   originalSetCurrent(row);
   const available = row.originalAvailable;
   const visual = available && /^\.(pdf|png|jpg|jpeg|webp)$/.test(row.extension);
-  $("#cleanButton").disabled = !available || row.status === "PROCESSING";
+  $("#cleanButton").disabled = !available || !!row.confirmed || row.status === "EXTRACTING";
   $("#retryCleanup").classList.toggle(
     "hidden",
     !available ||
@@ -40,7 +43,7 @@ setCurrent = function (row) {
   $("#filePreview").replaceChildren();
   $("#filePreview").classList.toggle("hidden", !visual);
   $("#sourceExplainer").textContent = visual
-    ? "Embedded PDF text is extracted locally. Scanned PDFs and images need manual entry; OCR is not enabled. No resume content is sent to an AI provider."
+    ? "Embedded PDF text is extracted locally. Scanned PDFs require evidence review; Local Tesseract OCR is used when embedded PDF text is insufficient. No resume content is sent to an AI provider."
     : "DOCX / TXT files are read locally. Review the original and extracted facts.";
   if (visual) {
     for (let n = 1; n <= (row.pages || 1); n++) {
@@ -60,9 +63,9 @@ async function openResume(id) {
   setCurrent(row);
   $("#sourceChecked").checked = false;
   message("#reviewMessage", row.error || "", !!row.error);
-  tab(row.status === "IMPORTED" ? "source" : "facts");
+  tab(row.status === "UPLOADED" ? "source" : "facts");
   if (!$("#reviewDialog").open) $("#reviewDialog").showModal();
-  if (row.status === "PROCESSING") startPoll();
+  if (row.status === "EXTRACTING") startPoll();
 }
 function renderFacts(draft) {
   $("#factCards").replaceChildren();
@@ -116,7 +119,7 @@ $("#manualReview").onclick = () => {
 $("#cleanButton").onclick = (e) =>
   action(e.currentTarget, async () => {
     await api(`/api/v1/resumes/${current.id}/clean`, {});
-    current.status = "PROCESSING";
+    current.status = "EXTRACTING";
     message(
       "#reviewMessage",
       "Extracting professional facts locally. No AI API is used.",
@@ -132,8 +135,10 @@ function startPoll() {
         clearInterval(polling);
         return;
       }
-      const row = await api("/api/v1/resumes/" + current.id);
-      if (row.status !== "PROCESSING") {
+      const id = current.id;
+      const row = await api("/api/v1/resumes/" + id);
+      if (!$("#reviewDialog").open || current?.id !== id) return;
+      if (row.status !== "EXTRACTING") {
         clearInterval(polling);
         setCurrent(row);
         tab("facts");
@@ -151,7 +156,11 @@ function startPoll() {
     }
   }, 2000);
 }
-$("#reviewDialog").addEventListener("close", () => clearInterval(polling));
+$("#reviewDialog").addEventListener("close", () => {
+  clearInterval(polling); current = null;
+  $("#sourceText").value = ""; $("#jsonEditor").value = "";
+  $("#filePreview").replaceChildren(); $("#factCards").replaceChildren();
+});
 async function saveDraft(confirmed) {
   if (confirmed && !$("#factsChecked").checked)
     throw new Error(
@@ -179,7 +188,7 @@ $("#confirmDraft").onclick = (e) =>
   action(e.currentTarget, () => saveDraft(true));
 $("#uploadCloud").onclick = (e) =>
   action(e.currentTarget, async () => {
-    await saveDraft(true);
+    if (!current.confirmed) await saveDraft(true);
     message(
       "#reviewMessage",
       "Uploading confirmed JSON. The temporary original is kept until upload succeeds…",
