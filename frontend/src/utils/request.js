@@ -2,6 +2,7 @@
 import axios from "axios";
 import { ElMessage } from "element-plus";
 import { getToken, removeToken } from "./auth";
+import { requestErrorMessage } from "./ui-message.js";
 
 const request = axios.create({
   baseURL: import.meta.env.VITE_APP_BASE_API || "/dev-api",
@@ -22,8 +23,7 @@ request.interceptors.response.use(
       removeToken();
       if (location.pathname !== "/login") location.assign("/login");
     }
-    const message =
-      body.msg || body.message || "The request could not be completed.";
+    const message = requestErrorMessage({ response: { status: code, data: body } });
     if (!response.config.silent) ElMessage.error(message);
     return Promise.reject(new Error(message));
   },
@@ -33,10 +33,8 @@ request.interceptors.response.use(
       removeToken();
       if (location.pathname !== "/login") location.assign("/login");
     }
-    if (!error.config?.silent) ElMessage.error(
-      error.response?.data?.message ||
-        "The service is unavailable. Please retry.",
-    );
+    error.message = requestErrorMessage(error);
+    if (!error.config?.silent) ElMessage.error(error.message);
     return Promise.reject(error);
   },
 );

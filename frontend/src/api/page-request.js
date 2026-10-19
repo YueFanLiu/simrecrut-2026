@@ -1,6 +1,7 @@
 // Keep unavailable business APIs explicit; never fall back to synthetic records.
 import request from '../utils/request.js'
 import { getToken } from '../utils/auth.js'
+import { requestErrorMessage } from '../utils/ui-message.js'
 
 export async function pageRequest(url, method = 'get', data, envelope = false) {
   const sessionToken = getToken()
@@ -13,7 +14,7 @@ export async function pageRequest(url, method = 'get', data, envelope = false) {
     if (error.response?.status === 404 || /^No static resource\s/i.test(error.message || '')) {
       throw new Error(`The backend has not implemented this page's API: ${url}`)
     }
-    throw new Error(error.response?.data?.message || error.response?.data?.msg || error.message || 'The request failed.')
+    throw new Error(requestErrorMessage(error))
   }
 }
 export const resourceId = value => encodeURIComponent(String(value))

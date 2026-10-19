@@ -1,5 +1,5 @@
 // Initialize domain modules after all ordered deferred scripts have loaded.
-Promise.all([loadSettings(), refresh()]).catch((e) => toast(e.message, true));
+Promise.all([loadSettings(), refresh()]).catch((e) => toast(uiMessage(e.message), true));
 
 $("#factsChecked").onchange = () => {
   $("#uploadCloud").disabled = !$("#factsChecked").checked;

@@ -62,7 +62,7 @@ async function openResume(id) {
   const row = await api("/api/v1/resumes/" + id);
   setCurrent(row);
   $("#sourceChecked").checked = false;
-  message("#reviewMessage", row.error || "", !!row.error);
+  message("#reviewMessage", row.error ? uiMessage(row.error, "Extraction failed. Please retry or upload another CV.") : "", !!row.error);
   tab(row.status === "UPLOADED" ? "source" : "facts");
   if (!$("#reviewDialog").open) $("#reviewDialog").showModal();
   if (row.status === "EXTRACTING") startPoll();
@@ -99,7 +99,7 @@ function renderFacts(draft) {
     $("#factCards").append(card);
   }
   const warnings = draft.warnings || [];
-  $("#warnings").textContent = warnings.map((w) => "• " + w).join("\n");
+  $("#warnings").textContent = warnings.map((w) => "• " + uiMessage(w, "Review the extracted facts and evidence before confirming.")).join("\n");
   $("#warnings").classList.toggle("hidden", !warnings.length);
 }
 $("#jsonEditor").oninput = () => {
@@ -144,7 +144,7 @@ function startPoll() {
         tab("facts");
         message(
           "#reviewMessage",
-          row.error ||
+          (row.error && uiMessage(row.error, "Extraction failed. Please retry or upload another CV.")) ||
             "Cleaning complete. Review the facts and supporting evidence.",
           !!row.error,
         );
@@ -152,7 +152,7 @@ function startPoll() {
       }
     } catch (e) {
       clearInterval(polling);
-      message("#reviewMessage", e.message, true);
+      message("#reviewMessage", uiMessage(e.message), true);
     }
   }, 2000);
 }

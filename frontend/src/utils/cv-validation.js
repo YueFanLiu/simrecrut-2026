@@ -1,3 +1,5 @@
+import { uiMessage } from './ui-message.js'
+
 export const maximumCvBytes = 10 * 1024 * 1024
 
 /** Inspect the local PDF only; no bytes or extracted text are sent to a service. */
@@ -27,7 +29,7 @@ export async function validateCvFile(file) {
     if (pageCount > 20) throw new Error('The PDF must contain no more than 20 pages.')
     return { name: file.name, size: file.size, pageCount }
   } catch (error) {
-    throw new Error(error.message || 'Unable to check the PDF. Please choose it again.')
+    throw new Error(uiMessage(error.message, 'Unable to check the PDF. Please choose it again.'))
   }
 }
 

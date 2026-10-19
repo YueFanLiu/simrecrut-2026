@@ -61,7 +61,7 @@ export default {
       </button>
     </nav>
     <div class="account">
-      <span class="demo-tag">{{ demoMode ? "Prototype" : "RuoYi" }}</span
+      <span class="demo-tag">{{ demoMode ? "Prototype" : "Connected" }}</span
       ><span class="avatar">YW</span
       ><span
         >{{ user.name }}<small>{{ page[1] }}</small></span
