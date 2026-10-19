@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.*;
 import java.util.*;
+import fr.isep.simrecrut.service.resume.ResumeException;
 
 /** Persist repeat-operation keys in the authenticated user's private index. */
 final class ResumeOperation {
@@ -28,8 +29,11 @@ final class ResumeOperation {
             }
             if (!existing.isEmpty()) {
                 var saved = existing.get(0);
-                Facts.require(saved.path("action").asText().equals(action) && saved.path("target").asText().equals(target)
-                    && saved.path("request_hash").asText().equals(hash), "This operation key was already used for different data or another action.");
+                if (!saved.path("action").asText().equals(action) || !saved.path("target").asText().equals(target)
+                    || !saved.path("request_hash").asText().equals(hash)) {
+                    throw new ResumeException(ResumeException.Reason.CONFLICT,
+                        "This operation key was already used for different data or another action.");
+                }
                 if (saved.hasNonNull("response")) {
                     if (deleted) return Map.of("deleted", true, "pending", false);
                     JsonNode result = Facts.JSON.readTree(saved.path("response").asText());
