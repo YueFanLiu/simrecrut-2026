@@ -55,6 +55,10 @@ public class SecurityConfig {
                 .authenticated()
                 .requestMatchers("/api/v1/resumes/**")
                 .authenticated()
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/v1/admin/roles")
+                .hasRole("ADMIN")
                 .anyRequest()
                 .denyAll())
             .exceptionHandling(exception -> exception

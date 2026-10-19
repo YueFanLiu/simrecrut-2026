@@ -22,6 +22,12 @@
         WHERE role_code = #{roleCode}
     </select>
 
+    <select id="findAll" resultMap="roleMap">
+        SELECT id, role_code, name, description, created_at, updated_at
+        FROM sim_role
+        ORDER BY role_code
+    </select>
+
     <select id="findByUserId" resultMap="roleMap">
         SELECT
         r.id,
