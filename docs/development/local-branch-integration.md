@@ -27,7 +27,7 @@ navigation cannot silently report mock actions as successful backend operations.
 ## Database boundary and remaining implementation
 
 Follow [database initialization](../database/initial-schema.md) and
-[RuoYi setup](ruoyi-migration.md). The original business SQL is unchanged;
+the historical RuoYi setup guide (removed). The original business SQL is unchanged;
 identity documentation now points to the actual RuoYi `sys_user.user_id`.
 Initialization is explicit because the RuoYi runtime disables Flyway.
 No cloud database initialization, Redis deployment or live login is performed

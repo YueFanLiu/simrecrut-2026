@@ -1,7 +1,7 @@
 # ADR 0001: Repository and runtime boundaries
 
 - Status: Superseded for identity by the 2026-10-10 RuoYi decision
-- Current identity decision: [RuoYi migration](../../development/ruoyi-migration.md)
+- Current backend setup: [Local setup](../../development/local-setup.md)
 - Date: 2026-10-09
 - Scope: Initial repository scaffold and intended architecture
 

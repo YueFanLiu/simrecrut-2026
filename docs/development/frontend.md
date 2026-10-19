@@ -43,4 +43,4 @@ The standalone resume workspace uses ordered deferred scripts, with domain files
 
 ## RuoYi integration
 
-See [RuoYi migration](ruoyi-migration.md) for identity endpoints, permissions, deployment modes and candidate resume routes. The authenticated shell is now `frontend/src/layout/index.vue`; `App.vue` delegates to Vue Router.
+For current backend setup, see [Local setup](local-setup.md); Candidate resume API behavior is documented in [Connected resume workflow](standard-resume-workflow.md). The authenticated shell is now `frontend/src/layout/index.vue`; `App.vue` delegates to Vue Router.

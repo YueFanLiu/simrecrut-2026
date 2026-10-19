@@ -92,7 +92,7 @@ or baseline an existing RuoYi schema just to suppress migration errors.
    intended database connection. MySQL 8.0.16 or newer is required. Check for
    existing business tables and migration history before making any changes.
 2. Initialize the official RuoYi system and Quartz tables in the selected empty
-   application schema according to [RuoYi migration](../development/ruoyi-migration.md).
+   application schema according to the historical RuoYi setup guide (removed).
    The upstream initialization contains DROP statements; never run it against
    an existing populated schema without reviewing every affected table.
 3. Apply the unchanged business SQL through a database client to the same schema,
