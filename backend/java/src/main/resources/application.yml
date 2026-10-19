@@ -40,6 +40,7 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
       mail.smtp.connectiontimeout: 5000
       mail.smtp.timeout: 5000
       mail.smtp.writetimeout: 5000
@@ -87,3 +88,25 @@ simrecrut:
   storage:
     case-workspace: ${CASE_WORKSPACE_PATH}
     model-artifacts: ${MODEL_ARTIFACTS_PATH}
+  registration:
+    code-ttl: 10m
+    resend-cooldown: 60s
+    max-code-attempts: 5
+    max-email-sends-per-hour: 5
+    max-ip-sends-per-hour: 30
+    max-global-sends-per-hour: 500
+    max-ip-verifications-per-ten-minutes: 60
+    code-secret: ${REGISTRATION_CODE_SECRET:}
+
+  authentication:
+    token-ttl: 30m
+    issuer: https://simrecrut.local
+    audience: simrecrut-api
+    signing-secret: ${JWT_SIGNING_SECRET:}
+    clock-skew: 30s
+    login-window: 15m
+    lock-duration: 15m
+    max-failed-attempts: 5
+    max-account-attempts: 20
+    ip-window: 10m
+    max-ip-attempts: 60

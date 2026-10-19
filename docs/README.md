@@ -14,6 +14,8 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
 
 ## Development
 
+- [Connected resume workflow](development/standard-resume-workflow.md): authenticated
+  own-resume APIs, permissions, request fields, storage, and verification boundaries.
 - [Coding standards](development/coding-standards.md): English-only content,
   formatting, contracts, and comments.
 - [Documentation policy](development/documentation-policy.md): locations,
@@ -86,5 +88,3 @@ module guides or place implementation status notes in unrelated source folders.
 
 - [Frontend setup and architecture](development/frontend.md)
 - [Page ownership and maintenance](development/frontend-page-ownership.md)
-
-- [RuoYi migration and setup](development/ruoyi-migration.md)

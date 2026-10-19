@@ -11,7 +11,12 @@ public interface RoleMapper {
 
     Role findByCode(@Param("roleCode") AccountRole roleCode);
 
+    List<Role> findAll();
+
     List<Role> findByUserId(@Param("userId") long userId);
+
+    List<String> findPermissionCodesByUserId(
+        @Param("userId") long userId);
 
     int insertUserRole(
         @Param("userId") long userId,

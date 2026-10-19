@@ -24,6 +24,7 @@ import org.apache.pdfbox.rendering.*;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import fr.isep.simrecrut.service.resume.ResumeException;
 
 @Service
 @org.springframework.context.annotation.Profile("resume-workspace")
@@ -132,13 +133,14 @@ public class ResumeService {
   ObjectNode storedRow(String id) throws SQLException {
     Facts.require(id.matches("[a-f0-9]{32}"), "Invalid resume ID.");
     List<ObjectNode> rows = query("SELECT * FROM resumes WHERE id=?", id);
-    Facts.require(!rows.isEmpty(), "Local resume not found.");
+    if (rows.isEmpty()) throw new ResumeException(ResumeException.Reason.NOT_FOUND, "Resume not found.");
     return rows.get(0);
   }
 
   ObjectNode row(String id) throws SQLException {
     ObjectNode record = storedRow(id);
-    Facts.require(!record.path("status").asText().equals("PURGING") && !expired(record), "This resume has expired or is pending deletion.");
+    if (record.path("status").asText().equals("PURGING") || expired(record))
+      throw new ResumeException(ResumeException.Reason.NOT_FOUND, "Resume not found.");
     return record;
   }
 
@@ -438,15 +440,15 @@ public class ResumeService {
 
   synchronized Object save(String id, JsonNode body) throws Exception {
     ObjectNode r = row(id);
-    Facts.require(
+    requireState(
         !processing.contains(id), "The resume is being processed. Wait until it finishes.");
     ObjectNode draft = Facts.validate(body.get("draft"));
     FactProvenance.markCorrections(draft, json.readTree(r.path("draft").asText()));
-    if (body.has("expectedRevision")) Facts.require(body.path("expectedRevision").asInt(-1) == r.path("revision").asInt(), "The resume changed. Reload before saving.");
+    if (body.has("expectedRevision")) requireState(body.path("expectedRevision").asInt(-1) == r.path("revision").asInt(), "The resume changed. Reload before saving.");
     boolean confirm = body.path("confirmed").asBoolean();
-    Facts.require(!confirm || Set.of("REVIEW_REQUIRED", "CONFIRMED").contains(r.path("status").asText()), "Save a review draft before confirmation.");
+    requireState(!confirm || Set.of("REVIEW_REQUIRED", "CONFIRMED").contains(r.path("status").asText()), "Save a review draft before confirmation.");
     if (r.path("confirmed").asInt() == 1) {
-      Facts.require(confirm && draft.equals(json.readTree(r.path("draft").asText())), "Confirmed facts are immutable. Import a new resume to make changes.");
+      requireState(confirm && draft.equals(json.readTree(r.path("draft").asText())), "Confirmed facts are immutable. Import a new resume to make changes.");
       return Map.of("saved", true);
     }
     Facts.require(
@@ -474,10 +476,10 @@ public class ResumeService {
 
   synchronized Object clean(String id, JsonNode body) throws Exception {
     ObjectNode row=row(id);
-    Facts.require(Set.of("UPLOADED", "REVIEW_REQUIRED", "FAILED").contains(row.path("status").asText()), "Extraction cannot start in the current state.");
-    Facts.require(row.path("confirmed").asInt() == 0, "Confirmed facts are immutable.");
-    Facts.require(originalAvailable(row), "The temporary original was removed after cloud confirmation.");
-    Facts.require(!processing.contains(id),"The resume is being processed.");
+    requireState(Set.of("UPLOADED", "REVIEW_REQUIRED", "FAILED").contains(row.path("status").asText()), "Extraction cannot start in the current state.");
+    requireState(row.path("confirmed").asInt() == 0, "Confirmed facts are immutable.");
+    requireState(originalAvailable(row), "The temporary original was removed after cloud confirmation.");
+    requireState(!processing.contains(id),"The resume is being processed.");
     patch(id,fields("status","EXTRACTING","confirmed",0,"revision",row.path("revision").asInt()+1,"error",null,"model_name","local-rules-v2"));
     processing.add(id);
     FutureTask<Void> task = new FutureTask<>(()->{
@@ -511,7 +513,7 @@ public class ResumeService {
 
   synchronized Object upload(String id) throws Exception {
     ObjectNode r = row(id);
-    Facts.require(
+    requireState(
         !processing.contains(id) && r.path("confirmed").asInt() == 1,
         "Save and confirm the structured data first.");
     ObjectNode d = Facts.validate(json.readTree(r.path("draft").asText()));
@@ -566,7 +568,7 @@ public class ResumeService {
     ObjectNode row = row(id);
     // Existing library records predate the temporary-storage policy and are preserved.
     if (row.path("temporary_original").asInt() != 1) return false;
-    Facts.require(row.path("cloud_revision").asInt(-1) == row.path("revision").asInt(),
+    requireState(row.path("cloud_revision").asInt(-1) == row.path("revision").asInt(),
         "Upload the confirmed version successfully before deleting its original.");
     try {
       Files.deleteIfExists(originalPath(row));
@@ -635,4 +637,8 @@ public class ResumeService {
 
   @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 60000, initialDelay = 10000)
   public void sweepLocalWorkspace() throws Exception { sweep(); }
+
+  private static void requireState(boolean valid, String message) {
+    if (!valid) throw new ResumeException(ResumeException.Reason.CONFLICT, message);
+  }
 }
