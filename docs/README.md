@@ -5,6 +5,13 @@ The root [README](../README.md) summarizes the repository and links here.
 Machine-readable API and feature contracts belong in `contracts/`; SQL migrations
 belong in the Java resources directory. Keep each topic in one authoritative page.
 
+## API
+
+- [Generate and share API documentation](api/api-documentation.md): springdoc,
+  Swagger UI, YAML export, token-based testing and frontend handoff.
+- [Job workflow API](api/job-workflow.md): document-first HR and Candidate job
+  endpoints, structured requests, revisions, extraction and deployment prerequisites.
+
 ## Architecture
 
 - [System overview](architecture/system-overview.md): components, layers, data

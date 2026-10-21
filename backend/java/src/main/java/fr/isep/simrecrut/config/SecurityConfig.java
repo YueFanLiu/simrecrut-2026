@@ -30,6 +30,8 @@ public class SecurityConfig {
                 "/api/v1/auth/register",
                 "/api/v1/auth/login",
                 "/api/v1/auth/logout",
+                "/api/v1/hr/jobs",
+                "/api/v1/hr/jobs/**",
                 "/api/v1/resumes",
                 "/api/v1/resumes/**"))
             .sessionManagement(session -> session
@@ -38,6 +40,10 @@ public class SecurityConfig {
             .requestCache(cache -> cache.disable())
             .logout(logout -> logout.disable())
             .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(HttpMethod.GET,
+                    "/swagger-ui.html", "/swagger-ui/**",
+                    "/v3/api-docs", "/v3/api-docs.yaml", "/v3/api-docs/**", "/v3/api-docs.yaml/**")
+                .permitAll()
                 .requestMatchers(
                     EndpointRequest.to(HealthEndpoint.class))
                 .permitAll()
@@ -57,6 +63,10 @@ public class SecurityConfig {
                 .authenticated()
                 .requestMatchers("/api/v1/resumes/**")
                 .authenticated()
+                .requestMatchers("/api/v1/hr/jobs", "/api/v1/hr/jobs/**")
+                .hasRole("HR")
+                .requestMatchers(HttpMethod.GET, "/api/v1/candidate/jobs", "/api/v1/candidate/jobs/**")
+                .hasRole("CANDIDATE")
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/v1/admin/roles")
