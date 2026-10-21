@@ -1,0 +1,5922 @@
+openapi: 3.0.3
+info:
+  description: "Implemented backend routes only. Live database/provider integration\
+    \ is not certified by this document. Job deployment requires V6 and a frozen matching\
+    \ rule. Start with registration/login, then authorize with data.accessToken. Business\
+    \ API errors use code/message/requestId/data. Success code is zero."
+  title: SimRecrut Backend API
+  version: 0.1.0
+servers:
+- description: The same backend that serves this documentation
+  url: /
+security:
+- bearerAuth: []
+paths:
+  /api/v1/admin/roles:
+    get:
+      description: "Requires ADMIN and simrecrut:role:list. This is role reading only,\
+        \ not user management."
+      operationId: list_3
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RoleSummary"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: List available roles
+      tags:
+      - Administration
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AdminRoleController.list
+  /api/v1/auth/login:
+    post:
+      description: Public endpoint. Supply identifier and password. Copy data.accessToken
+        into Swagger UI Authorize; enter the token without a Bearer prefix.
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/LoginResponse"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Rate limited; respect Retry-After
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+            Retry-After:
+              description: Seconds before retrying
+              schema:
+                type: integer
+                format: int32
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security: []
+      summary: Sign in with username or email
+      tags:
+      - Authentication
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AuthenticationController.login
+  /api/v1/auth/logout:
+    post:
+      description: Bearer token required. Revokes this Redis session; the token cannot
+        be reused afterward.
+      operationId: logout
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/LogoutResponse"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Rate limited; respect Retry-After
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+            Retry-After:
+              description: Seconds before retrying
+              schema:
+                type: integer
+                format: int32
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Revoke the current session
+      tags:
+      - Authentication
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AuthenticationController.logout
+  /api/v1/auth/me:
+    get:
+      description: Bearer token required. Returns the current database-backed roles
+        and permissions.
+      operationId: currentUser
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/CurrentUserResponse"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Rate limited; respect Retry-After
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+            Retry-After:
+              description: Seconds before retrying
+              schema:
+                type: integer
+                format: int32
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: "Read the current account, roles and permissions"
+      tags:
+      - Authentication
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AuthenticationController.currentUser
+  /api/v1/auth/register:
+    post:
+      description: "Public endpoint. Supply the email challenge/code, terms agreement\
+        \ and CANDIDATE or HR account type."
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/RegisterResponse"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Rate limited; respect Retry-After
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+            Retry-After:
+              description: Seconds before retrying
+              schema:
+                type: integer
+                format: int32
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security: []
+      summary: Register a verified account
+      tags:
+      - Authentication
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AuthenticationController.register
+  /api/v1/auth/registration/code:
+    post:
+      description: Public endpoint. Returns a challengeId; the code is delivered by
+        email. Rate limits apply.
+      operationId: requestCode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CodeRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/CodeResponse"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Rate limited; respect Retry-After
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+            Retry-After:
+              description: Seconds before retrying
+              schema:
+                type: integer
+                format: int32
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security: []
+      summary: Send a registration email code
+      tags:
+      - Authentication
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AuthenticationController.requestCode
+  /api/v1/candidate/jobs:
+    get:
+      description: Requires CANDIDATE and simrecrut:job:browse. Only current published
+        jobs and public requirements are returned; drafts and weights are absent.
+      operationId: list_2
+      parameters:
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+          maximum: 100000
+          minimum: 1
+      - in: query
+        name: pageSize
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: keyword
+        required: false
+        schema:
+          type: string
+          default: ""
+          maxLength: 100
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobPublicPage"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: List current published jobs
+      tags:
+      - Candidate jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: CandidateJobController.list
+  /api/v1/candidate/jobs/{jobId}:
+    get:
+      description: Requires CANDIDATE and simrecrut:job:browse. Only current published
+        jobs and public requirements are returned; drafts and weights are absent.
+      operationId: detail_1
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobPublicDetail"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Read the current published job
+      tags:
+      - Candidate jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: CandidateJobController.detail
+  /api/v1/hr/jobs:
+    get:
+      description: "Requires HR and simrecrut:job:list. Managed jobs only. Use the\
+        \ revision returned by each preceding write. Writes require Idempotency-Key;\
+        \ validation is read-only. Weights are fractions totalling exactly one. Published\
+        \ versions cannot be edited. HTTP 202 means queued, not complete: poll extraction-status,\
+        \ then reload the draft. V6 and a usable frozen rule are deployment prerequisites;\
+        \ extraction additionally needs the configured provider."
+      operationId: list
+      parameters:
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+          maximum: 100000
+          minimum: 1
+      - in: query
+        name: pageSize
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: keyword
+        required: false
+        schema:
+          type: string
+          default: ""
+          maxLength: 100
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobManagedPage"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: List managed jobs
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.list
+    post:
+      description: "Requires HR and simrecrut:job:create. Managed jobs only. Use the\
+        \ revision returned by each preceding write. Writes require Idempotency-Key;\
+        \ validation is read-only. Weights are fractions totalling exactly one. Published\
+        \ versions cannot be edited. HTTP 202 means queued, not complete: poll extraction-status,\
+        \ then reload the draft. V6 and a usable frozen rule are deployment prerequisites;\
+        \ extraction additionally needs the configured provider."
+      operationId: create
+      parameters:
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobManagedDetail"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Create a job and initial draft
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.create
+  /api/v1/hr/jobs/{jobId}:
+    get:
+      description: "Requires HR and simrecrut:job:list. Managed jobs only. Use the\
+        \ revision returned by each preceding write. Writes require Idempotency-Key;\
+        \ validation is read-only. Weights are fractions totalling exactly one. Published\
+        \ versions cannot be edited. HTTP 202 means queued, not complete: poll extraction-status,\
+        \ then reload the draft. V6 and a usable frozen rule are deployment prerequisites;\
+        \ extraction additionally needs the configured provider."
+      operationId: draft
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobManagedDetail"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Reload the editable job draft
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.draft
+    put:
+      description: "Requires HR and simrecrut:job:edit (GET requirements/weights uses\
+        \ list). Managed jobs only. Use the revision returned by each preceding write.\
+        \ Writes require Idempotency-Key; validation is read-only. Weights are fractions\
+        \ totalling exactly one. Published versions cannot be edited. HTTP 202 means\
+        \ queued, not complete: poll extraction-status, then reload the draft. V6\
+        \ and a usable frozen rule are deployment prerequisites; extraction additionally\
+        \ needs the configured provider."
+      operationId: update
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobManagedDetail"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Update the draft title and description
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.update
+  /api/v1/hr/jobs/{jobId}/drafts:
+    post:
+      description: "Requires HR and simrecrut:job:create. Managed jobs only. Use the\
+        \ revision returned by each preceding write. Writes require Idempotency-Key;\
+        \ validation is read-only. Weights are fractions totalling exactly one. Published\
+        \ versions cannot be edited. HTTP 202 means queued, not complete: poll extraction-status,\
+        \ then reload the draft. V6 and a usable frozen rule are deployment prerequisites;\
+        \ extraction additionally needs the configured provider."
+      operationId: cloneDraft
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloneRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobManagedDetail"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Create a draft from a published job version
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.cloneDraft
+  /api/v1/hr/jobs/{jobId}/extract-requirements:
+    post:
+      description: "Requires HR and simrecrut:job:edit (GET requirements/weights uses\
+        \ list). Managed jobs only. Use the revision returned by each preceding write.\
+        \ Writes require Idempotency-Key; validation is read-only. Weights are fractions\
+        \ totalling exactly one. Published versions cannot be edited. HTTP 202 means\
+        \ queued, not complete: poll extraction-status, then reload the draft. V6\
+        \ and a usable frozen rule are deployment prerequisites; extraction additionally\
+        \ needs the configured provider."
+      operationId: extract
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmptyRequest"
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobExtractionStatus"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Start job requirement extraction
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.extract
+  /api/v1/hr/jobs/{jobId}/extraction-status:
+    get:
+      description: "Requires HR and simrecrut:job:list. Managed jobs only. Use the\
+        \ revision returned by each preceding write. Writes require Idempotency-Key;\
+        \ validation is read-only. Weights are fractions totalling exactly one. Published\
+        \ versions cannot be edited. HTTP 202 means queued, not complete: poll extraction-status,\
+        \ then reload the draft. V6 and a usable frozen rule are deployment prerequisites;\
+        \ extraction additionally needs the configured provider."
+      operationId: extraction
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobExtractionStatus"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Read job extraction progress
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.extraction
+  /api/v1/hr/jobs/{jobId}/publish:
+    post:
+      description: "Requires HR and simrecrut:job:publish. Managed jobs only. Use\
+        \ the revision returned by each preceding write. Writes require Idempotency-Key;\
+        \ validation is read-only. Weights are fractions totalling exactly one. Published\
+        \ versions cannot be edited. HTTP 202 means queued, not complete: poll extraction-status,\
+        \ then reload the draft. V6 and a usable frozen rule are deployment prerequisites;\
+        \ extraction additionally needs the configured provider."
+      operationId: publish_1
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevisionRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobManagedDetail"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Publish an immutable job version
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.publish
+  /api/v1/hr/jobs/{jobId}/requirements:
+    get:
+      description: "Requires HR and simrecrut:job:edit (GET requirements/weights uses\
+        \ list). Managed jobs only. Use the revision returned by each preceding write.\
+        \ Writes require Idempotency-Key; validation is read-only. Weights are fractions\
+        \ totalling exactly one. Published versions cannot be edited. HTTP 202 means\
+        \ queued, not complete: poll extraction-status, then reload the draft. V6\
+        \ and a usable frozen rule are deployment prerequisites; extraction additionally\
+        \ needs the configured provider."
+      operationId: requirements
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobRequirementsView"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Read or replace structured job requirements
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.requirements
+    put:
+      description: "Requires HR and simrecrut:job:edit (GET requirements/weights uses\
+        \ list). Managed jobs only. Use the revision returned by each preceding write.\
+        \ Writes require Idempotency-Key; validation is read-only. Weights are fractions\
+        \ totalling exactly one. Published versions cannot be edited. HTTP 202 means\
+        \ queued, not complete: poll extraction-status, then reload the draft. V6\
+        \ and a usable frozen rule are deployment prerequisites; extraction additionally\
+        \ needs the configured provider."
+      operationId: requirements_1
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequirementsRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobManagedDetail"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Read or replace structured job requirements
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.requirements
+  /api/v1/hr/jobs/{jobId}/validate:
+    post:
+      description: "Requires HR and simrecrut:job:publish. Managed jobs only. Use\
+        \ the revision returned by each preceding write. Writes require Idempotency-Key;\
+        \ validation is read-only. Weights are fractions totalling exactly one. Published\
+        \ versions cannot be edited. HTTP 202 means queued, not complete: poll extraction-status,\
+        \ then reload the draft. V6 and a usable frozen rule are deployment prerequisites;\
+        \ extraction additionally needs the configured provider."
+      operationId: validate
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmptyRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/Validation"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Validate the saved job draft
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.validate
+  /api/v1/hr/jobs/{jobId}/versions:
+    get:
+      description: "Requires HR and simrecrut:job:list. Managed jobs only. Use the\
+        \ revision returned by each preceding write. Writes require Idempotency-Key;\
+        \ validation is read-only. Weights are fractions totalling exactly one. Published\
+        \ versions cannot be edited. HTTP 202 means queued, not complete: poll extraction-status,\
+        \ then reload the draft. V6 and a usable frozen rule are deployment prerequisites;\
+        \ extraction additionally needs the configured provider."
+      operationId: versions
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/JobManagedSummary"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: List managed job versions
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.versions
+  /api/v1/hr/jobs/{jobId}/versions/{jobVersionId}:
+    get:
+      description: "Requires HR and simrecrut:job:list. Managed jobs only. Use the\
+        \ revision returned by each preceding write. Writes require Idempotency-Key;\
+        \ validation is read-only. Weights are fractions totalling exactly one. Published\
+        \ versions cannot be edited. HTTP 202 means queued, not complete: poll extraction-status,\
+        \ then reload the draft. V6 and a usable frozen rule are deployment prerequisites;\
+        \ extraction additionally needs the configured provider."
+      operationId: version
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      - in: path
+        name: jobVersionId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobManagedDetail"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Read an immutable version or saved draft
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.version
+  /api/v1/hr/jobs/{jobId}/weights:
+    get:
+      description: "Requires HR and simrecrut:job:edit (GET requirements/weights uses\
+        \ list). Managed jobs only. Use the revision returned by each preceding write.\
+        \ Writes require Idempotency-Key; validation is read-only. Weights are fractions\
+        \ totalling exactly one. Published versions cannot be edited. HTTP 202 means\
+        \ queued, not complete: poll extraction-status, then reload the draft. V6\
+        \ and a usable frozen rule are deployment prerequisites; extraction additionally\
+        \ needs the configured provider."
+      operationId: weights
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobWeightsView"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Read or update fractional job weights
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.weights
+    put:
+      description: "Requires HR and simrecrut:job:edit (GET requirements/weights uses\
+        \ list). Managed jobs only. Use the revision returned by each preceding write.\
+        \ Writes require Idempotency-Key; validation is read-only. Weights are fractions\
+        \ totalling exactly one. Published versions cannot be edited. HTTP 202 means\
+        \ queued, not complete: poll extraction-status, then reload the draft. V6\
+        \ and a usable frozen rule are deployment prerequisites; extraction additionally\
+        \ needs the configured provider."
+      operationId: weights_1
+      parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeightsRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/JobManagedDetail"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Read or update fractional job weights
+      tags:
+      - HR jobs
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: HrJobController.weights
+  /api/v1/resumes:
+    get:
+      description: "Requires CANDIDATE and simrecrut:resume:list. Own retained resumes\
+        \ only. This library is separate from job assessment cases. Save uses confirmed=false;\
+        \ confirm uses true. Writes require Idempotency-Key. Reload detail for the\
+        \ next expectedRevision. Import accepts Base64 PDF content, not multipart\
+        \ upload. Confirming does not publish automatically."
+      operationId: list_1
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ResumeSummary"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: List own retained resumes
+      tags:
+      - Candidate resumes
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: ResumeController.list
+  /api/v1/resumes/import:
+    post:
+      description: "Requires CANDIDATE and simrecrut:resume:upload. Own retained resumes\
+        \ only. This library is separate from job assessment cases. Save uses confirmed=false;\
+        \ confirm uses true. Writes require Idempotency-Key. Reload detail for the\
+        \ next expectedRevision. Import accepts Base64 PDF content, not multipart\
+        \ upload. Confirming does not publish automatically."
+      operationId: importFile
+      parameters:
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResumeImportResult"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: The retained PDF already exists
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResumeImportResult"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Import a temporary PDF resume
+      tags:
+      - Candidate resumes
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: ResumeController.importFile
+  /api/v1/resumes/{id}:
+    delete:
+      description: "Requires CANDIDATE and simrecrut:resume:delete. Own retained resumes\
+        \ only. This library is separate from job assessment cases. Save uses confirmed=false;\
+        \ confirm uses true. Writes require Idempotency-Key. Reload detail for the\
+        \ next expectedRevision. Import accepts Base64 PDF content, not multipart\
+        \ upload. Confirming does not publish automatically."
+      operationId: delete
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-f0-9]{32}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmptyRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResumeDeletionResult"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "202":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResumeDeletionResult"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Access revoked; physical cleanup is still pending
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Delete an owned resume
+      tags:
+      - Candidate resumes
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: ResumeController.delete
+    get:
+      description: "Requires CANDIDATE and simrecrut:resume:list. Own retained resumes\
+        \ only. This library is separate from job assessment cases. Save uses confirmed=false;\
+        \ confirm uses true. Writes require Idempotency-Key. Reload detail for the\
+        \ next expectedRevision. Import accepts Base64 PDF content, not multipart\
+        \ upload. Confirming does not publish automatically."
+      operationId: detail
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-f0-9]{32}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResumeDetail"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Read own professional facts and processing status
+      tags:
+      - Candidate resumes
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: ResumeController.detail
+  /api/v1/resumes/{id}/clean:
+    post:
+      description: "Requires CANDIDATE and simrecrut:resume:edit. Own retained resumes\
+        \ only. This library is separate from job assessment cases. Save uses confirmed=false;\
+        \ confirm uses true. Writes require Idempotency-Key. Reload detail for the\
+        \ next expectedRevision. Import accepts Base64 PDF content, not multipart\
+        \ upload. Confirming does not publish automatically."
+      operationId: clean
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-f0-9]{32}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmptyRequest"
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResumeProcessingResult"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Start professional fact extraction
+      tags:
+      - Candidate resumes
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: ResumeController.clean
+  /api/v1/resumes/{id}/cleanup:
+    post:
+      description: "Requires CANDIDATE and simrecrut:resume:confirm. Own retained\
+        \ resumes only. This library is separate from job assessment cases. Save uses\
+        \ confirmed=false; confirm uses true. Writes require Idempotency-Key. Reload\
+        \ detail for the next expectedRevision. Import accepts Base64 PDF content,\
+        \ not multipart upload. Confirming does not publish automatically."
+      operationId: cleanup
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-f0-9]{32}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmptyRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    type: boolean
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Retry temporary original cleanup
+      tags:
+      - Candidate resumes
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: ResumeController.cleanup
+  /api/v1/resumes/{id}/confirm:
+    post:
+      description: "Requires CANDIDATE and simrecrut:resume:edit and simrecrut:resume:confirm.\
+        \ Own retained resumes only. This library is separate from job assessment\
+        \ cases. Save uses confirmed=false; confirm uses true. Writes require Idempotency-Key.\
+        \ Reload detail for the next expectedRevision. Import accepts Base64 PDF content,\
+        \ not multipart upload. Confirming does not publish automatically."
+      operationId: confirm
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-f0-9]{32}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResumeSaveResult"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Confirm and lock reviewed professional facts
+      tags:
+      - Candidate resumes
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: ResumeController.confirm
+  /api/v1/resumes/{id}/save:
+    post:
+      description: "Requires CANDIDATE and simrecrut:resume:edit. Own retained resumes\
+        \ only. This library is separate from job assessment cases. Save uses confirmed=false;\
+        \ confirm uses true. Writes require Idempotency-Key. Reload detail for the\
+        \ next expectedRevision. Import accepts Base64 PDF content, not multipart\
+        \ upload. Confirming does not publish automatically."
+      operationId: save
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-f0-9]{32}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResumeSaveResult"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Save the editable professional draft
+      tags:
+      - Candidate resumes
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: ResumeController.save
+  /api/v1/resumes/{id}/upload:
+    post:
+      description: "Requires CANDIDATE and simrecrut:resume:confirm. Own retained\
+        \ resumes only. This library is separate from job assessment cases. Save uses\
+        \ confirmed=false; confirm uses true. Writes require Idempotency-Key. Reload\
+        \ detail for the next expectedRevision. Import accepts Base64 PDF content,\
+        \ not multipart upload. Confirming does not publish automatically."
+      operationId: publish
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-f0-9]{32}$"
+      - description: Required for writes. Reuse the same key for an unchanged retry;
+          use a new key for changed input or an intentional new action.
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: "^[A-Za-z0-9_-]{16,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmptyRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResumePublicationResult"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Publish confirmed professional JSON
+      tags:
+      - Candidate resumes
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: ResumeController.publish
+components:
+  schemas:
+    ApiErrorData:
+      type: object
+      properties:
+        draftId:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Issue"
+        jobId:
+          type: string
+        retryable:
+          type: boolean
+        revision:
+          type: integer
+          format: int64
+        warnings:
+          type: array
+          items:
+            type: string
+    ApiErrorEnvelope:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/ApiErrorData"
+        message:
+          type: string
+        requestId:
+          type: string
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    ApiResponseCodeResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/CodeResponse"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseCurrentUserResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/CurrentUserResponse"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseJsonNode:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/JsonNode"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseListJsonNode:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/JsonNode"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseListRoleSummary:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleSummary"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseLoginResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/LoginResponse"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseLogoutResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/LogoutResponse"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseMapStringObject:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          type: object
+          additionalProperties:
+            type: object
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponsePageJsonNode:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/PageJsonNode"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseRegisterResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/RegisterResponse"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseValidation:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/Validation"
+        message:
+          type: string
+        requestId:
+          type: string
+    CloneRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        sourceJobVersionId:
+          type: string
+          minLength: 1
+          pattern: "[0-9A-HJKMNP-TV-Z]{26}"
+      required:
+      - sourceJobVersionId
+    CodeRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          minLength: 0
+      required:
+      - email
+    CodeResponse:
+      type: object
+      properties:
+        challengeId:
+          type: string
+        expiresInSeconds:
+          type: integer
+          format: int64
+        resendAfterSeconds:
+          type: integer
+          format: int64
+    CreateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+          maxLength: 20000
+          minLength: 0
+        title:
+          type: string
+          maxLength: 255
+          minLength: 0
+      required:
+      - description
+      - title
+    CurrentUserResponse:
+      type: object
+      properties:
+        email:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        publicId:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        username:
+          type: string
+    EditRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        confirmed:
+          type: boolean
+        draft:
+          $ref: "#/components/schemas/ResumeDraft"
+        expectedRevision:
+          type: integer
+          format: int64
+          maximum: 2147483647
+          minimum: 1
+      required:
+      - confirmed
+      - draft
+      - expectedRevision
+    EmptyRequest:
+      type: object
+      additionalProperties: false
+    ImportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: string
+          maxLength: 13981016
+          minLength: 0
+        filename:
+          type: string
+          maxLength: 255
+          minLength: 0
+          pattern: (?i).+\.pdf
+      required:
+      - content
+      - filename
+    Issue:
+      type: object
+      properties:
+        code:
+          type: string
+        field:
+          type: string
+        message:
+          type: string
+    JobEducationPayload:
+      type: object
+      additionalProperties: false
+      properties:
+        acceptedSubjectCodes:
+          type: array
+          items:
+            type: string
+        minimumDegreeLevelCode:
+          type: string
+        unrestrictedSubject:
+          type: boolean
+    JobExperiencePayload:
+      type: object
+      additionalProperties: false
+      properties:
+        minimumYears:
+          type: number
+        relevantRoleFamilyCodes:
+          type: array
+          items:
+            type: string
+        targetYears:
+          type: number
+    JobExtractionStatus:
+      type: object
+      additionalProperties: false
+      properties:
+        errorCode:
+          type: string
+          nullable: true
+        jobId:
+          type: string
+        message:
+          type: string
+          nullable: true
+        retryable:
+          type: boolean
+        revision:
+          type: integer
+          format: int64
+        stage:
+          type: string
+        status:
+          type: string
+          enum:
+          - IDLE
+          - RUNNING
+          - COMPLETE
+          - FAILED_RETRYABLE
+        updatedAt:
+          type: string
+          nullable: true
+    JobLanguagesPayload:
+      type: object
+      additionalProperties: false
+      properties:
+        requiredLanguages:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobRequiredLanguage"
+    JobManagedDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        activeCriteria:
+          type: array
+          items:
+            type: string
+            enum:
+            - SKILLS
+            - EXPERIENCE
+            - EDUCATION
+            - LANGUAGES
+            - PROJECTS
+        createdAt:
+          type: string
+        currentVersion:
+          type: integer
+          format: int32
+        description:
+          type: string
+        extraction:
+          $ref: "#/components/schemas/JobExtractionStatus"
+        jobId:
+          type: string
+        jobVersionId:
+          type: string
+        matchingRuleVersion:
+          type: string
+        publishedAt:
+          type: string
+          nullable: true
+        requirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/Requirement"
+        revision:
+          type: integer
+          format: int64
+        status:
+          type: string
+        summary:
+          type: string
+        title:
+          type: string
+        version:
+          type: integer
+          format: int32
+        weights:
+          $ref: "#/components/schemas/Weights"
+    JobManagedPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobManagedSummary"
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        total:
+          type: integer
+          format: int64
+    JobManagedSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        createdAt:
+          type: string
+        currentVersion:
+          type: integer
+          format: int32
+        jobId:
+          type: string
+        jobVersionId:
+          type: string
+        publishedAt:
+          type: string
+          nullable: true
+        revision:
+          type: integer
+          format: int64
+        status:
+          type: string
+        summary:
+          type: string
+        title:
+          type: string
+        version:
+          type: integer
+          format: int32
+    JobProjectsPayload:
+      type: object
+      additionalProperties: false
+      properties:
+        assessedConditionCodes:
+          type: array
+          items:
+            type: string
+    JobPublicDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        currentVersion:
+          type: integer
+          format: int32
+        description:
+          type: string
+        jobId:
+          type: string
+        jobVersionId:
+          type: string
+        publishedAt:
+          type: string
+        requirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobPublicRequirement"
+        summary:
+          type: string
+        title:
+          type: string
+        version:
+          type: integer
+          format: int32
+    JobPublicPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobPublicSummary"
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        total:
+          type: integer
+          format: int64
+    JobPublicRequirement:
+      type: object
+      additionalProperties: false
+      description: Public professional fields only; no weights or evidence.
+      properties:
+        criterionType:
+          type: string
+          enum:
+          - SKILLS
+          - EXPERIENCE
+          - EDUCATION
+          - LANGUAGES
+          - PROJECTS
+        mandatory:
+          type: boolean
+        payload:
+          description: Use the payload matching criterionType. Drafts may be incomplete;
+            publication validates frozen codes.
+          oneOf:
+          - $ref: "#/components/schemas/JobSkillsPayload"
+          - $ref: "#/components/schemas/JobExperiencePayload"
+          - $ref: "#/components/schemas/JobEducationPayload"
+          - $ref: "#/components/schemas/JobLanguagesPayload"
+          - $ref: "#/components/schemas/JobProjectsPayload"
+        requirementCode:
+          type: string
+    JobPublicSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        currentVersion:
+          type: integer
+          format: int32
+        jobId:
+          type: string
+        jobVersionId:
+          type: string
+        publishedAt:
+          type: string
+        summary:
+          type: string
+        title:
+          type: string
+        version:
+          type: integer
+          format: int32
+    JobRequiredLanguage:
+      type: object
+      additionalProperties: false
+      properties:
+        languageCode:
+          type: string
+        minimumLevelCode:
+          type: string
+    JobRequirementsView:
+      type: object
+      additionalProperties: false
+      properties:
+        jobId:
+          type: string
+        requirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/Requirement"
+        revision:
+          type: integer
+          format: int64
+    JobSkillsPayload:
+      type: object
+      additionalProperties: false
+      properties:
+        assessedSkillCodes:
+          type: array
+          items:
+            type: string
+    JobWeightsView:
+      type: object
+      additionalProperties: false
+      properties:
+        activeCriteria:
+          type: array
+          items:
+            type: string
+            enum:
+            - SKILLS
+            - EXPERIENCE
+            - EDUCATION
+            - LANGUAGES
+            - PROJECTS
+        jobId:
+          type: string
+        revision:
+          type: integer
+          format: int64
+        weights:
+          $ref: "#/components/schemas/Weights"
+    JsonNode:
+      type: object
+    LoginRequest:
+      type: object
+      properties:
+        identifier:
+          type: string
+          maxLength: 254
+          minLength: 0
+        password:
+          type: string
+          format: password
+          maxLength: 256
+          minLength: 1
+          writeOnly: true
+      required:
+      - identifier
+      - password
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        expiresInSeconds:
+          type: integer
+          format: int64
+        publicId:
+          type: string
+        tokenType:
+          type: string
+    LogoutResponse:
+      type: object
+      properties:
+        loggedOut:
+          type: boolean
+    PageJsonNode:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/JsonNode"
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        total:
+          type: integer
+          format: int64
+    RegisterRequest:
+      type: object
+      properties:
+        accountType:
+          type: string
+          description: Public registration never grants ADMIN or RESEARCHER.
+          enum:
+          - CANDIDATE
+          - HR
+        agreedToTerms:
+          type: boolean
+        challengeId:
+          type: string
+          pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+        email:
+          type: string
+          maxLength: 254
+          minLength: 0
+        emailCode:
+          type: string
+          pattern: "[0-9]{6}"
+        password:
+          type: string
+          format: password
+          maxLength: 256
+          minLength: 0
+          writeOnly: true
+        passwordConfirmation:
+          type: string
+          format: password
+          maxLength: 256
+          minLength: 0
+          writeOnly: true
+        username:
+          type: string
+          maxLength: 64
+          minLength: 0
+      required:
+      - accountType
+      - challengeId
+      - email
+      - emailCode
+      - password
+      - passwordConfirmation
+      - username
+    RegisterResponse:
+      type: object
+      properties:
+        accountType:
+          type: string
+          enum:
+          - CANDIDATE
+          - HR
+          - RESEARCHER
+          - ADMIN
+        publicId:
+          type: string
+        username:
+          type: string
+    Requirement:
+      type: object
+      additionalProperties: false
+      properties:
+        assessmentIncluded:
+          type: boolean
+        criterionType:
+          type: string
+          enum:
+          - SKILLS
+          - EXPERIENCE
+          - EDUCATION
+          - LANGUAGES
+          - PROJECTS
+        evidenceExcerpt:
+          type: string
+          maxLength: 1000
+          minLength: 0
+        evidenceLocation:
+          type: string
+          maxLength: 255
+          minLength: 0
+        mandatory:
+          type: boolean
+        payload:
+          description: Use the payload matching criterionType. Drafts may be incomplete;
+            publication validates frozen codes.
+          oneOf:
+          - $ref: "#/components/schemas/JobSkillsPayload"
+          - $ref: "#/components/schemas/JobExperiencePayload"
+          - $ref: "#/components/schemas/JobEducationPayload"
+          - $ref: "#/components/schemas/JobLanguagesPayload"
+          - $ref: "#/components/schemas/JobProjectsPayload"
+        publicVisible:
+          type: boolean
+        requirementCode:
+          type: string
+          minLength: 1
+          pattern: "[A-Za-z0-9_-]{1,64}"
+        reviewed:
+          type: boolean
+        warnings:
+          type: array
+          items:
+            type: string
+            maxLength: 255
+            minLength: 0
+          maxItems: 20
+          minItems: 0
+      required:
+      - assessmentIncluded
+      - criterionType
+      - mandatory
+      - payload
+      - publicVisible
+      - requirementCode
+      - reviewed
+      - warnings
+    RequirementsRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        requirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/Requirement"
+          maxItems: 100
+          minItems: 0
+        revision:
+          type: integer
+          format: int64
+      required:
+      - requirements
+      - revision
+    ResumeDeletionResult:
+      type: object
+      additionalProperties: false
+      properties:
+        deleted:
+          type: boolean
+        pending:
+          type: boolean
+    ResumeDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        bytes:
+          type: integer
+          format: int64
+        cloud_revision:
+          type: integer
+          format: int32
+        confirmed:
+          type: integer
+          format: int32
+        confirmed_at:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+        draft:
+          $ref: "#/components/schemas/ResumeDraft"
+        error:
+          type: string
+          nullable: true
+        expires_at:
+          type: string
+          nullable: true
+        extension:
+          type: string
+        filename:
+          type: string
+        id:
+          type: string
+        originalAvailable:
+          type: boolean
+        pages:
+          type: integer
+          format: int32
+        reference_month:
+          type: string
+          nullable: true
+        revision:
+          type: integer
+          format: int32
+        status:
+          type: string
+        temporary_original:
+          type: integer
+          format: int32
+        updated_at:
+          type: string
+    ResumeDraft:
+      type: object
+      additionalProperties: false
+      description: "Professional facts only. No names, contact details or full CV\
+        \ text."
+      properties:
+        professional:
+          $ref: "#/components/schemas/ResumeProfessionalFacts"
+        warnings:
+          type: array
+          items:
+            type: string
+    ResumeEducation:
+      type: object
+      additionalProperties: false
+      properties:
+        degreeLevelCode:
+          type: string
+        evidence:
+          $ref: "#/components/schemas/ResumeEvidence"
+        subjectCode:
+          type: string
+    ResumeEvidence:
+      type: object
+      additionalProperties: false
+      properties:
+        page:
+          type: integer
+          format: int32
+          nullable: true
+        source:
+          type: string
+          enum:
+          - EXTRACTED
+          - USER_SUPPLIED
+        text:
+          type: string
+    ResumeExperience:
+      type: object
+      additionalProperties: false
+      properties:
+        endMonth:
+          type: string
+          nullable: true
+        evidence:
+          $ref: "#/components/schemas/ResumeEvidence"
+        isCurrent:
+          type: boolean
+        reviewedRelevantYears:
+          type: number
+          nullable: true
+        roleFamilyCode:
+          type: string
+        startMonth:
+          type: string
+          nullable: true
+        supportedSkillCodes:
+          type: array
+          items:
+            type: string
+    ResumeImportResult:
+      type: object
+      additionalProperties: false
+      properties:
+        duplicate:
+          type: boolean
+        id:
+          type: string
+    ResumeLanguage:
+      type: object
+      additionalProperties: false
+      properties:
+        evidence:
+          $ref: "#/components/schemas/ResumeEvidence"
+        languageCode:
+          type: string
+        levelCode:
+          type: string
+    ResumeProcessingResult:
+      type: object
+      additionalProperties: false
+      properties:
+        processing:
+          type: boolean
+    ResumeProfessionalFacts:
+      type: object
+      additionalProperties: false
+      properties:
+        education:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeEducation"
+        experience:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeExperience"
+        languages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeLanguage"
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeProject"
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeSkill"
+    ResumeProject:
+      type: object
+      additionalProperties: false
+      properties:
+        evidence:
+          $ref: "#/components/schemas/ResumeEvidence"
+        projectId:
+          type: string
+        supportedConditionCodes:
+          type: array
+          items:
+            type: string
+        supportedSkillCodes:
+          type: array
+          items:
+            type: string
+    ResumePublicationResult:
+      type: object
+      additionalProperties: false
+      properties:
+        originalRemoved:
+          type: boolean
+        revision:
+          type: integer
+          format: int32
+        uploaded:
+          type: boolean
+    ResumeSaveResult:
+      type: object
+      additionalProperties: false
+      properties:
+        saved:
+          type: boolean
+    ResumeSkill:
+      type: object
+      additionalProperties: false
+      properties:
+        evidence:
+          $ref: "#/components/schemas/ResumeEvidence"
+        skillCode:
+          type: string
+    ResumeSummary:
+      type: object
+      additionalProperties: false
+      description: SQLite flags confirmed and temporary_original are integers 0 or
+        1.
+      properties:
+        bytes:
+          type: integer
+          format: int64
+        cloud_revision:
+          type: integer
+          format: int32
+        confirmed:
+          type: integer
+          format: int32
+        confirmed_at:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+        error:
+          type: string
+          nullable: true
+        expires_at:
+          type: string
+          nullable: true
+        extension:
+          type: string
+        filename:
+          type: string
+        id:
+          type: string
+        originalAvailable:
+          type: boolean
+        pages:
+          type: integer
+          format: int32
+        revision:
+          type: integer
+          format: int32
+        status:
+          type: string
+        temporary_original:
+          type: integer
+          format: int32
+        updated_at:
+          type: string
+    RevisionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        revision:
+          type: integer
+          format: int64
+      required:
+      - revision
+    RoleSummary:
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+        name:
+          type: string
+    UpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+          maxLength: 20000
+          minLength: 0
+        revision:
+          type: integer
+          format: int64
+        title:
+          type: string
+          maxLength: 255
+          minLength: 0
+      required:
+      - description
+      - revision
+      - title
+    Validation:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Issue"
+        valid:
+          type: boolean
+        warnings:
+          type: array
+          items:
+            type: string
+    Weights:
+      type: object
+      additionalProperties: false
+      properties:
+        education:
+          type: number
+          exclusiveMaximum: false
+          exclusiveMinimum: false
+          maximum: 1
+          minimum: 0
+        experience:
+          type: number
+          exclusiveMaximum: false
+          exclusiveMinimum: false
+          maximum: 1
+          minimum: 0
+        languages:
+          type: number
+          exclusiveMaximum: false
+          exclusiveMinimum: false
+          maximum: 1
+          minimum: 0
+        projects:
+          type: number
+          exclusiveMaximum: false
+          exclusiveMinimum: false
+          maximum: 1
+          minimum: 0
+        skills:
+          type: number
+          exclusiveMaximum: false
+          exclusiveMinimum: false
+          maximum: 1
+          minimum: 0
+      required:
+      - education
+      - experience
+      - languages
+      - projects
+      - skills
+    WeightsRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        activeCriteria:
+          type: array
+          items:
+            type: string
+            enum:
+            - SKILLS
+            - EXPERIENCE
+            - EDUCATION
+            - LANGUAGES
+            - PROJECTS
+          maxItems: 5
+          minItems: 1
+        revision:
+          type: integer
+          format: int64
+        weights:
+          $ref: "#/components/schemas/Weights"
+      required:
+      - activeCriteria
+      - revision
+      - weights
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http

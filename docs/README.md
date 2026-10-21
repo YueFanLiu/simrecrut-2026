@@ -7,6 +7,8 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
 
 ## API
 
+- [Generate and share API documentation](api/api-documentation.md): springdoc,
+  Swagger UI, YAML export, token-based testing and frontend handoff.
 - [Job workflow API](api/job-workflow.md): document-first HR and Candidate job
   endpoints, structured requests, revisions, extraction and deployment prerequisites.
 
