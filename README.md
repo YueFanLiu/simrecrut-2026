@@ -15,6 +15,11 @@ All project-owned content must be in English, including documentation, comments,
 identifiers, interface text, logs, errors, examples, and commit messages. Java
 development, compilation, CI, and runtime use **JDK 17**.
 
+The [job workflow API](docs/api/job-workflow.md) implements document-defined HR
+drafts, structured requirements, weights, extraction, publication, version
+history and Candidate published-job reads. It requires Flyway V6 and a configured
+frozen matching rule. Existing browser forms still require contract adaptation.
+
 ## Repository structure
 
 | Source component | Location | Responsibility |

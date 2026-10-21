@@ -74,6 +74,10 @@ management:
           include: readinessState,db,redis
 
 simrecrut:
+  jobs:
+    matching-rule-version: ${JOB_MATCHING_RULE_VERSION:}
+    rule-root: ${JOB_RULE_ROOT:model_artifacts/rules}
+    extraction-model: ${JOB_EXTRACTION_MODEL:deepseek-chat}
   mail:
     from: ${SMTP_FROM:}
   ml:

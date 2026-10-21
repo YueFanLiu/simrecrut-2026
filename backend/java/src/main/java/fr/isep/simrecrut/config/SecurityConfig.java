@@ -30,6 +30,8 @@ public class SecurityConfig {
                 "/api/v1/auth/register",
                 "/api/v1/auth/login",
                 "/api/v1/auth/logout",
+                "/api/v1/hr/jobs",
+                "/api/v1/hr/jobs/**",
                 "/api/v1/resumes",
                 "/api/v1/resumes/**"))
             .sessionManagement(session -> session
@@ -57,6 +59,10 @@ public class SecurityConfig {
                 .authenticated()
                 .requestMatchers("/api/v1/resumes/**")
                 .authenticated()
+                .requestMatchers("/api/v1/hr/jobs", "/api/v1/hr/jobs/**")
+                .hasRole("HR")
+                .requestMatchers(HttpMethod.GET, "/api/v1/candidate/jobs", "/api/v1/candidate/jobs/**")
+                .hasRole("CANDIDATE")
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/v1/admin/roles")
