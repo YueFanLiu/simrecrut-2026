@@ -1,0 +1,21 @@
+{
+  "purpose": "Preserved previous R01 implementation, superseded by adapted WANG pages.",
+  "files": [
+    {
+      "path": "src/views/research/experiments/index.vue",
+      "sha256": "07f1f3163cbc94f22d8068279ec1e124dc882068c8893ae48f0e5de7943310d1"
+    },
+    {
+      "path": "src/mock/research-experiments.js",
+      "sha256": "f0b06e82978c5d5df5f87e58f5911228cbb88c5ff167ecaf8abb877aa8ca1711"
+    },
+    {
+      "path": "src/store/modules/research-experiments.js",
+      "sha256": "5e49dca57fe635937734672fd4324ecaffa1eaf9842eb82ff094b2b19ac9f06b"
+    },
+    {
+      "path": "tests/research-experiments.test.js",
+      "sha256": "29822a9ea4861cb065938a4a04703926c03458c107bcd26d5d862a78393a50c3"
+    }
+  ]
+}

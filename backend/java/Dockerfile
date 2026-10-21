@@ -11,5 +11,6 @@ WORKDIR /app
 RUN groupadd --system simrecrut && useradd --system --gid simrecrut simrecrut
 COPY --from=build --chown=simrecrut:simrecrut /build/target/app.jar /app/app.jar
 USER simrecrut
+ENV JAVA_PORT=8080
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

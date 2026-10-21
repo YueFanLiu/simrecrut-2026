@@ -8,12 +8,21 @@ models.
 
 This repository currently contains the initial directory layout, contribution
 rules, configuration examples, and a Java build bootstrap. Product workflows,
-frontend pages, inference endpoints, training programs, database migrations, and
+frontend pages, inference endpoints, training programs, and
 the deployment stack are developed incrementally in their designated locations.
 
 All project-owned content must be in English, including documentation, comments,
 identifiers, interface text, logs, errors, examples, and commit messages. Java
 development, compilation, CI, and runtime use **JDK 17**.
+
+The [job workflow API](docs/api/job-workflow.md) implements document-defined HR
+drafts, structured requirements, weights, extraction, publication, version
+history and Candidate published-job reads. It requires Flyway V6 and a configured
+frozen matching rule. Existing browser forms still require contract adaptation.
+
+The backend also provides [Swagger UI and OpenAPI YAML](docs/api/api-documentation.md)
+for the implemented controllers. The generated snapshot can be shared with the
+frontend without changing its source files.
 
 ## Repository structure
 
@@ -94,6 +103,10 @@ with `.gitkeep` files; they are not implementations. Compose files, Dockerfiles,
 component dependency manifests, and public/internal API contracts are added with
 the corresponding working component. They must not imply an operational stack
 before that stack exists.
+
+The initial 36-table business migration is available for review and controlled
+installation. See [initial schema](docs/database/initial-schema.md) for its
+scope, identity boundary, remaining business rules and execution checks.
 
 The planned frontend feature clients are `candidateJobs.js`, `candidateCases.js`,
 `hrJobs.js`, `hrCases.js`, `researchExperiments.js`, `reviewerTasks.js`, and

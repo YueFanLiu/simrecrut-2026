@@ -3,6 +3,11 @@ package fr.isep.simrecrut;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+
+@ConfigurationPropertiesScan(
+    "fr.isep.simrecrut.config.properties"
+)
 
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 public class SimRecrutApplication {
