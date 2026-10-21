@@ -4,6 +4,7 @@ import { registerDemo, loginDemo } from '../src/mock/auth.js'
 import {
   validateUsername, validateEmail, validateRegistrationPassword,
   validatePasswordConfirmation, validateAgreement,
+  validateConnectedPassword, validateConnectedEmail,
 } from '../src/utils/registration-validation.js'
 
 function errorMessage(validator, value) {
@@ -11,6 +12,18 @@ function errorMessage(validator, value) {
   validator({}, value, (error) => { message = error?.message })
   return message
 }
+
+test('connected registration follows backend password code points and email limits', () => {
+  for (const value of ['', 'a'.repeat(14), 'a'.repeat(129)]) {
+    assert.match(errorMessage(validateConnectedPassword, value), /15-128/)
+  }
+  for (const value of ['a'.repeat(15), 'a'.repeat(128), 'a long passphrase', '\u{1f600}'.repeat(15)]) {
+    assert.equal(errorMessage(validateConnectedPassword, value), undefined)
+  }
+  assert.match(errorMessage(validateConnectedPassword, '\u{1f600}'.repeat(14)), /15-128/)
+  assert.equal(errorMessage(validateConnectedEmail, 'user@' + 'a'.repeat(120) + '.test'), undefined)
+  assert.match(errorMessage(validateConnectedEmail, 'user@' + 'a'.repeat(250) + '.test'), /254/)
+})
 
 test('registration rules reject missing fields and malformed values', () => {
   assert.match(errorMessage(validateUsername, ''), /enter a username/)

@@ -36,6 +36,18 @@ export function validatePasswordConfirmation(password, confirmation) {
   return ''
 }
 
+export function validateConnectedPassword(_rule, value, callback) {
+  const length = [...value].length
+  callback(length >= 15 && length <= 128 ? undefined
+    : new Error('Use a password of 15-128 characters.'))
+}
+
+export function validateConnectedEmail(_rule, value, callback) {
+  const email = value.trim()
+  callback(email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? undefined
+    : new Error('Please enter a valid email address of up to 254 characters.'))
+}
+
 export function validateAgreement(_rule, value, callback) {
   callback(value ? undefined : new Error('Please read the registration and privacy notices.'))
 }

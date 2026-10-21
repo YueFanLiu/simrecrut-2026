@@ -1,5 +1,6 @@
 <script setup>
 import BrandMark from '../components/simrecrut/BrandMark.vue'
+import { demoMode } from '../config/runtime.js'
 import illustration from '../assets/recruitment-illustration.svg'
 
 defineProps({ titleId: { type: String, default: 'login-title' } })
@@ -20,7 +21,7 @@ defineProps({ titleId: { type: String, default: 'login-title' } })
         <slot />
       </section>
     </div>
-    <footer>SimRecrut <span>·</span> Frontend demonstration</footer>
+    <footer>SimRecrut <span>·</span> {{ demoMode ? 'Frontend demonstration' : 'Recruitment and fairness research' }}</footer>
   </main>
 </template>
 

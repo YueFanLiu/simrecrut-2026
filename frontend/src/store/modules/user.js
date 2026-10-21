@@ -1,4 +1,4 @@
-// Identity and grants follow RuoYi-Vue3; demo privileges never become backend credentials.
+// Read identity and grants from the Java JWT session; demo privileges never authorize API writes.
 import { defineStore } from "pinia";
 import { login, getInfo, logout } from "@/api/login";
 import { getToken, setToken, removeToken } from "@/utils/auth";
@@ -16,12 +16,12 @@ export default defineStore("user", {
   actions: {
     async Login(credentials) {
       const response = await login(credentials);
-      if (!response.token)
+      if (!response.data?.accessToken)
         throw new Error("The identity service did not return a token.");
-      this.token = response.token;
-      setToken(response.token);
+      this.token = response.data.accessToken;
+      setToken(this.token);
       try { await this.GetInfo(); }
-      catch (error) { removeToken(); this.$reset(); throw error; }
+      catch (error) { removeToken(); this.$reset(); this.token = ''; throw error; }
     },
     async GetInfo() {
       if (demoMode) {
@@ -32,11 +32,10 @@ export default defineStore("user", {
         return;
       }
       const response = await getInfo();
-      this.roles = response.roles || [];
-      this.permissions = response.permissions || [];
-      this.name =
-        response.user?.nickName || response.user?.userName || "Workspace user";
-      this.username = response.user?.userName || "";
+      this.roles = (response.data?.roles || []).map(role => role.toLowerCase());
+      this.permissions = response.data?.permissions || [];
+      this.name = response.data?.username || "Workspace user";
+      this.username = response.data?.username || "";
       this.loaded = true;
     },
     async LogOut() {
@@ -45,6 +44,7 @@ export default defineStore("user", {
       } finally {
         removeToken();
         this.$reset();
+        this.token = '';
       }
     },
   },

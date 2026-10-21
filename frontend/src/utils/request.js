@@ -9,6 +9,7 @@ const request = axios.create({
   timeout: 15000,
 });
 request.interceptors.request.use((config) => {
+  config.publicRequest = config.headers.isToken === false;
   if (config.headers.isToken !== false && getToken())
     config.headers.Authorization = `Bearer ${getToken()}`;
   delete config.headers.isToken;
@@ -19,7 +20,7 @@ request.interceptors.response.use(
     const body = response.data;
     const code = body.code ?? 200;
     if (code === 0 || code === 200) return body;
-    if (code === 401) {
+    if (code === 401 && !response.config.publicRequest) {
       removeToken();
       if (location.pathname !== "/login") location.assign("/login");
     }
@@ -29,7 +30,7 @@ request.interceptors.response.use(
   },
   (error) => {
     if (axios.isCancel(error)) return Promise.reject(error);
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.config?.publicRequest) {
       removeToken();
       if (location.pathname !== "/login") location.assign("/login");
     }

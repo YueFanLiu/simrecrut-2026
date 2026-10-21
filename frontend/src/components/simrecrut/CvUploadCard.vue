@@ -50,7 +50,7 @@ onBeforeUnmount(() => { selection += 1 })
     <div v-if="selected" class="selected-file" role="status">
       <strong>{{ selected.name }}</strong>
       <span>{{ formatCvSize(selected.size) }} · {{ selected.pageCount }} {{ selected.pageCount === 1 ? 'page' : 'pages' }}</span>
-      <span>PDF checks passed. Ready for the frontend demo.</span>
+      <span>{{ demoMode ? 'PDF checks passed. Ready for the frontend demo.' : 'PDF checks passed. Ready to upload.' }}</span>
       <ElButton text :disabled="disabled || checking" @click="emit('select', null)">Remove File</ElButton>
     </div>
   </div>

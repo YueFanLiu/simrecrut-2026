@@ -1,14 +1,15 @@
-// Verify the connected account transport without creating accounts in the shared database.
+// Exercise the connected contract without creating real accounts or sending email.
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'vite'
 import { fileURLToPath } from 'node:url'
 
-test('account APIs use public RuoYi adapters and discard incomplete login state', async () => {
+test('JWT identity uses the new envelope, public requests, and clears incomplete sessions', async () => {
   const previousLocation = globalThis.location
-  globalThis.location = { protocol: 'http:', pathname: '/login' }
-  // Exercise connected identity rather than the development demo shortcut.
-  const server = await createServer({ mode: 'production', root: fileURLToPath(new URL('../', import.meta.url)),
+  let redirects = 0
+  globalThis.location = { protocol: 'http:', pathname: '/register', assign: () => redirects++ }
+  const server = await createServer({ mode: 'production',
+    root: fileURLToPath(new URL('../', import.meta.url)),
     server: { middlewareMode: true, hmr: false }, appType: 'custom' })
   try {
     const { default: request } = await server.ssrLoadModule('/src/utils/request.js')
@@ -16,40 +17,68 @@ test('account APIs use public RuoYi adapters and discard incomplete login state'
     const { default: useUserStore } = await server.ssrLoadModule('/src/store/modules/user.js')
     const { createPinia } = await server.ssrLoadModule('pinia')
     const seen = []
+    let failIdentity = false
     request.defaults.adapter = async config => {
       seen.push(config)
-      let data = { code: 200 }
-      if (config.url.endsWith('/options')) data.registrationEnabled = true
-      if (config.url.endsWith('/login')) data.token = 'test-token'
-      if (config.url === '/getInfo') {
-        config.silent = true
-        const failure = new Error('Identity unavailable'); failure.config = config; throw failure
+      let data = {}
+      if (config.url.endsWith('/registration/code')) {
+        data = { challengeId: 'challenge-id', expiresInSeconds: 600, resendAfterSeconds: 60 }
       }
-      return { config, status: 200, data }
+      if (config.url.endsWith('/login')) data = { accessToken: 'test-token', tokenType: 'Bearer' }
+      if (config.url.endsWith('/me')) {
+        if (failIdentity) {
+          config.silent = true
+          throw Object.assign(new Error('Identity unavailable'), { config })
+        }
+        data = { username: 'candidate_test', roles: ['CANDIDATE'],
+          permissions: ['simrecrut:resume:upload'] }
+      }
+      return { config, status: 200, data: { code: 0, data } }
     }
-    assert.equal((await api.getRegistrationOptions()).registrationEnabled, true)
-    await api.register({ username: 'candidate_test', email: 'test@example.org', password: 'ExamplePass7' })
-    assert.equal(seen.at(-1).url, '/simrecrut/account/register')
-    assert.equal(seen.at(-1).method, 'post')
-    assert.equal(seen.at(-1).silent, true)
+    const code = await api.sendRegistrationCode({ email: 'test@example.org' })
+    assert.equal(code.data.resendAfterSeconds, 60)
+    assert.equal(seen.at(-1).url, '/api/v1/auth/registration/code')
     assert.equal(seen.at(-1).headers.Authorization, undefined)
-    await api.passwordResetOptions()
-    assert.equal(seen.at(-1).url, '/simrecrut/account/password/options')
-    await api.sendPasswordCode({ email: 'test@example.org', code: 'challenge', uuid: 'uuid' })
-    assert.equal(seen.at(-1).url, '/simrecrut/account/password/code')
     assert.equal(seen.at(-1).timeout, 35000)
-    assert.equal(seen.at(-1).headers.Authorization, undefined)
-    await api.resetPassword({ email: 'test@example.org', requestId: 'request', emailCode: '123456', password: 'ExamplePass7', confirmation: 'ExamplePass7' })
-    assert.equal(seen.at(-1).url, '/simrecrut/account/password/reset')
+    const registration = { username: 'candidate_test', email: 'test@example.org',
+      password: 'A long passphrase', passwordConfirmation: 'A long passphrase',
+      accountType: 'CANDIDATE', challengeId: 'challenge-id', emailCode: '123456',
+      agreedToTerms: true }
+    await api.register(registration)
+    assert.equal(seen.at(-1).url, '/api/v1/auth/register')
+    assert.deepEqual(JSON.parse(seen.at(-1).data), registration)
     assert.equal(seen.at(-1).headers.Authorization, undefined)
     const user = useUserStore(createPinia())
-    await assert.rejects(user.Login({ username: 'test@example.org', password: 'ExamplePass7', code: 'challenge', uuid: 'uuid' }), /Identity unavailable/)
+    await user.Login({ identifier: 'test@example.org', password: 'A long passphrase' })
+    assert.equal(user.token, 'test-token')
+    assert.deepEqual(user.roles, ['candidate'])
+    assert.deepEqual(user.permissions, ['simrecrut:resume:upload'])
+    assert.equal(user.username, 'candidate_test')
+    const signIn = seen.find(config => config.url.endsWith('/login'))
+    assert.equal(signIn.url, '/api/v1/auth/login')
+    assert.deepEqual(JSON.parse(signIn.data), {
+      identifier: 'test@example.org', password: 'A long passphrase' })
+    await user.LogOut()
+    assert.equal(seen.at(-1).url, '/api/v1/auth/logout')
+    assert.equal(user.loaded, false)
+    assert.equal(user.token, '')
+    failIdentity = true
+    await assert.rejects(user.Login({ identifier: 'test@example.org', password: 'pass' }),
+      /Identity unavailable/)
     assert.equal(user.token, '')
     assert.equal(user.loaded, false)
     assert.deepEqual(user.roles, [])
-    const signIn = seen.find(config => config.url.endsWith('/login'))
-    assert.equal(signIn.url, '/simrecrut/account/login')
-    assert.equal(signIn.headers.Authorization, undefined)
-    assert.equal(JSON.parse(signIn.data).username, 'test@example.org')
-  } finally { await server.close(); if (previousLocation === undefined) delete globalThis.location; else globalThis.location = previousLocation }
+    request.defaults.adapter = async config => {
+      throw Object.assign(new Error('Unauthorized'), { config,
+        response: { status: 401, data: { message: 'Invalid username/email or password.' } } })
+    }
+    await assert.rejects(api.login({ identifier: 'wrong', password: 'wrong' }), /Invalid username/)
+    assert.equal(redirects, 0, 'Public login failures must stay on the form')
+    await assert.rejects(request({ url: '/api/v1/auth/me', silent: true }))
+    assert.equal(redirects, 1, 'Protected requests must redirect an expired session')
+  } finally {
+    await server.close()
+    if (previousLocation === undefined) delete globalThis.location
+    else globalThis.location = previousLocation
+  }
 })

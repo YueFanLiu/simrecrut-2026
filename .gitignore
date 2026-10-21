@@ -60,6 +60,7 @@ Desktop.ini
 # Public frontend mode flags contain no secrets.
 !frontend/.env.development
 !frontend/.env.production
+!frontend/.env.connected
 
 # Local OCR models are installed separately.
 /runtime/ocr/

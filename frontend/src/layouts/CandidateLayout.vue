@@ -10,8 +10,8 @@ const route = useRoute()
 const auth = useAuthStore()
 
 async function signOut() {
-  await auth.logout()
-  router.replace({ name: 'Login' })
+  try { await auth.logout() }
+  finally { await router.replace({ name: 'Login' }) }
 }
 </script>
 
@@ -27,8 +27,10 @@ async function signOut() {
           <RouterLink class="jobs-link" :to="{ name: 'MySimulations' }"
             :class="{ 'current-link': ['MySimulations', 'CvUpload', 'CvReview', 'SimulationProgress', 'SimulationResults'].includes(route.name) }"
             :aria-current="['MySimulations', 'CvUpload', 'CvReview', 'SimulationProgress', 'SimulationResults'].includes(route.name) ? 'page' : undefined">My simulations</RouterLink>
+          <RouterLink v-if="!demoMode" class="jobs-link" :to="{ name: 'ConnectedResumes' }"
+            :class="{ 'current-link': route.meta.connected }"
+            :aria-current="route.meta.connected ? 'page' : undefined">My CVs</RouterLink>
         </nav>
-        <RouterLink v-if="!demoMode" class="jobs-link" :to="{ name: 'ConnectedResumes' }">My CVs</RouterLink>
         <div class="session-controls">
           <span class="user-name">{{ auth.demoUser?.displayName }}</span>
           <ElButton @click="router.push({ name: 'DemoDashboard' })">Dashboard</ElButton>

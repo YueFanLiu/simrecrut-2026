@@ -62,6 +62,30 @@ targets in deployment configuration.
 Keep `.env`, temporary CVs, actual datasets, run output, and model weights out of
 Git. The directory markers preserve the scaffold without storing those files.
 
+## Connected frontend
+
+Run the Java backend on port 8080 with its database, Redis, JWT signing key and
+registration mail settings configured. Flyway V5 grants the Candidate resume
+permissions. Registration sends a real email verification code; use an address
+you control. The frontend never receives backend credentials.
+
+From `frontend/`, run `npm run dev:connected` and open
+`http://127.0.0.1:5173/login`. This selects `.env.connected` and proxies `/dev-api`
+to the Java backend. It does not load `.env.development.local`, which may still
+select the older demo mode. Stop an existing Vite server first if it uses 5173.
+A process-level `VITE_APP_DEMO_MODE` or `.env.connected.local` can override this mode.
+
+Candidate sign-in opens `/candidate/resumes`. The CV library imports a temporary
+PDF, extracts professional facts and opens review. Review supports draft saving,
+explicit confirmation, publication, cleanup retry and deletion. See
+[Connected resume workflow](standard-resume-workflow.md) for permissions and retention.
+Public registration supports Candidate and HR accounts, email verification and
+15-128 character passwords. Password recovery has no endpoint in this backend
+and has no link in the connected login form.
+
+Production builds use `.env.production`; the deployment must proxy `/prod-api`
+to Java with that prefix removed, or supply its own `VITE_APP_BASE_API` at build time.
+
 ## Frontend demo
 
 Use Node.js 22.12 or newer and npm. From the repository root:

@@ -15,7 +15,7 @@ test('login input validation handles empty fields and malformed emails', () => {
   assert.match(validationError(validateIdentifier, '  '), /enter your username/)
   assert.match(validationError(validateIdentifier, 'user@example'), /valid email/)
   assert.match(validationError(validateIdentifier, 'demo user'), /spaces/)
-  assert.match(validationError(validateIdentifier, 'a'.repeat(101)), /100 characters/)
+  assert.match(validationError(validateIdentifier, 'a'.repeat(255)), /254 characters/)
   assert.equal(validationError(validateIdentifier, 'demo'), undefined)
   assert.equal(validationError(validateIdentifier, ' demo@simrecrut.test '), undefined)
   assert.match(validationError(validatePassword, ''), /enter your password/)

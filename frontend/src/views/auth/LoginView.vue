@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElCheckbox, ElForm, ElFormItem, ElInput, ElMessage } from 'element-plus'
 import AuthLayout from '../../layouts/AuthLayout.vue'
@@ -8,7 +8,6 @@ import PasswordInput from '../../components/simrecrut/PasswordInput.vue'
 import { registrationEnabled } from '../../config/demo.js'
 import { useAuthStore } from '../../store/modules/auth.js'
 import { demoMode } from '../../config/runtime.js'
-import { getCaptcha, getRegistrationOptions } from '../../api/login.js'
 import { demoAccount } from '../../mock/auth.js'
 import { readRememberedIdentifier, saveRememberedIdentifier } from '../../utils/remembered-account.js'
 import { validateIdentifier, validatePassword } from '../../utils/login-validation.js'
@@ -21,27 +20,10 @@ const form = reactive({
   identifier: rememberedIdentifier,
   password: '',
   rememberMe: Boolean(rememberedIdentifier),
-  code: '', uuid: '',
 })
 const loading = ref(false)
 const loginError = ref('')
-const captcha = ref('')
-// Reuse the supplied login layout with the actual RuoYi challenge.
-async function refreshCaptcha() {
-  if (demoMode) return
-  try {
-    const result = await getCaptcha()
-    captcha.value = result.captchaEnabled === false ? '' : `data:image/png;base64,${result.img}`
-    form.uuid = result.uuid || ''; form.code = ''
-  } catch { loginError.value = 'Unable to load the login challenge.' }
-}
-const canRegister = ref(demoMode && registrationEnabled)
-onMounted(async () => {
-  await refreshCaptcha()
-  if (!demoMode) {
-    try { canRegister.value = (await getRegistrationOptions()).registrationEnabled === true } catch { canRegister.value = false }
-  }
-})
+const canRegister = !demoMode || registrationEnabled
 const rules = {
   identifier: [{ validator: validateIdentifier, trigger: 'blur' }],
   password: [{ validator: validatePassword, trigger: 'blur' }],
@@ -55,13 +37,13 @@ async function submitLogin() {
 
   loading.value = true
   try {
-    await auth.login({ identifier: form.identifier, password: form.password, code: form.code, uuid: form.uuid })
+    await auth.login({ identifier: form.identifier, password: form.password })
     const saved = saveRememberedIdentifier(form.identifier, form.rememberMe)
     if (!saved) ElMessage.warning('Your browser could not save the Remember Me preference.')
     form.password = ''
-    await router.replace({ name: 'DemoDashboard' })
+    await router.replace({ name: !demoMode && auth.hasDemoRole('Candidate')
+      ? 'ConnectedResumes' : 'DemoDashboard' })
   } catch (error) {
-    await refreshCaptcha()
     loginError.value = error.message || 'Unable to sign in. Please try again.'
   } finally {
     loading.value = false
@@ -93,15 +75,10 @@ async function submitLogin() {
           :disabled="loading" @input="loginError = ''" />
       </el-form-item>
 
-      <el-form-item v-if="captcha" label="Verification code">
-        <el-input v-model="form.code" autocomplete="off" placeholder="Enter the code" />
-        <button type="button" aria-label="Refresh verification code" @click="refreshCaptcha"><img :src="captcha" alt="Verification challenge" /></button>
-      </el-form-item>
       <div class="remember-row">
         <el-checkbox v-model="form.rememberMe">Remember Me</el-checkbox>
         <span>Username only</span>
       </div>
-      <el-button v-if="!demoMode" link :disabled="loading" @click="router.push({ name: 'ForgotPassword' })">Forgot password?</el-button>
 
       <el-button class="sign-in-button" type="primary" size="large" native-type="submit"
         :loading="loading" :disabled="loading">

@@ -23,17 +23,18 @@ export const useAuthStore = defineStore('auth', {
     hasDemoRole(role) {
       if (!demoMode) {
         const roles = this.demoUser?.roles || []
-        return roles.includes('admin') || roles.some(value => String(value).toLowerCase() === role.toLowerCase())
+        return (role.toLowerCase() !== 'candidate' && roles.includes('admin'))
+          || roles.some(value => String(value).toLowerCase() === role.toLowerCase())
       }
       return this.demoUser?.role === role
     },
-    // Connected identity comes from RuoYi; demo sessions never authorize API writes.
+    // Connected identity comes from Java; demo sessions never authorize API writes.
     async restoreConnectedSession() {
       if (demoMode) return
       const { getToken } = await import('../../utils/auth.js')
-      if (!getToken()) { this.demoUser = null; return }
       const { default: useUserStore } = await import('./user.js')
       const user = useUserStore()
+      if (!getToken()) { this.demoUser = null; user.$reset(); user.token = ''; return }
       if (!user.loaded) await user.GetInfo()
       const labels = { admin: 'Admin', hr: 'HR', researcher: 'Researcher', candidate: 'Candidate' }
       const role = user.roles.map(value => labels[String(value).toLowerCase()]).find(Boolean) || 'Connected'
@@ -43,7 +44,7 @@ export const useAuthStore = defineStore('auth', {
     async login(credentials) {
       if (!demoMode) {
         const { default: useUserStore } = await import('./user.js')
-        await useUserStore().Login({ username: credentials.identifier, password: credentials.password, code: credentials.code, uuid: credentials.uuid })
+        await useUserStore().Login({ identifier: credentials.identifier.trim(), password: credentials.password })
         await this.restoreConnectedSession()
         return
       }

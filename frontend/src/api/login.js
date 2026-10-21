@@ -1,11 +1,14 @@
-// Use the identity endpoints supplied by the official RuoYi backend.
+// Public identity calls never attach or invalidate an existing session.
 import request from "@/utils/request";
 export const login = (data) =>
-  request({ url: "/simrecrut/account/login", method: "post", data, headers: { isToken: false } });
-export const getRegistrationOptions = () => request({ url: "/simrecrut/account/options", method: "get", headers: { isToken: false }, silent: true });
-export const register = data => request({ url: "/simrecrut/account/register", method: "post", data, headers: { isToken: false }, silent: true });
-export const getInfo = () => request({ url: "/getInfo", method: "get" });
-export const logout = () => request({ url: "/logout", method: "post" });
+  request({ url: "/api/v1/auth/login", method: "post", data, headers: { isToken: false }, silent: true });
+export const sendRegistrationCode = data => request({
+  url: "/api/v1/auth/registration/code", method: "post", data,
+  headers: { isToken: false }, silent: true, timeout: 35000,
+});
+export const register = data => request({ url: "/api/v1/auth/register", method: "post", data, headers: { isToken: false }, silent: true });
+export const getInfo = () => request({ url: "/api/v1/auth/me", method: "get" });
+export const logout = () => request({ url: "/api/v1/auth/logout", method: "post" });
 export const getRouters = () => request({ url: "/getRouters", method: "get" });
 
 // Fetch the configured RuoYi login challenge.

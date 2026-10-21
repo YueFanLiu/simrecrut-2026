@@ -9,8 +9,8 @@ const router = createRouter({
     { path: '/', redirect: '/login' },
     { path: '/forgot-password', name: 'ForgotPassword', component: () => import('../views/auth/ForgotPasswordView.vue'), meta: { title: 'Reset password' } },
     // Keep the existing resume API adapter alongside the preferred prototype pages.
-    { path: '/candidate/resumes', name: 'ConnectedResumes', component: () => import('../views/candidate/ResumeUpload.vue'), meta: { title: 'My CVs', requiresDemoSession: true, connected: true } },
-    { path: '/candidate/resumes/:id', name: 'ConnectedResumeReview', component: () => import('../views/candidate/ResumeReview.vue'), meta: { title: 'Review CV facts', requiresDemoSession: true, connected: true } },
+    { path: '/candidate/resumes', name: 'ConnectedResumes', component: () => import('../views/candidate/ResumeUpload.vue'), meta: { title: 'My CVs', requiresDemoSession: true, demoRole: 'Candidate', connected: true } },
+    { path: '/candidate/resumes/:id', name: 'ConnectedResumeReview', component: () => import('../views/candidate/ResumeReview.vue'), meta: { title: 'Review CV facts', requiresDemoSession: true, demoRole: 'Candidate', connected: true } },
     {
       path: '/login',
       name: 'Login',

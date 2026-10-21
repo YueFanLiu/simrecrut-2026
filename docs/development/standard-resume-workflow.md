@@ -118,5 +118,18 @@ It is not a multi-instance durable worker system. The service cache currently al
 OCR installation. Job selection, optional research attributes, scoring and research
 experiments belong to the separate case workflow and are not added here.
 
-The current frontend still has legacy authentication adapters. Align those with the
-new `/api/v1/auth` response fields before claiming browser-level integration.
+The connected frontend uses `/api/v1/auth` identity and opens `/candidate/resumes`
+after Candidate sign-in. Its PDF chooser checks format, encryption, size and page
+count locally before import. Upload retries on the same selection retain the
+original operation key and payload. New selections get a new key. Existing imported
+reviews are reopened without restarting extraction or replacing corrected facts.
+The library provides loading, empty and recoverable error states. The detail page
+polls extraction, cancels reads on navigation, preserves edits on failed draft or
+confirmation requests, and retries publication separately after facts are locked.
+Action retries on the same page retain the key for identical failed requests.
+Keys are held in memory and do not survive refresh. Server ownership, revision and
+permission checks remain authoritative.
+
+Frontend browser verification uses intercepted responses and synthetic PDFs.
+It validates transport and interaction, including publication failure recovery;
+it does not verify actual mail delivery, Redis, OCR or database publication.
