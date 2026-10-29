@@ -1,5 +1,13 @@
 # Email verified password recovery
 
+This historical RuoYi integration note is superseded by
+[Independent account and permission management](../api/identity-management.md).
+Current recovery uses `/api/v1/auth/password-reset`, `/code` and `/options`, the
+standard code-zero response envelope and 15-128-character passwords, without a
+CAPTCHA. The current frontend uses these independent endpoints. The old routes
+and account/token assumptions below are historical, not supported API contracts.
+The SMTP configuration instructions remain applicable.
+
 The login screen now links to /forgot-password. Recovery requires a registered active account, a RuoYi CAPTCHA and a six-digit mailbox verification code. The existing authentication layout is retained.
 
 ## Gmail configuration

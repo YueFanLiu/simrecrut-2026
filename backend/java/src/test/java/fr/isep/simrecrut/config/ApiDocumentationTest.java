@@ -14,6 +14,11 @@ import fr.isep.simrecrut.controller.job.*;
 import fr.isep.simrecrut.controller.resume.*;
 import fr.isep.simrecrut.security.authentication.*;
 import fr.isep.simrecrut.service.identity.RoleQueryService;
+import fr.isep.simrecrut.service.identity.AdminAccountService;
+import fr.isep.simrecrut.controller.candidate.CandidateCaseController;
+import fr.isep.simrecrut.service.assessment.CandidateCaseService;
+import fr.isep.simrecrut.service.assessment.ReviewCaseService;
+import fr.isep.simrecrut.controller.review.*;
 import fr.isep.simrecrut.service.job.JobService;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -51,6 +56,10 @@ class ApiDocumentationTest {
     @Autowired ResumeApplicationService resumeService;
     @Autowired RoleQueryService roleService;
     @Autowired JobService jobService;
+    @Autowired AdminAccountService adminService;
+    @Autowired PasswordResetApplicationService resetService;
+    @Autowired CandidateCaseService caseService;
+    @Autowired ReviewCaseService reviewService;
 
     JsonNode spec() throws Exception {
         return json.readTree(mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
@@ -58,7 +67,8 @@ class ApiDocumentationTest {
     }
 
     @AfterEach void documentationNeverExecutesBusinessOperations() {
-        verifyNoInteractions(registrationService, authenticationService, resumeService, roleService, jobService);
+        verifyNoInteractions(registrationService, authenticationService, resumeService, roleService, jobService,
+                adminService, resetService, caseService, reviewService);
     }
 
     @Test void everyActivePublicControllerMappingIsDocumented() throws Exception {
@@ -112,6 +122,38 @@ class ApiDocumentationTest {
         mvc.perform(get("/api/v1/auth/me")).andExpect(status().isUnauthorized());
     }
 
+    @Test void independentIdentityRoutesHaveSafeSchemasAndPublicResetMetadata() throws Exception {
+        JsonNode document = spec();
+        JsonNode paths = document.path("paths");
+        assertTrue(paths.at("/~1api~1v1~1auth~1password-reset/post/security").isEmpty());
+        assertTrue(paths.at("/~1api~1v1~1auth~1password-reset~1code/post/security").isEmpty());
+        assertTrue(paths.at("/~1api~1v1~1admin~1users/post/responses").has("201"));
+        assertTrue(paths.has("/api/v1/admin/roles/{roleCode}/permissions"));
+        assertTrue(paths.has("/api/v1/admin/permissions"));
+        JsonNode user = document.at("/components/schemas/UserView/properties");
+        assertFalse(user.has("passwordHash"));
+        assertFalse(user.has("securityVersion"));
+        assertTrue(user.has("revision"));
+        assertTrue(document.at("/components/schemas/ResetRequest/properties/password/writeOnly").asBoolean());
+        assertFalse(document.at("/components/schemas/CreateUserRequest/additionalProperties").asBoolean(true));
+    }
+
+    @Test void candidateCaseRoutesExplainAsyncStatesAndSafeTypedProjections() throws Exception {
+        JsonNode document = spec(), paths = document.path("paths");
+        assertTrue(paths.at("/~1api~1v1~1candidate~1cases/post/responses").has("201"));
+        assertTrue(paths.at("/~1api~1v1~1candidate~1cases~1{caseId}~1cv/post/responses").has("202"));
+        assertTrue(paths.at("/~1api~1v1~1candidate~1cases~1{caseId}~1run/post/responses").has("202"));
+        assertTrue(paths.at("/~1api~1v1~1candidate~1cases~1{caseId}/delete/responses").has("200"));
+        assertTrue(paths.has("/api/v1/candidate/cases/{caseId}/research-attributes"));
+        assertTrue(paths.has("/api/v1/candidate/cases/{caseId}/retry"));
+        assertFalse(document.at("/components/schemas/CreateCaseRequest/properties").has("candidateUserId"));
+        assertEquals("#/components/schemas/ResumeProfessionalFacts",
+                document.at("/components/schemas/UpdateDraftRequest/properties/professional/$ref").asText());
+        assertTrue(document.at("/components/schemas/ObjectiveView/properties").has("score"));
+        assertFalse(document.at("/components/schemas/ObjectiveView/properties").has("weights"));
+        assertFalse(document.at("/components/schemas/MlView/properties").has("modelThreshold"));
+    }
+
     @Test void dynamicResponseFieldsAndActualStatusesAreExplained() throws Exception {
         JsonNode document = spec();
         JsonNode paths = document.path("paths");
@@ -144,11 +186,31 @@ class ApiDocumentationTest {
         }
     }
 
+    @Test void hrAndHumanReviewContractsDescribeRealRoutesAndSafeResponses() throws Exception {
+        JsonNode document = spec(), paths = document.path("paths");
+        assertTrue(paths.has("/api/v1/hr/cases"));
+        assertTrue(paths.has("/api/v1/hr/cases/{caseId}"));
+        assertTrue(paths.has("/api/v1/reviewer/tasks"));
+        assertTrue(paths.has("/api/v1/reviewer/tasks/{reviewId}"));
+        assertTrue(paths.at("/~1api~1v1~1reviewer~1tasks~1{reviewId}~1submit/post/responses").has("200"));
+        assertTrue(paths.has("/api/v1/research/cases/{caseId}/eligible-reviewers"));
+        assertTrue(paths.at("/~1api~1v1~1research~1cases~1{caseId}~1reviews/post/responses").has("201"));
+        JsonNode schemas = document.path("components").path("schemas");
+        assertFalse(schemas.path("TaskDetail").path("properties").has("objective"));
+        assertFalse(schemas.path("TaskDetail").path("properties").has("weights"));
+        assertFalse(schemas.path("TaskSummary").path("properties").has("decision"));
+        assertFalse(schemas.path("SubmitReviewRequest").path("additionalProperties").asBoolean(true));
+        assertTrue(schemas.path("TaskDetail").path("properties").has("versions"));
+    }
+
     @SpringBootConfiguration
     @EnableAutoConfiguration(exclude = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class,
             RedisAutoConfiguration.class, RedisRepositoriesAutoConfiguration.class, MailSenderAutoConfiguration.class})
     @Import({ApiDocumentationConfig.class, SecurityConfig.class, AuthenticationErrorHandler.class,
             AuthenticationController.class, AdminRoleController.class, ResumeController.class,
+            AdminUserController.class, RolePermissionController.class, PasswordResetController.class,
+            CandidateCaseController.class,
+            HrCaseController.class, ReviewerTaskController.class, ResearchCaseReviewController.class,
             HrJobController.class, CandidateJobController.class})
     static class DocumentationApplication {
         @Bean RegistrationApplicationService registrationApplicationService() { return mock(RegistrationApplicationService.class); }
@@ -156,6 +218,10 @@ class ApiDocumentationTest {
         @Bean ResumeApplicationService resumeApplicationService() { return mock(ResumeApplicationService.class); }
         @Bean RoleQueryService roleQueryService() { return mock(RoleQueryService.class); }
         @Bean JobService jobService() { return mock(JobService.class); }
+        @Bean AdminAccountService adminAccountService() { return mock(AdminAccountService.class); }
+        @Bean PasswordResetApplicationService passwordResetApplicationService() { return mock(PasswordResetApplicationService.class); }
+        @Bean CandidateCaseService candidateCaseService() { return mock(CandidateCaseService.class); }
+        @Bean ReviewCaseService reviewCaseService() { return mock(ReviewCaseService.class); }
         @Bean JwtDecoder jwtDecoder() { return mock(JwtDecoder.class); }
         @Bean JwtSessionAuthenticationConverter converter() { return mock(JwtSessionAuthenticationConverter.class); }
     }

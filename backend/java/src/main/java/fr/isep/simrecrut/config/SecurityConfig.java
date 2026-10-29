@@ -30,9 +30,18 @@ public class SecurityConfig {
                 "/api/v1/auth/register",
                 "/api/v1/auth/login",
                 "/api/v1/auth/logout",
+                "/api/v1/auth/password-reset",
+                "/api/v1/auth/password-reset/code",
+                "/api/v1/admin/users",
+                "/api/v1/admin/users/**",
+                "/api/v1/admin/roles/**",
                 "/api/v1/hr/jobs",
                 "/api/v1/hr/jobs/**",
                 "/api/v1/resumes",
+                "/api/v1/candidate/cases",
+                "/api/v1/candidate/cases/**",
+                "/api/v1/reviewer/tasks/**",
+                "/api/v1/research/cases/**",
                 "/api/v1/resumes/**"))
             .sessionManagement(session -> session
                 .sessionCreationPolicy(
@@ -53,6 +62,10 @@ public class SecurityConfig {
                     "/api/v1/auth/register",
                     "/api/v1/auth/login")
                 .permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/password-reset", "/api/v1/auth/password-reset/code")
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/auth/password-reset/options")
+                .permitAll()
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/v1/auth/me")
@@ -63,13 +76,20 @@ public class SecurityConfig {
                 .authenticated()
                 .requestMatchers("/api/v1/resumes/**")
                 .authenticated()
+                .requestMatchers("/api/v1/candidate/cases", "/api/v1/candidate/cases/**")
+                .hasRole("CANDIDATE")
                 .requestMatchers("/api/v1/hr/jobs", "/api/v1/hr/jobs/**")
                 .hasRole("HR")
+                .requestMatchers("/api/v1/hr/cases", "/api/v1/hr/cases/**")
+                .hasRole("HR")
+                .requestMatchers("/api/v1/reviewer/tasks", "/api/v1/reviewer/tasks/**")
+                .hasAnyRole("HR", "RESEARCHER")
+                .requestMatchers("/api/v1/research/cases/**")
+                .hasRole("RESEARCHER")
                 .requestMatchers(HttpMethod.GET, "/api/v1/candidate/jobs", "/api/v1/candidate/jobs/**")
                 .hasRole("CANDIDATE")
-                .requestMatchers(
-                    HttpMethod.GET,
-                    "/api/v1/admin/roles")
+                .requestMatchers("/api/v1/admin/users", "/api/v1/admin/users/**",
+                    "/api/v1/admin/roles", "/api/v1/admin/roles/**", "/api/v1/admin/permissions")
                 .hasRole("ADMIN")
                 .anyRequest()
                 .denyAll())

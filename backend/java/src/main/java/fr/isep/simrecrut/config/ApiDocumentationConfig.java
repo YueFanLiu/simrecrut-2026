@@ -3,9 +3,12 @@ package fr.isep.simrecrut.config;
 import static fr.isep.simrecrut.config.ApiDocumentationModels.*;
 
 import fr.isep.simrecrut.dto.identity.AuthenticationDtos.*;
+import fr.isep.simrecrut.dto.identity.AccountManagementDtos.*;
 import fr.isep.simrecrut.dto.identity.RegistrationDtos.*;
 import fr.isep.simrecrut.dto.identity.RoleDtos.RoleSummary;
 import fr.isep.simrecrut.dto.job.JobDtos.Validation;
+import fr.isep.simrecrut.dto.assessment.CandidateCaseDtos;
+import fr.isep.simrecrut.dto.assessment.ReviewDtos;
 import io.swagger.v3.core.converter.*;
 import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Info;
@@ -32,6 +35,8 @@ public class ApiDocumentationConfig {
                 .info(new Info().title("SimRecrut Backend API").version("0.1.0")
                         .description("Implemented backend routes only. Live database/provider integration is not certified "
                                 + "by this document. Job deployment requires V6 and a frozen matching rule. "
+                                + "Independent account management requires V7. "
+                                + "Candidate case workflows require V8 and compatible frozen protocols/models. "
                                 + "Start with registration/login, then authorize with data.accessToken. "
                                 + "Business API errors use code/message/requestId/data. Success code is zero."))
                 .servers(List.of(new Server().url("/").description("The same backend that serves this documentation")))
@@ -47,16 +52,22 @@ public class ApiDocumentationConfig {
             String name = method.getMethod().getName();
             String tag = switch (controller) {
                 case "AuthenticationController" -> "Authentication";
-                case "AdminRoleController" -> "Administration";
+                case "AdminRoleController", "AdminUserController", "RolePermissionController" -> "Administration";
+                case "PasswordResetController" -> "Authentication";
                 case "ResumeController" -> "Candidate resumes";
                 case "CandidateJobController" -> "Candidate jobs";
+                case "CandidateCaseController" -> "Candidate cases";
                 case "HrJobController" -> "HR jobs";
+                case "HrCaseController" -> "HR cases";
+                case "ReviewerTaskController" -> "Assigned human reviews";
+                case "ResearchCaseReviewController" -> "Research review assignments";
                 default -> controller.replace("Controller", "");
             };
             operation.setTags(List.of(tag));
             operation.addExtension("x-implementation-status", "implemented; live integration verification may be pending");
             operation.addExtension("x-java-handler", controller + "." + name);
-            boolean publicAuth = controller.equals("AuthenticationController")
+            boolean publicAuth = controller.equals("PasswordResetController")
+                    || controller.equals("AuthenticationController")
                     && Set.of("requestCode", "register", "login").contains(name);
             operation.setSecurity(publicAuth ? List.of() : List.of(new SecurityRequirement().addList(BEARER)));
             if (operation.getSummary() == null || operation.getSummary().isBlank()) {
@@ -74,7 +85,7 @@ public class ApiDocumentationConfig {
                                 .minLength(16).maxLength(128));
                         parameter.setExample("550e8400-e29b-41d4-a716-446655440000");
                     }
-                    if ("path".equals(parameter.getIn())) {
+                    if ("path".equals(parameter.getIn()) && !"roleCode".equals(parameter.getName())) {
                         parameter.setSchema(new StringSchema().pattern(controller.equals("ResumeController")
                                 ? "^[a-f0-9]{32}$" : "^[0-9A-HJKMNP-TV-Z]{26}$"));
                     }
@@ -111,8 +122,11 @@ public class ApiDocumentationConfig {
                 if (controller.equals("ResumeController") && method.equals("delete")) {
                     responses.addApiResponse("202", response("Access revoked; physical cleanup is still pending", envelope(data, false)));
                 }
-                for (int status : new int[]{400, 401, 403, 404, 409, 429, 500, 503}) {
-                    if (status == 429 && !controller.equals("AuthenticationController")) continue;
+                if (controller.equals("CandidateCaseController") && method.equals("delete")) {
+                    responses.addApiResponse("200", response("Deletion completed on a repeated request", envelope(data, false)));
+                }
+                for (int status : new int[]{400, 401, 403, 404, 409, 422, 429, 500, 503}) {
+                    if (status == 429 && !Set.of("AuthenticationController", "PasswordResetController").contains(controller)) continue;
                     var error = response(errorDescription(status), new Schema<>().$ref("#/components/schemas/ApiErrorEnvelope"));
                     if (status == 429) error.addHeaderObject("Retry-After", new io.swagger.v3.oas.models.headers.Header()
                             .description("Seconds before retrying").schema(new IntegerSchema()));
@@ -126,6 +140,31 @@ public class ApiDocumentationConfig {
 
     private Schema<?> responseSchema(OpenAPI api, String controller, String method, PathItem.HttpMethod verb) {
         return switch (controller) {
+            case "HrCaseController" -> method.equals("list") ? reviewPage(api, ReviewDtos.HrCaseSummary.class) : model(api, ReviewDtos.HrCaseDetail.class);
+            case "ReviewerTaskController" -> switch (method) {
+                case "list" -> reviewPage(api, ReviewDtos.TaskSummary.class);
+                case "detail" -> model(api, ReviewDtos.TaskDetail.class);
+                default -> model(api, ReviewDtos.SubmissionResult.class);
+            };
+            case "ResearchCaseReviewController" -> method.equals("eligible")
+                    ? new ArraySchema().items(model(api, ReviewDtos.EligibleReviewer.class)) : model(api, ReviewDtos.AssignmentResult.class);
+            case "CandidateCaseController" -> model(api, switch (method) {
+                case "list" -> CandidateCaseDtos.CasePage.class;
+                case "status" -> CandidateCaseDtos.CaseStatus.class;
+                case "draft" -> CandidateCaseDtos.ReviewDraft.class;
+                case "attributes" -> CandidateCaseDtos.ResearchAttributes.class;
+                case "results" -> CandidateCaseDtos.FiveResults.class;
+                case "delete" -> CandidateCaseDtos.DeleteResult.class;
+                default -> CandidateCaseDtos.CaseAction.class;
+            });
+            case "AdminUserController" -> model(api, method.equals("list") ? UserPage.class : UserView.class);
+            case "RolePermissionController" -> method.equals("permissions")
+                    ? new ArraySchema().items(model(api, PermissionView.class)) : model(api, RolePermissionsView.class);
+            case "PasswordResetController" -> model(api, switch (method) {
+                case "options" -> ResetOptions.class;
+                case "requestCode" -> ResetCodeResponse.class;
+                default -> ResetResult.class;
+            });
             case "AuthenticationController" -> model(api, switch (method) {
                 case "requestCode" -> CodeResponse.class;
                 case "register" -> RegisterResponse.class;
@@ -184,8 +223,13 @@ public class ApiDocumentationConfig {
         List<Schema> payloads = List.of(model(api, SkillsPayload.class), model(api, ExperiencePayload.class),
                 model(api, EducationPayload.class), model(api, LanguagesPayload.class), model(api, ProjectsPayload.class));
         Schema<?> resumeDraft = model(api, ResumeDraft.class);
+        Schema<?> caseObjective = model(api, CandidateCaseDtos.ObjectiveView.class);
+        Schema<?> caseMl = model(api, CandidateCaseDtos.MlView.class);
         Set<String> strict = Set.of("CreateRequest", "UpdateRequest", "RequirementsRequest", "WeightsRequest",
-                "RevisionRequest", "CloneRequest", "EmptyRequest", "ImportRequest", "EditRequest", "Requirement", "Weights");
+                "RevisionRequest", "CloneRequest", "EmptyRequest", "ImportRequest", "EditRequest", "Requirement", "Weights",
+                "CreateUserRequest", "UpdateUserRequest", "StatusRequest", "RolesRequest", "PermissionsRequest",
+                "ResetCodeRequest", "ResetRequest", "CreateCaseRequest", "UpdateDraftRequest",
+                "AttributesRequest", "AttributeInput", "ConfirmRequest", "Assignment", "AssignReviewsRequest", "SubmitReviewRequest");
         for (var entry : api.getComponents().getSchemas().entrySet()) {
             Schema<?> schema = entry.getValue();
             if (strict.contains(entry.getKey()) || entry.getKey().startsWith("Job")
@@ -193,6 +237,14 @@ public class ApiDocumentationConfig {
                 if ("object".equals(schema.getType())) schema.setAdditionalProperties(false);
             }
             if (schema.getProperties() == null) continue;
+            if (Set.of("UpdateDraftRequest", "ReviewDraft").contains(entry.getKey())) {
+                schema.getProperties().put("professional", model(api, ProfessionalFacts.class));
+            }
+            if (entry.getKey().equals("FiveResults")) {
+                schema.getProperties().put("objective", new ComposedSchema().allOf(List.of(caseObjective)).nullable(true));
+                schema.getProperties().put("neutralMl", new ComposedSchema().allOf(List.of(caseMl)).nullable(true));
+                schema.getProperties().put("biasedMl", new ComposedSchema().allOf(List.of(caseMl)).nullable(true));
+            }
             Schema<?> payload = (Schema<?>) schema.getProperties().get("payload");
             if (payload != null && schema.getProperties().containsKey("criterionType")) {
                 schema.getProperties().put("payload", new ComposedSchema().oneOf(payloads)
@@ -216,6 +268,13 @@ public class ApiDocumentationConfig {
     }
 
     private int successStatus(String controller, String method) {
+        if (controller.equals("ResearchCaseReviewController") && method.equals("assign")) return 201;
+        if (controller.equals("CandidateCaseController")) return switch (method) {
+            case "create" -> 201;
+            case "upload", "run", "retry", "delete" -> 202;
+            default -> 200;
+        };
+        if (controller.equals("AdminUserController") && method.equals("create")) return 201;
         if (controller.equals("AuthenticationController") && method.equals("register")) return 201;
         if (controller.equals("HrJobController") && Set.of("create", "cloneDraft").contains(method)) return 201;
         if (controller.equals("HrJobController") && method.equals("extract")
@@ -225,6 +284,39 @@ public class ApiDocumentationConfig {
     }
 
     private String summary(String controller, String method) {
+        if (controller.equals("CandidateCaseController")) return switch (method) {
+            case "create" -> "Create a job-linked simulation case";
+            case "list" -> "List own retained cases";
+            case "upload" -> "Upload a PDF and queue extraction";
+            case "status" -> "Read case processing and cleanup state";
+            case "draft" -> "Read professional facts for review";
+            case "saveDraft" -> "Save professional corrections";
+            case "attributes" -> "Read optional research attributes";
+            case "saveAttributes" -> "Save optional research attributes";
+            case "confirm" -> "Freeze facts and queue original cleanup";
+            case "run" -> "Freeze model versions and queue assessment";
+            case "retry" -> "Resume a stored retryable failure";
+            case "results" -> "Read five permitted result slots";
+            default -> "Revoke access and queue complete case deletion";
+        };
+        if (controller.equals("AdminUserController")) return switch (method) {
+            case "list" -> "List safe account summaries";
+            case "detail" -> "Read account details";
+            case "create" -> "Create an account requiring mailbox password setup";
+            case "update" -> "Change account email and require reverification";
+            case "status" -> "Enable or disable an account";
+            default -> "Replace account roles";
+        };
+        if (controller.equals("RolePermissionController")) return switch (method) {
+            case "permissions" -> "Read the server-owned permission catalogue";
+            case "rolePermissions" -> "Read role permissions and revision";
+            default -> "Replace role permissions";
+        };
+        if (controller.equals("PasswordResetController")) return switch (method) {
+            case "options" -> "Read password recovery availability";
+            case "requestCode" -> "Request mailbox password setup or recovery";
+            default -> "Set a password using mailbox proof";
+        };
         return switch (method) {
             case "requestCode" -> "Send a registration email code";
             case "register" -> "Register a verified account";
@@ -262,6 +354,35 @@ public class ApiDocumentationConfig {
     }
 
     private String description(String controller, String method) {
+        if (controller.equals("HrCaseController")) return "Requires HR and simrecrut:hr-case:list/detail. "
+                + "Only managed-job or unexpired HR_READ-granted retained cases. Unfinished reviewers cannot read results. "
+                + "Professional facts exclude evidence text. No raw CV, research attributes or reviewer identities are returned.";
+        if (controller.equals("ReviewerTaskController")) return "Requires HR/RESEARCHER and simrecrut:review:list/detail/submit. "
+                + "Only assigned retained case tasks with current case access. No automated or other Human results. "
+                + "Standard omits the research scenario. Submit requires Idempotency-Key and locks a valid decision/reason. "
+                + "Earlier answers remain hidden until all assigned conditions have been submitted.";
+        if (controller.equals("ResearchCaseReviewController")) return "Requires RESEARCHER, simrecrut:research:review:assign "
+                + "and an unexpired RESEARCH_READ grant. Assign one primary task per condition; repeat assignment conflicts. "
+                + "Reviewer eligibility is rechecked on writes. Rubrics/instructions come from the frozen feature schema. "
+                + "New permission provisioning is deferred; no new Flyway migration is included.";
+        if (controller.equals("CandidateCaseController")) return "Requires CANDIDATE and the operation-specific "
+                + "simrecrut:case permission. Own retained cases only. All writes require Idempotency-Key, "
+                + "including creation; draft/attribute/confirmation writes also require revision. Upload uses multipart file. "
+                + "Confirmation freezes inputs; run requires compatible models and configured inference paths. "
+                + "HTTP 202 is accepted, not completed. Retry preserves successful results and frozen versions. "
+                + "PURGING content is inaccessible. Objective and ML scores use separate scales. No sample results are generated.";
+        if (controller.equals("AdminUserController")) return "Requires ADMIN and the operation-specific simrecrut:user permission. "
+                + "Use public account IDs and the latest revision. Username is immutable; email changes require mailbox proof. "
+                + "Created accounts cannot sign in until password setup. Creation does not send email automatically: request a "
+                + "password-reset code. Status, role and email changes invalidate old sessions. Preserve the last available Admin.";
+        if (controller.equals("RolePermissionController")) return "Requires ADMIN and simrecrut:permission:list, "
+                + "simrecrut:role:list or simrecrut:role:edit as applicable. Fixed roles only. Permission writes require revision. "
+                + "Reject unknown/out-of-scope permissions and removal of core Admin permissions. Changed grants invalidate member sessions.";
+        if (controller.equals("PasswordResetController")) return "Public mailbox proof flow; no RuoYi endpoint or CAPTCHA. "
+                + "Codes expire after 600 seconds, are single-use, allow five failures, and are bound to email and challenge. "
+                + "Unknown/disabled accounts receive the same code-request response. Sending and verification are rate limited. "
+                + "Passwords must contain 15-128 characters. Successful reset invalidates all old sessions. "
+                + "A changed account security version invalidates outstanding proofs. No password or code is returned.";
         if (controller.equals("AuthenticationController")) {
             return switch (method) {
                 case "requestCode" -> "Public endpoint. Returns a challengeId; the code is delivered by email. Rate limits apply.";
@@ -311,5 +432,11 @@ public class ApiDocumentationConfig {
             case 503 -> "Storage, rule configuration or external dependency is unavailable";
             default -> "Unexpected failure with a safe message";
         };
+    }
+
+    private Schema<?> reviewPage(OpenAPI api, Class<?> item) {
+        return new ObjectSchema().addProperty("items", new ArraySchema().items(model(api, item)))
+                .addProperty("total", new IntegerSchema().format("int64"))
+                .addProperty("page", new IntegerSchema()).addProperty("pageSize", new IntegerSchema());
     }
 }

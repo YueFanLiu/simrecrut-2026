@@ -12,18 +12,19 @@
                 javaType="fr.isep.simrecrut.entity.identity.AccountRole"/>
         <result property="name" column="name"/>
         <result property="description" column="description"/>
+        <result property="revision" column="revision"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
     <select id="findByCode" resultMap="roleMap">
-        SELECT id, role_code, name, description, created_at, updated_at
+        SELECT id, role_code, name, description, revision, created_at, updated_at
         FROM sim_role
         WHERE role_code = #{roleCode}
     </select>
 
     <select id="findAll" resultMap="roleMap">
-        SELECT id, role_code, name, description, created_at, updated_at
+        SELECT id, role_code, name, description, revision, created_at, updated_at
         FROM sim_role
         ORDER BY role_code
     </select>
@@ -34,6 +35,7 @@
         r.role_code,
         r.name,
         r.description,
+        r.revision,
         r.created_at,
         r.updated_at
         FROM sim_role r

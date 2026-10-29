@@ -1,10 +1,12 @@
 # Generate and share backend API documentation
 
 The backend serves Swagger UI and generates OpenAPI 3 JSON/YAML from the active
-Controller mappings and DTOs. The first release covers authentication, role
-reading, the standalone Candidate resume library and HR/Candidate jobs. Planned
-assessment, review and research routes do not appear until their controllers
-are implemented. No files under `frontend/` are needed or changed.
+Controller mappings and DTOs. Implemented routes cover authentication, account
+and role management, the Candidate resume library, HR/Candidate jobs, Candidate
+cases, authorized HR case results and assigned Human reviews. Research coverage
+currently includes eligible-reviewer search and primary case review assignment;
+experiment APIs are not implemented by this module. No files under `frontend/`
+are needed or changed.
 
 ## Installed components
 
