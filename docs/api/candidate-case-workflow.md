@@ -165,8 +165,9 @@ identity. Objective display uses 0-100; ML scores use 0-1.
 
 Human slots are `standard` and `instructedBias`, with Not assigned, Pending or
 Submitted status. Missing/pending reviews have null decisions and reasons. Only
-candidate-visible PRIMARY reviews are read; assignment/submission endpoints are
-outside this module. Partial automated results remain null until successfully saved.
+candidate-visible PRIMARY reviews are read. The separate [HR and Human review
+module](hr-cases-and-human-reviews.md) assigns and submits these same rows.
+Partial automated results remain null until successfully saved.
 
 ## Durable work and deletion
 

@@ -274,7 +274,7 @@ public class AdminAccountService {
                 || permission.equals("simrecrut:job:browse")) {
             return List.of(AccountRole.CANDIDATE);
         }
-        if (permission.startsWith("simrecrut:job:")) return List.of(AccountRole.HR);
+        if (permission.startsWith("simrecrut:job:") || permission.startsWith("simrecrut:hr-case:")) return List.of(AccountRole.HR);
         if (permission.startsWith("simrecrut:research:")) return List.of(AccountRole.RESEARCHER);
         if (permission.startsWith("simrecrut:review:")) return List.of(AccountRole.HR, AccountRole.RESEARCHER);
         return List.of(AccountRole.ADMIN);

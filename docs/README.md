@@ -7,6 +7,9 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
 
 ## API
 
+- [HR cases and assigned Human reviews](api/hr-cases-and-human-reviews.md): scoped
+  HR results, primary assignments, blind review, submission and deferred permissions.
+
 - [Candidate simulation case API](api/candidate-case-workflow.md): job-linked
   cases, reviewed facts, durable assessment tasks, public results and privacy deletion.
 

@@ -40,6 +40,8 @@ public class SecurityConfig {
                 "/api/v1/resumes",
                 "/api/v1/candidate/cases",
                 "/api/v1/candidate/cases/**",
+                "/api/v1/reviewer/tasks/**",
+                "/api/v1/research/cases/**",
                 "/api/v1/resumes/**"))
             .sessionManagement(session -> session
                 .sessionCreationPolicy(
@@ -78,6 +80,12 @@ public class SecurityConfig {
                 .hasRole("CANDIDATE")
                 .requestMatchers("/api/v1/hr/jobs", "/api/v1/hr/jobs/**")
                 .hasRole("HR")
+                .requestMatchers("/api/v1/hr/cases", "/api/v1/hr/cases/**")
+                .hasRole("HR")
+                .requestMatchers("/api/v1/reviewer/tasks", "/api/v1/reviewer/tasks/**")
+                .hasAnyRole("HR", "RESEARCHER")
+                .requestMatchers("/api/v1/research/cases/**")
+                .hasRole("RESEARCHER")
                 .requestMatchers(HttpMethod.GET, "/api/v1/candidate/jobs", "/api/v1/candidate/jobs/**")
                 .hasRole("CANDIDATE")
                 .requestMatchers("/api/v1/admin/users", "/api/v1/admin/users/**",

@@ -8,6 +8,7 @@ import fr.isep.simrecrut.dto.identity.RegistrationDtos.*;
 import fr.isep.simrecrut.dto.identity.RoleDtos.RoleSummary;
 import fr.isep.simrecrut.dto.job.JobDtos.Validation;
 import fr.isep.simrecrut.dto.assessment.CandidateCaseDtos;
+import fr.isep.simrecrut.dto.assessment.ReviewDtos;
 import io.swagger.v3.core.converter.*;
 import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Info;
@@ -57,6 +58,9 @@ public class ApiDocumentationConfig {
                 case "CandidateJobController" -> "Candidate jobs";
                 case "CandidateCaseController" -> "Candidate cases";
                 case "HrJobController" -> "HR jobs";
+                case "HrCaseController" -> "HR cases";
+                case "ReviewerTaskController" -> "Assigned human reviews";
+                case "ResearchCaseReviewController" -> "Research review assignments";
                 default -> controller.replace("Controller", "");
             };
             operation.setTags(List.of(tag));
@@ -136,6 +140,14 @@ public class ApiDocumentationConfig {
 
     private Schema<?> responseSchema(OpenAPI api, String controller, String method, PathItem.HttpMethod verb) {
         return switch (controller) {
+            case "HrCaseController" -> method.equals("list") ? reviewPage(api, ReviewDtos.HrCaseSummary.class) : model(api, ReviewDtos.HrCaseDetail.class);
+            case "ReviewerTaskController" -> switch (method) {
+                case "list" -> reviewPage(api, ReviewDtos.TaskSummary.class);
+                case "detail" -> model(api, ReviewDtos.TaskDetail.class);
+                default -> model(api, ReviewDtos.SubmissionResult.class);
+            };
+            case "ResearchCaseReviewController" -> method.equals("eligible")
+                    ? new ArraySchema().items(model(api, ReviewDtos.EligibleReviewer.class)) : model(api, ReviewDtos.AssignmentResult.class);
             case "CandidateCaseController" -> model(api, switch (method) {
                 case "list" -> CandidateCaseDtos.CasePage.class;
                 case "status" -> CandidateCaseDtos.CaseStatus.class;
@@ -217,7 +229,7 @@ public class ApiDocumentationConfig {
                 "RevisionRequest", "CloneRequest", "EmptyRequest", "ImportRequest", "EditRequest", "Requirement", "Weights",
                 "CreateUserRequest", "UpdateUserRequest", "StatusRequest", "RolesRequest", "PermissionsRequest",
                 "ResetCodeRequest", "ResetRequest", "CreateCaseRequest", "UpdateDraftRequest",
-                "AttributesRequest", "AttributeInput", "ConfirmRequest");
+                "AttributesRequest", "AttributeInput", "ConfirmRequest", "Assignment", "AssignReviewsRequest", "SubmitReviewRequest");
         for (var entry : api.getComponents().getSchemas().entrySet()) {
             Schema<?> schema = entry.getValue();
             if (strict.contains(entry.getKey()) || entry.getKey().startsWith("Job")
@@ -256,6 +268,7 @@ public class ApiDocumentationConfig {
     }
 
     private int successStatus(String controller, String method) {
+        if (controller.equals("ResearchCaseReviewController") && method.equals("assign")) return 201;
         if (controller.equals("CandidateCaseController")) return switch (method) {
             case "create" -> 201;
             case "upload", "run", "retry", "delete" -> 202;
@@ -341,6 +354,17 @@ public class ApiDocumentationConfig {
     }
 
     private String description(String controller, String method) {
+        if (controller.equals("HrCaseController")) return "Requires HR and simrecrut:hr-case:list/detail. "
+                + "Only managed-job or unexpired HR_READ-granted retained cases. Unfinished reviewers cannot read results. "
+                + "Professional facts exclude evidence text. No raw CV, research attributes or reviewer identities are returned.";
+        if (controller.equals("ReviewerTaskController")) return "Requires HR/RESEARCHER and simrecrut:review:list/detail/submit. "
+                + "Only assigned retained case tasks with current case access. No automated or other Human results. "
+                + "Standard omits the research scenario. Submit requires Idempotency-Key and locks a valid decision/reason. "
+                + "Earlier answers remain hidden until all assigned conditions have been submitted.";
+        if (controller.equals("ResearchCaseReviewController")) return "Requires RESEARCHER, simrecrut:research:review:assign "
+                + "and an unexpired RESEARCH_READ grant. Assign one primary task per condition; repeat assignment conflicts. "
+                + "Reviewer eligibility is rechecked on writes. Rubrics/instructions come from the frozen feature schema. "
+                + "New permission provisioning is deferred; no new Flyway migration is included.";
         if (controller.equals("CandidateCaseController")) return "Requires CANDIDATE and the operation-specific "
                 + "simrecrut:case permission. Own retained cases only. All writes require Idempotency-Key, "
                 + "including creation; draft/attribute/confirmation writes also require revision. Upload uses multipart file. "
@@ -408,5 +432,11 @@ public class ApiDocumentationConfig {
             case 503 -> "Storage, rule configuration or external dependency is unavailable";
             default -> "Unexpected failure with a safe message";
         };
+    }
+
+    private Schema<?> reviewPage(OpenAPI api, Class<?> item) {
+        return new ObjectSchema().addProperty("items", new ArraySchema().items(model(api, item)))
+                .addProperty("total", new IntegerSchema().format("int64"))
+                .addProperty("page", new IntegerSchema()).addProperty("pageSize", new IntegerSchema());
     }
 }
