@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="fr.isep.simrecrut.mapper.identity.RoleMapper">
+
+    <resultMap id="roleMap"
+               type="fr.isep.simrecrut.entity.identity.Role">
+        <id property="id" column="id"/>
+        <result property="roleCode" column="role_code"
+                javaType="fr.isep.simrecrut.entity.identity.AccountRole"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="revision" column="revision"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findByCode" resultMap="roleMap">
+        SELECT id, role_code, name, description, revision, created_at, updated_at
+        FROM sim_role
+        WHERE role_code = #{roleCode}
+    </select>
+
+    <select id="findAll" resultMap="roleMap">
+        SELECT id, role_code, name, description, revision, created_at, updated_at
+        FROM sim_role
+        ORDER BY role_code
+    </select>
+
+    <select id="findByUserId" resultMap="roleMap">
+        SELECT
+        r.id,
+        r.role_code,
+        r.name,
+        r.description,
+        r.revision,
+        r.created_at,
+        r.updated_at
+        FROM sim_role r
+        INNER JOIN sim_user_role ur ON ur.role_id = r.id
+        WHERE ur.user_id = #{userId}
+        ORDER BY r.role_code
+    </select>
+
+    <insert id="insertUserRole">
+        INSERT INTO sim_user_role (user_id, role_id)
+        VALUES (#{userId}, #{roleId})
+    </insert>
+
+    <select id="findPermissionCodesByUserId"
+            resultType="java.lang.String">
+        SELECT DISTINCT p.permission_code
+        FROM sim_permission p
+        INNER JOIN sim_role_permission rp
+        ON rp.permission_id = p.id
+        INNER JOIN sim_user_role ur
+        ON ur.role_id = rp.role_id
+        WHERE ur.user_id = #{userId}
+        ORDER BY p.permission_code
+    </select>
+</mapper>
