@@ -15,6 +15,8 @@ import fr.isep.simrecrut.controller.resume.*;
 import fr.isep.simrecrut.security.authentication.*;
 import fr.isep.simrecrut.service.identity.RoleQueryService;
 import fr.isep.simrecrut.service.identity.AdminAccountService;
+import fr.isep.simrecrut.controller.candidate.CandidateCaseController;
+import fr.isep.simrecrut.service.assessment.CandidateCaseService;
 import fr.isep.simrecrut.service.job.JobService;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -54,6 +56,7 @@ class ApiDocumentationTest {
     @Autowired JobService jobService;
     @Autowired AdminAccountService adminService;
     @Autowired PasswordResetApplicationService resetService;
+    @Autowired CandidateCaseService caseService;
 
     JsonNode spec() throws Exception {
         return json.readTree(mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
@@ -62,7 +65,7 @@ class ApiDocumentationTest {
 
     @AfterEach void documentationNeverExecutesBusinessOperations() {
         verifyNoInteractions(registrationService, authenticationService, resumeService, roleService, jobService,
-                adminService, resetService);
+                adminService, resetService, caseService);
     }
 
     @Test void everyActivePublicControllerMappingIsDocumented() throws Exception {
@@ -132,6 +135,22 @@ class ApiDocumentationTest {
         assertFalse(document.at("/components/schemas/CreateUserRequest/additionalProperties").asBoolean(true));
     }
 
+    @Test void candidateCaseRoutesExplainAsyncStatesAndSafeTypedProjections() throws Exception {
+        JsonNode document = spec(), paths = document.path("paths");
+        assertTrue(paths.at("/~1api~1v1~1candidate~1cases/post/responses").has("201"));
+        assertTrue(paths.at("/~1api~1v1~1candidate~1cases~1{caseId}~1cv/post/responses").has("202"));
+        assertTrue(paths.at("/~1api~1v1~1candidate~1cases~1{caseId}~1run/post/responses").has("202"));
+        assertTrue(paths.at("/~1api~1v1~1candidate~1cases~1{caseId}/delete/responses").has("200"));
+        assertTrue(paths.has("/api/v1/candidate/cases/{caseId}/research-attributes"));
+        assertTrue(paths.has("/api/v1/candidate/cases/{caseId}/retry"));
+        assertFalse(document.at("/components/schemas/CreateCaseRequest/properties").has("candidateUserId"));
+        assertEquals("#/components/schemas/ResumeProfessionalFacts",
+                document.at("/components/schemas/UpdateDraftRequest/properties/professional/$ref").asText());
+        assertTrue(document.at("/components/schemas/ObjectiveView/properties").has("score"));
+        assertFalse(document.at("/components/schemas/ObjectiveView/properties").has("weights"));
+        assertFalse(document.at("/components/schemas/MlView/properties").has("modelThreshold"));
+    }
+
     @Test void dynamicResponseFieldsAndActualStatusesAreExplained() throws Exception {
         JsonNode document = spec();
         JsonNode paths = document.path("paths");
@@ -170,6 +189,7 @@ class ApiDocumentationTest {
     @Import({ApiDocumentationConfig.class, SecurityConfig.class, AuthenticationErrorHandler.class,
             AuthenticationController.class, AdminRoleController.class, ResumeController.class,
             AdminUserController.class, RolePermissionController.class, PasswordResetController.class,
+            CandidateCaseController.class,
             HrJobController.class, CandidateJobController.class})
     static class DocumentationApplication {
         @Bean RegistrationApplicationService registrationApplicationService() { return mock(RegistrationApplicationService.class); }
@@ -179,6 +199,7 @@ class ApiDocumentationTest {
         @Bean JobService jobService() { return mock(JobService.class); }
         @Bean AdminAccountService adminAccountService() { return mock(AdminAccountService.class); }
         @Bean PasswordResetApplicationService passwordResetApplicationService() { return mock(PasswordResetApplicationService.class); }
+        @Bean CandidateCaseService candidateCaseService() { return mock(CandidateCaseService.class); }
         @Bean JwtDecoder jwtDecoder() { return mock(JwtDecoder.class); }
         @Bean JwtSessionAuthenticationConverter converter() { return mock(JwtSessionAuthenticationConverter.class); }
     }

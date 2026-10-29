@@ -7,6 +7,9 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
 
 ## API
 
+- [Candidate simulation case API](api/candidate-case-workflow.md): job-linked
+  cases, reviewed facts, durable assessment tasks, public results and privacy deletion.
+
 - [Independent account and permission management](api/identity-management.md):
   account administration, role permissions and mailbox password setup/recovery.
 

@@ -270,7 +270,8 @@ public class AdminAccountService {
         } catch (NoSuchAlgorithmException exception) { throw new IllegalStateException(exception); }
     }
     public static List<AccountRole> allowedRoles(String permission) {
-        if (permission.startsWith("simrecrut:resume:") || permission.equals("simrecrut:job:browse")) {
+        if (permission.startsWith("simrecrut:resume:") || permission.startsWith("simrecrut:case:")
+                || permission.equals("simrecrut:job:browse")) {
             return List.of(AccountRole.CANDIDATE);
         }
         if (permission.startsWith("simrecrut:job:")) return List.of(AccountRole.HR);

@@ -7,6 +7,10 @@ server:
     include-stacktrace: never
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
   application:
     name: simrecrut-backend
   profiles:
@@ -105,6 +109,8 @@ management:
           include: readinessState,db,redis
 
 simrecrut:
+  cases:
+    protocol-version: ${CASE_PROTOCOL_VERSION:}
   jobs:
     matching-rule-version: ${JOB_MATCHING_RULE_VERSION:}
     rule-root: ${JOB_RULE_ROOT:model_artifacts/rules}
@@ -112,8 +118,10 @@ simrecrut:
   mail:
     from: ${SMTP_FROM:}
   ml:
-    base-url: ${ML_BASE_URL}
-    internal-token: ${ML_INTERNAL_TOKEN}
+    neutral-path: ${ML_NEUTRAL_PATH:}
+    biased-path: ${ML_BIASED_PATH:}
+    base-url: ${ML_BASE_URL:}
+    internal-token: ${ML_INTERNAL_TOKEN:}
     connect-timeout: 2s
     read-timeout: 10s
   extraction:
@@ -121,8 +129,8 @@ simrecrut:
       base-url: ${DEEPSEEK_BASE_URL}
       api-key: ${DEEPSEEK_API_KEY}
   storage:
-    case-workspace: ${CASE_WORKSPACE_PATH}
-    model-artifacts: ${MODEL_ARTIFACTS_PATH}
+    case-workspace: ${CASE_WORKSPACE_PATH:runtime/cases}
+    model-artifacts: ${MODEL_ARTIFACTS_PATH:model_artifacts}
   registration:
     code-ttl: 10m
     resend-cooldown: 60s
