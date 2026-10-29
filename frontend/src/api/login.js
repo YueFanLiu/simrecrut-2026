@@ -16,6 +16,6 @@ export const getCaptcha = () =>
   request({ url: "/captchaImage", method: "get", headers: { isToken: false } });
 
 // Email verification and password reset use public endpoints without a login token.
-export const passwordResetOptions = () => request({ url: '/simrecrut/account/password/options', method: 'get', headers: { isToken: false }, silent: true });
-export const sendPasswordCode = data => request({ url: '/simrecrut/account/password/code', method: 'post', data, headers: { isToken: false }, silent: true, timeout: 35000 });
-export const resetPassword = data => request({ url: '/simrecrut/account/password/reset', method: 'post', data, headers: { isToken: false }, silent: true });
+export const passwordResetOptions = () => request({ url: '/api/v1/auth/password-reset/options', method: 'get', headers: { isToken: false }, silent: true });
+export const sendPasswordCode = data => request({ url: '/api/v1/auth/password-reset/code', method: 'post', data, headers: { isToken: false }, silent: true, timeout: 35000 });
+export const resetPassword = data => request({ url: '/api/v1/auth/password-reset', method: 'post', data, headers: { isToken: false }, silent: true });

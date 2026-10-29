@@ -3,6 +3,7 @@ package fr.isep.simrecrut.config;
 import static fr.isep.simrecrut.config.ApiDocumentationModels.*;
 
 import fr.isep.simrecrut.dto.identity.AuthenticationDtos.*;
+import fr.isep.simrecrut.dto.identity.AccountManagementDtos.*;
 import fr.isep.simrecrut.dto.identity.RegistrationDtos.*;
 import fr.isep.simrecrut.dto.identity.RoleDtos.RoleSummary;
 import fr.isep.simrecrut.dto.job.JobDtos.Validation;
@@ -32,6 +33,7 @@ public class ApiDocumentationConfig {
                 .info(new Info().title("SimRecrut Backend API").version("0.1.0")
                         .description("Implemented backend routes only. Live database/provider integration is not certified "
                                 + "by this document. Job deployment requires V6 and a frozen matching rule. "
+                                + "Independent account management requires V7. "
                                 + "Start with registration/login, then authorize with data.accessToken. "
                                 + "Business API errors use code/message/requestId/data. Success code is zero."))
                 .servers(List.of(new Server().url("/").description("The same backend that serves this documentation")))
@@ -47,7 +49,8 @@ public class ApiDocumentationConfig {
             String name = method.getMethod().getName();
             String tag = switch (controller) {
                 case "AuthenticationController" -> "Authentication";
-                case "AdminRoleController" -> "Administration";
+                case "AdminRoleController", "AdminUserController", "RolePermissionController" -> "Administration";
+                case "PasswordResetController" -> "Authentication";
                 case "ResumeController" -> "Candidate resumes";
                 case "CandidateJobController" -> "Candidate jobs";
                 case "HrJobController" -> "HR jobs";
@@ -56,7 +59,8 @@ public class ApiDocumentationConfig {
             operation.setTags(List.of(tag));
             operation.addExtension("x-implementation-status", "implemented; live integration verification may be pending");
             operation.addExtension("x-java-handler", controller + "." + name);
-            boolean publicAuth = controller.equals("AuthenticationController")
+            boolean publicAuth = controller.equals("PasswordResetController")
+                    || controller.equals("AuthenticationController")
                     && Set.of("requestCode", "register", "login").contains(name);
             operation.setSecurity(publicAuth ? List.of() : List.of(new SecurityRequirement().addList(BEARER)));
             if (operation.getSummary() == null || operation.getSummary().isBlank()) {
@@ -74,7 +78,7 @@ public class ApiDocumentationConfig {
                                 .minLength(16).maxLength(128));
                         parameter.setExample("550e8400-e29b-41d4-a716-446655440000");
                     }
-                    if ("path".equals(parameter.getIn())) {
+                    if ("path".equals(parameter.getIn()) && !"roleCode".equals(parameter.getName())) {
                         parameter.setSchema(new StringSchema().pattern(controller.equals("ResumeController")
                                 ? "^[a-f0-9]{32}$" : "^[0-9A-HJKMNP-TV-Z]{26}$"));
                     }
@@ -112,7 +116,7 @@ public class ApiDocumentationConfig {
                     responses.addApiResponse("202", response("Access revoked; physical cleanup is still pending", envelope(data, false)));
                 }
                 for (int status : new int[]{400, 401, 403, 404, 409, 429, 500, 503}) {
-                    if (status == 429 && !controller.equals("AuthenticationController")) continue;
+                    if (status == 429 && !Set.of("AuthenticationController", "PasswordResetController").contains(controller)) continue;
                     var error = response(errorDescription(status), new Schema<>().$ref("#/components/schemas/ApiErrorEnvelope"));
                     if (status == 429) error.addHeaderObject("Retry-After", new io.swagger.v3.oas.models.headers.Header()
                             .description("Seconds before retrying").schema(new IntegerSchema()));
@@ -126,6 +130,14 @@ public class ApiDocumentationConfig {
 
     private Schema<?> responseSchema(OpenAPI api, String controller, String method, PathItem.HttpMethod verb) {
         return switch (controller) {
+            case "AdminUserController" -> model(api, method.equals("list") ? UserPage.class : UserView.class);
+            case "RolePermissionController" -> method.equals("permissions")
+                    ? new ArraySchema().items(model(api, PermissionView.class)) : model(api, RolePermissionsView.class);
+            case "PasswordResetController" -> model(api, switch (method) {
+                case "options" -> ResetOptions.class;
+                case "requestCode" -> ResetCodeResponse.class;
+                default -> ResetResult.class;
+            });
             case "AuthenticationController" -> model(api, switch (method) {
                 case "requestCode" -> CodeResponse.class;
                 case "register" -> RegisterResponse.class;
@@ -185,7 +197,9 @@ public class ApiDocumentationConfig {
                 model(api, EducationPayload.class), model(api, LanguagesPayload.class), model(api, ProjectsPayload.class));
         Schema<?> resumeDraft = model(api, ResumeDraft.class);
         Set<String> strict = Set.of("CreateRequest", "UpdateRequest", "RequirementsRequest", "WeightsRequest",
-                "RevisionRequest", "CloneRequest", "EmptyRequest", "ImportRequest", "EditRequest", "Requirement", "Weights");
+                "RevisionRequest", "CloneRequest", "EmptyRequest", "ImportRequest", "EditRequest", "Requirement", "Weights",
+                "CreateUserRequest", "UpdateUserRequest", "StatusRequest", "RolesRequest", "PermissionsRequest",
+                "ResetCodeRequest", "ResetRequest");
         for (var entry : api.getComponents().getSchemas().entrySet()) {
             Schema<?> schema = entry.getValue();
             if (strict.contains(entry.getKey()) || entry.getKey().startsWith("Job")
@@ -216,6 +230,7 @@ public class ApiDocumentationConfig {
     }
 
     private int successStatus(String controller, String method) {
+        if (controller.equals("AdminUserController") && method.equals("create")) return 201;
         if (controller.equals("AuthenticationController") && method.equals("register")) return 201;
         if (controller.equals("HrJobController") && Set.of("create", "cloneDraft").contains(method)) return 201;
         if (controller.equals("HrJobController") && method.equals("extract")
@@ -225,6 +240,24 @@ public class ApiDocumentationConfig {
     }
 
     private String summary(String controller, String method) {
+        if (controller.equals("AdminUserController")) return switch (method) {
+            case "list" -> "List safe account summaries";
+            case "detail" -> "Read account details";
+            case "create" -> "Create an account requiring mailbox password setup";
+            case "update" -> "Change account email and require reverification";
+            case "status" -> "Enable or disable an account";
+            default -> "Replace account roles";
+        };
+        if (controller.equals("RolePermissionController")) return switch (method) {
+            case "permissions" -> "Read the server-owned permission catalogue";
+            case "rolePermissions" -> "Read role permissions and revision";
+            default -> "Replace role permissions";
+        };
+        if (controller.equals("PasswordResetController")) return switch (method) {
+            case "options" -> "Read password recovery availability";
+            case "requestCode" -> "Request mailbox password setup or recovery";
+            default -> "Set a password using mailbox proof";
+        };
         return switch (method) {
             case "requestCode" -> "Send a registration email code";
             case "register" -> "Register a verified account";
@@ -262,6 +295,18 @@ public class ApiDocumentationConfig {
     }
 
     private String description(String controller, String method) {
+        if (controller.equals("AdminUserController")) return "Requires ADMIN and the operation-specific simrecrut:user permission. "
+                + "Use public account IDs and the latest revision. Username is immutable; email changes require mailbox proof. "
+                + "Created accounts cannot sign in until password setup. Creation does not send email automatically: request a "
+                + "password-reset code. Status, role and email changes invalidate old sessions. Preserve the last available Admin.";
+        if (controller.equals("RolePermissionController")) return "Requires ADMIN and simrecrut:permission:list, "
+                + "simrecrut:role:list or simrecrut:role:edit as applicable. Fixed roles only. Permission writes require revision. "
+                + "Reject unknown/out-of-scope permissions and removal of core Admin permissions. Changed grants invalidate member sessions.";
+        if (controller.equals("PasswordResetController")) return "Public mailbox proof flow; no RuoYi endpoint or CAPTCHA. "
+                + "Codes expire after 600 seconds, are single-use, allow five failures, and are bound to email and challenge. "
+                + "Unknown/disabled accounts receive the same code-request response. Sending and verification are rate limited. "
+                + "Passwords must contain 15-128 characters. Successful reset invalidates all old sessions. "
+                + "A changed account security version invalidates outstanding proofs. No password or code is returned.";
         if (controller.equals("AuthenticationController")) {
             return switch (method) {
                 case "requestCode" -> "Public endpoint. Returns a challengeId; the code is delivered by email. Rate limits apply.";

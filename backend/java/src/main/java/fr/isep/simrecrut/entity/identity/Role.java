@@ -8,6 +8,11 @@ public class Role {
     private AccountRole roleCode;
     private String name;
     private String description;
+    private Long revision;
+
+    public Long getRevision() { return revision; }
+
+    public void setRevision(Long revision) { this.revision = revision; }
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

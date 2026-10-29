@@ -7,6 +7,9 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
 
 ## API
 
+- [Independent account and permission management](api/identity-management.md):
+  account administration, role permissions and mailbox password setup/recovery.
+
 - [Generate and share API documentation](api/api-documentation.md): springdoc,
   Swagger UI, YAML export, token-based testing and frontend handoff.
 - [Job workflow API](api/job-workflow.md): document-first HR and Candidate job

@@ -17,6 +17,7 @@ public class UserAccount {
     private LocalDateTime emailVerifiedAt;
     private LocalDateTime passwordUpdatedAt;
     private Long securityVersion;
+    private Long revision;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -87,6 +88,10 @@ public class UserAccount {
     public Long getSecurityVersion() {
         return securityVersion;
     }
+
+    public Long getRevision() { return revision; }
+
+    public void setRevision(Long revision) { this.revision = revision; }
 
     public void setSecurityVersion(Long securityVersion) {
         this.securityVersion = securityVersion;

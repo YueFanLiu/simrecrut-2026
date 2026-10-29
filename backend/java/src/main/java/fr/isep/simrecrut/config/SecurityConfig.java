@@ -30,6 +30,11 @@ public class SecurityConfig {
                 "/api/v1/auth/register",
                 "/api/v1/auth/login",
                 "/api/v1/auth/logout",
+                "/api/v1/auth/password-reset",
+                "/api/v1/auth/password-reset/code",
+                "/api/v1/admin/users",
+                "/api/v1/admin/users/**",
+                "/api/v1/admin/roles/**",
                 "/api/v1/hr/jobs",
                 "/api/v1/hr/jobs/**",
                 "/api/v1/resumes",
@@ -53,6 +58,10 @@ public class SecurityConfig {
                     "/api/v1/auth/register",
                     "/api/v1/auth/login")
                 .permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/password-reset", "/api/v1/auth/password-reset/code")
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/auth/password-reset/options")
+                .permitAll()
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/v1/auth/me")
@@ -67,9 +76,8 @@ public class SecurityConfig {
                 .hasRole("HR")
                 .requestMatchers(HttpMethod.GET, "/api/v1/candidate/jobs", "/api/v1/candidate/jobs/**")
                 .hasRole("CANDIDATE")
-                .requestMatchers(
-                    HttpMethod.GET,
-                    "/api/v1/admin/roles")
+                .requestMatchers("/api/v1/admin/users", "/api/v1/admin/users/**",
+                    "/api/v1/admin/roles", "/api/v1/admin/roles/**", "/api/v1/admin/permissions")
                 .hasRole("ADMIN")
                 .anyRequest()
                 .denyAll())

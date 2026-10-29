@@ -14,6 +14,7 @@ import fr.isep.simrecrut.controller.job.*;
 import fr.isep.simrecrut.controller.resume.*;
 import fr.isep.simrecrut.security.authentication.*;
 import fr.isep.simrecrut.service.identity.RoleQueryService;
+import fr.isep.simrecrut.service.identity.AdminAccountService;
 import fr.isep.simrecrut.service.job.JobService;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -51,6 +52,8 @@ class ApiDocumentationTest {
     @Autowired ResumeApplicationService resumeService;
     @Autowired RoleQueryService roleService;
     @Autowired JobService jobService;
+    @Autowired AdminAccountService adminService;
+    @Autowired PasswordResetApplicationService resetService;
 
     JsonNode spec() throws Exception {
         return json.readTree(mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
@@ -58,7 +61,8 @@ class ApiDocumentationTest {
     }
 
     @AfterEach void documentationNeverExecutesBusinessOperations() {
-        verifyNoInteractions(registrationService, authenticationService, resumeService, roleService, jobService);
+        verifyNoInteractions(registrationService, authenticationService, resumeService, roleService, jobService,
+                adminService, resetService);
     }
 
     @Test void everyActivePublicControllerMappingIsDocumented() throws Exception {
@@ -112,6 +116,22 @@ class ApiDocumentationTest {
         mvc.perform(get("/api/v1/auth/me")).andExpect(status().isUnauthorized());
     }
 
+    @Test void independentIdentityRoutesHaveSafeSchemasAndPublicResetMetadata() throws Exception {
+        JsonNode document = spec();
+        JsonNode paths = document.path("paths");
+        assertTrue(paths.at("/~1api~1v1~1auth~1password-reset/post/security").isEmpty());
+        assertTrue(paths.at("/~1api~1v1~1auth~1password-reset~1code/post/security").isEmpty());
+        assertTrue(paths.at("/~1api~1v1~1admin~1users/post/responses").has("201"));
+        assertTrue(paths.has("/api/v1/admin/roles/{roleCode}/permissions"));
+        assertTrue(paths.has("/api/v1/admin/permissions"));
+        JsonNode user = document.at("/components/schemas/UserView/properties");
+        assertFalse(user.has("passwordHash"));
+        assertFalse(user.has("securityVersion"));
+        assertTrue(user.has("revision"));
+        assertTrue(document.at("/components/schemas/ResetRequest/properties/password/writeOnly").asBoolean());
+        assertFalse(document.at("/components/schemas/CreateUserRequest/additionalProperties").asBoolean(true));
+    }
+
     @Test void dynamicResponseFieldsAndActualStatusesAreExplained() throws Exception {
         JsonNode document = spec();
         JsonNode paths = document.path("paths");
@@ -149,6 +169,7 @@ class ApiDocumentationTest {
             RedisAutoConfiguration.class, RedisRepositoriesAutoConfiguration.class, MailSenderAutoConfiguration.class})
     @Import({ApiDocumentationConfig.class, SecurityConfig.class, AuthenticationErrorHandler.class,
             AuthenticationController.class, AdminRoleController.class, ResumeController.class,
+            AdminUserController.class, RolePermissionController.class, PasswordResetController.class,
             HrJobController.class, CandidateJobController.class})
     static class DocumentationApplication {
         @Bean RegistrationApplicationService registrationApplicationService() { return mock(RegistrationApplicationService.class); }
@@ -156,6 +177,8 @@ class ApiDocumentationTest {
         @Bean ResumeApplicationService resumeApplicationService() { return mock(ResumeApplicationService.class); }
         @Bean RoleQueryService roleQueryService() { return mock(RoleQueryService.class); }
         @Bean JobService jobService() { return mock(JobService.class); }
+        @Bean AdminAccountService adminAccountService() { return mock(AdminAccountService.class); }
+        @Bean PasswordResetApplicationService passwordResetApplicationService() { return mock(PasswordResetApplicationService.class); }
         @Bean JwtDecoder jwtDecoder() { return mock(JwtDecoder.class); }
         @Bean JwtSessionAuthenticationConverter converter() { return mock(JwtSessionAuthenticationConverter.class); }
     }

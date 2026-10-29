@@ -2,8 +2,9 @@ openapi: 3.0.3
 info:
   description: "Implemented backend routes only. Live database/provider integration\
     \ is not certified by this document. Job deployment requires V6 and a frozen matching\
-    \ rule. Start with registration/login, then authorize with data.accessToken. Business\
-    \ API errors use code/message/requestId/data. Success code is zero."
+    \ rule. Independent account management requires V7. Start with registration/login,\
+    \ then authorize with data.accessToken. Business API errors use code/message/requestId/data.\
+    \ Success code is zero."
   title: SimRecrut Backend API
   version: 0.1.0
 servers:
@@ -12,11 +13,142 @@ servers:
 security:
 - bearerAuth: []
 paths:
+  /api/v1/admin/permissions:
+    get:
+      description: "Requires ADMIN and simrecrut:permission:list, simrecrut:role:list\
+        \ or simrecrut:role:edit as applicable. Fixed roles only. Permission writes\
+        \ require revision. Reject unknown/out-of-scope permissions and removal of\
+        \ core Admin permissions. Changed grants invalidate member sessions."
+      operationId: permissions
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PermissionView"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Read the server-owned permission catalogue
+      tags:
+      - Administration
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: RolePermissionController.permissions
   /api/v1/admin/roles:
     get:
       description: "Requires ADMIN and simrecrut:role:list. This is role reading only,\
         \ not user management."
-      operationId: list_3
+      operationId: list_4
       responses:
         "200":
           content:
@@ -141,6 +273,1171 @@ paths:
       - Administration
       x-implementation-status: implemented; live integration verification may be pending
       x-java-handler: AdminRoleController.list
+  /api/v1/admin/roles/{roleCode}/permissions:
+    get:
+      description: "Requires ADMIN and simrecrut:permission:list, simrecrut:role:list\
+        \ or simrecrut:role:edit as applicable. Fixed roles only. Permission writes\
+        \ require revision. Reject unknown/out-of-scope permissions and removal of\
+        \ core Admin permissions. Changed grants invalidate member sessions."
+      operationId: rolePermissions
+      parameters:
+      - in: path
+        name: roleCode
+        required: true
+        schema:
+          type: string
+          enum:
+          - CANDIDATE
+          - HR
+          - RESEARCHER
+          - ADMIN
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/RolePermissionsView"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Read role permissions and revision
+      tags:
+      - Administration
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: RolePermissionController.rolePermissions
+    put:
+      description: "Requires ADMIN and simrecrut:permission:list, simrecrut:role:list\
+        \ or simrecrut:role:edit as applicable. Fixed roles only. Permission writes\
+        \ require revision. Reject unknown/out-of-scope permissions and removal of\
+        \ core Admin permissions. Changed grants invalidate member sessions."
+      operationId: savePermissions
+      parameters:
+      - in: path
+        name: roleCode
+        required: true
+        schema:
+          type: string
+          enum:
+          - CANDIDATE
+          - HR
+          - RESEARCHER
+          - ADMIN
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PermissionsRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/RolePermissionsView"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Replace role permissions
+      tags:
+      - Administration
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: RolePermissionController.savePermissions
+  /api/v1/admin/users:
+    get:
+      description: "Requires ADMIN and the operation-specific simrecrut:user permission.\
+        \ Use public account IDs and the latest revision. Username is immutable; email\
+        \ changes require mailbox proof. Created accounts cannot sign in until password\
+        \ setup. Creation does not send email automatically: request a password-reset\
+        \ code. Status, role and email changes invalidate old sessions. Preserve the\
+        \ last available Admin."
+      operationId: list_1
+      parameters:
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+          maximum: 100000
+          minimum: 1
+      - in: query
+        name: pageSize
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: keyword
+        required: false
+        schema:
+          type: string
+          default: ""
+          maxLength: 100
+      - in: query
+        name: status
+        required: false
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - DISABLED
+      - in: query
+        name: role
+        required: false
+        schema:
+          type: string
+          enum:
+          - CANDIDATE
+          - HR
+          - RESEARCHER
+          - ADMIN
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/UserPage"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: List safe account summaries
+      tags:
+      - Administration
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AdminUserController.list
+    post:
+      description: "Requires ADMIN and the operation-specific simrecrut:user permission.\
+        \ Use public account IDs and the latest revision. Username is immutable; email\
+        \ changes require mailbox proof. Created accounts cannot sign in until password\
+        \ setup. Creation does not send email automatically: request a password-reset\
+        \ code. Status, role and email changes invalidate old sessions. Preserve the\
+        \ last available Admin."
+      operationId: create_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/UserView"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Create an account requiring mailbox password setup
+      tags:
+      - Administration
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AdminUserController.create
+  /api/v1/admin/users/{userId}:
+    get:
+      description: "Requires ADMIN and the operation-specific simrecrut:user permission.\
+        \ Use public account IDs and the latest revision. Username is immutable; email\
+        \ changes require mailbox proof. Created accounts cannot sign in until password\
+        \ setup. Creation does not send email automatically: request a password-reset\
+        \ code. Status, role and email changes invalidate old sessions. Preserve the\
+        \ last available Admin."
+      operationId: detail
+      parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/UserView"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Read account details
+      tags:
+      - Administration
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AdminUserController.detail
+    put:
+      description: "Requires ADMIN and the operation-specific simrecrut:user permission.\
+        \ Use public account IDs and the latest revision. Username is immutable; email\
+        \ changes require mailbox proof. Created accounts cannot sign in until password\
+        \ setup. Creation does not send email automatically: request a password-reset\
+        \ code. Status, role and email changes invalidate old sessions. Preserve the\
+        \ last available Admin."
+      operationId: update_1
+      parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/UserView"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Change account email and require reverification
+      tags:
+      - Administration
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AdminUserController.update
+  /api/v1/admin/users/{userId}/roles:
+    put:
+      description: "Requires ADMIN and the operation-specific simrecrut:user permission.\
+        \ Use public account IDs and the latest revision. Username is immutable; email\
+        \ changes require mailbox proof. Created accounts cannot sign in until password\
+        \ setup. Creation does not send email automatically: request a password-reset\
+        \ code. Status, role and email changes invalidate old sessions. Preserve the\
+        \ last available Admin."
+      operationId: assignRoles
+      parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RolesRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/UserView"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Replace account roles
+      tags:
+      - Administration
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AdminUserController.assignRoles
+  /api/v1/admin/users/{userId}/status:
+    put:
+      description: "Requires ADMIN and the operation-specific simrecrut:user permission.\
+        \ Use public account IDs and the latest revision. Username is immutable; email\
+        \ changes require mailbox proof. Created accounts cannot sign in until password\
+        \ setup. Creation does not send email automatically: request a password-reset\
+        \ code. Status, role and email changes invalidate old sessions. Preserve the\
+        \ last available Admin."
+      operationId: status
+      parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/UserView"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security:
+      - bearerAuth: []
+      summary: Enable or disable an account
+      tags:
+      - Administration
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: AdminUserController.status
   /api/v1/auth/login:
     post:
       description: Public endpoint. Supply identifier and password. Copy data.accessToken
@@ -578,6 +1875,462 @@ paths:
       - Authentication
       x-implementation-status: implemented; live integration verification may be pending
       x-java-handler: AuthenticationController.currentUser
+  /api/v1/auth/password-reset:
+    post:
+      description: "Public mailbox proof flow; no RuoYi endpoint or CAPTCHA. Codes\
+        \ expire after 600 seconds, are single-use, allow five failures, and are bound\
+        \ to email and challenge. Unknown/disabled accounts receive the same code-request\
+        \ response. Sending and verification are rate limited. Passwords must contain\
+        \ 15-128 characters. Successful reset invalidates all old sessions. A changed\
+        \ account security version invalidates outstanding proofs. No password or\
+        \ code is returned."
+      operationId: reset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResetResult"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Rate limited; respect Retry-After
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+            Retry-After:
+              description: Seconds before retrying
+              schema:
+                type: integer
+                format: int32
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security: []
+      summary: Set a password using mailbox proof
+      tags:
+      - Authentication
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: PasswordResetController.reset
+  /api/v1/auth/password-reset/code:
+    post:
+      description: "Public mailbox proof flow; no RuoYi endpoint or CAPTCHA. Codes\
+        \ expire after 600 seconds, are single-use, allow five failures, and are bound\
+        \ to email and challenge. Unknown/disabled accounts receive the same code-request\
+        \ response. Sending and verification are rate limited. Passwords must contain\
+        \ 15-128 characters. Successful reset invalidates all old sessions. A changed\
+        \ account security version invalidates outstanding proofs. No password or\
+        \ code is returned."
+      operationId: requestCode_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetCodeRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResetCodeResponse"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Rate limited; respect Retry-After
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+            Retry-After:
+              description: Seconds before retrying
+              schema:
+                type: integer
+                format: int32
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security: []
+      summary: Request mailbox password setup or recovery
+      tags:
+      - Authentication
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: PasswordResetController.requestCode
+  /api/v1/auth/password-reset/options:
+    get:
+      description: "Public mailbox proof flow; no RuoYi endpoint or CAPTCHA. Codes\
+        \ expire after 600 seconds, are single-use, allow five failures, and are bound\
+        \ to email and challenge. Unknown/disabled accounts receive the same code-request\
+        \ response. Sending and verification are rate limited. Passwords must contain\
+        \ 15-128 characters. Successful reset invalidates all old sessions. A changed\
+        \ account security version invalidates outstanding proofs. No password or\
+        \ code is returned."
+      operationId: options
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    enum:
+                    - 0
+                  data:
+                    $ref: "#/components/schemas/ResetOptions"
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - requestId
+                - data
+          description: Successful request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Invalid fields, PDF, operation key or revision"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Missing/invalid authentication or invalid login credentials
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Required role or action permission is missing
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Unknown, foreign or expired resource"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Revision, workflow state, existing draft or operation-key\
+            \ conflict"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Rate limited; respect Retry-After
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+            Retry-After:
+              description: Seconds before retrying
+              schema:
+                type: integer
+                format: int32
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: Unexpected failure with a safe message
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+          description: "Storage, rule configuration or external dependency is unavailable"
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+      security: []
+      summary: Read password recovery availability
+      tags:
+      - Authentication
+      x-implementation-status: implemented; live integration verification may be pending
+      x-java-handler: PasswordResetController.options
   /api/v1/auth/register:
     post:
       description: "Public endpoint. Supply the email challenge/code, terms agreement\
@@ -880,7 +2633,7 @@ paths:
     get:
       description: Requires CANDIDATE and simrecrut:job:browse. Only current published
         jobs and public requirements are returned; drafts and weights are absent.
-      operationId: list_2
+      operationId: list_3
       parameters:
       - in: query
         name: page
@@ -1033,7 +2786,7 @@ paths:
     get:
       description: Requires CANDIDATE and simrecrut:job:browse. Only current published
         jobs and public requirements are returned; drafts and weights are absent.
-      operationId: detail_1
+      operationId: detail_2
       parameters:
       - in: path
         name: jobId
@@ -3386,7 +5139,7 @@ paths:
         \ confirm uses true. Writes require Idempotency-Key. Reload detail for the\
         \ next expectedRevision. Import accepts Base64 PDF content, not multipart\
         \ upload. Confirming does not publish automatically."
-      operationId: list_1
+      operationId: list_2
       responses:
         "200":
           content:
@@ -3876,7 +5629,7 @@ paths:
         \ confirm uses true. Writes require Idempotency-Key. Reload detail for the\
         \ next expectedRevision. Import accepts Base64 PDF content, not multipart\
         \ upload. Confirming does not publish automatically."
-      operationId: detail
+      operationId: detail_1
       parameters:
       - in: path
         name: id
@@ -4862,6 +6615,20 @@ components:
           type: string
         requestId:
           type: string
+    ApiResponseListPermissionView:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PermissionView"
+        message:
+          type: string
+        requestId:
+          type: string
     ApiResponseListRoleSummary:
       type: object
       properties:
@@ -4938,6 +6705,78 @@ components:
           type: string
         requestId:
           type: string
+    ApiResponseResetCodeResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/ResetCodeResponse"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseResetOptions:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/ResetOptions"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseResetResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/ResetResult"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseRolePermissionsView:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/RolePermissionsView"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseUserPage:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/UserPage"
+        message:
+          type: string
+        requestId:
+          type: string
+    ApiResponseUserView:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: "#/components/schemas/UserView"
+        message:
+          type: string
+        requestId:
+          type: string
     ApiResponseValidation:
       type: object
       properties:
@@ -4995,6 +6834,33 @@ components:
       required:
       - description
       - title
+    CreateUserRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          minLength: 0
+        roles:
+          type: array
+          items:
+            type: string
+            enum:
+            - CANDIDATE
+            - HR
+            - RESEARCHER
+            - ADMIN
+          maxItems: 4
+          minItems: 0
+        username:
+          type: string
+          maxLength: 64
+          minLength: 0
+      required:
+      - email
+      - roles
+      - username
     CurrentUserResponse:
       type: object
       properties:
@@ -5413,6 +7279,43 @@ components:
         total:
           type: integer
           format: int64
+    PermissionView:
+      type: object
+      properties:
+        allowedRoles:
+          type: array
+          items:
+            type: string
+            enum:
+            - CANDIDATE
+            - HR
+            - RESEARCHER
+            - ADMIN
+        code:
+          type: string
+        description:
+          type: string
+        name:
+          type: string
+        protectedAdminPermission:
+          type: boolean
+    PermissionsRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        permissions:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          maxItems: 200
+          minItems: 0
+        revision:
+          type: integer
+          format: int64
+      required:
+      - permissions
+      - revision
     RegisterRequest:
       type: object
       properties:
@@ -5546,6 +7449,69 @@ components:
       required:
       - requirements
       - revision
+    ResetCodeRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          minLength: 0
+      required:
+      - email
+    ResetCodeResponse:
+      type: object
+      properties:
+        challengeId:
+          type: string
+        expiresInSeconds:
+          type: integer
+          format: int64
+        resendAfterSeconds:
+          type: integer
+          format: int64
+    ResetOptions:
+      type: object
+      properties:
+        emailEnabled:
+          type: boolean
+    ResetRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        challengeId:
+          type: string
+          pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+        email:
+          type: string
+          maxLength: 254
+          minLength: 0
+        emailCode:
+          type: string
+          pattern: "[0-9]{6}"
+        password:
+          type: string
+          format: password
+          maxLength: 256
+          minLength: 0
+          writeOnly: true
+        passwordConfirmation:
+          type: string
+          format: password
+          maxLength: 256
+          minLength: 0
+          writeOnly: true
+      required:
+      - challengeId
+      - email
+      - emailCode
+      - password
+      - passwordConfirmation
+    ResetResult:
+      type: object
+      properties:
+        passwordUpdated:
+          type: boolean
     ResumeDeletionResult:
       type: object
       additionalProperties: false
@@ -5809,6 +7775,18 @@ components:
           format: int64
       required:
       - revision
+    RolePermissionsView:
+      type: object
+      properties:
+        permissions:
+          type: array
+          items:
+            type: string
+        revision:
+          type: integer
+          format: int64
+        roleCode:
+          type: string
     RoleSummary:
       type: object
       properties:
@@ -5818,6 +7796,42 @@ components:
           type: string
         name:
           type: string
+    RolesRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        revision:
+          type: integer
+          format: int64
+        roles:
+          type: array
+          items:
+            type: string
+            enum:
+            - CANDIDATE
+            - HR
+            - RESEARCHER
+            - ADMIN
+          maxItems: 4
+          minItems: 0
+      required:
+      - revision
+      - roles
+    StatusRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        revision:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - DISABLED
+      required:
+      - revision
+      - status
     UpdateRequest:
       type: object
       additionalProperties: false
@@ -5837,6 +7851,67 @@ components:
       - description
       - revision
       - title
+    UpdateUserRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          minLength: 0
+        revision:
+          type: integer
+          format: int64
+      required:
+      - email
+      - revision
+    UserPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserView"
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        total:
+          type: integer
+          format: int64
+    UserView:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        email:
+          type: string
+        emailVerified:
+          type: boolean
+        passwordSetupRequired:
+          type: boolean
+        revision:
+          type: integer
+          format: int64
+        roles:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - DISABLED
+        updatedAt:
+          type: string
+          format: date-time
+        userId:
+          type: string
+        username:
+          type: string
     Validation:
       type: object
       properties:

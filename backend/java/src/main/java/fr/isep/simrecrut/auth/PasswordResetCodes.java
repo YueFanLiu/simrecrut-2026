@@ -9,6 +9,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class PasswordResetCodes {
     private final StringRedisTemplate redis;
+    private static final DefaultRedisScript<Long> SUBMIT = new DefaultRedisScript<>("""
+        local count = tonumber(redis.call('GET', KEYS[1]) or '0')
+        if count >= 60 then return 0 end
+        if redis.call('INCR', KEYS[1]) == 1 then redis.call('EXPIRE', KEYS[1], 600) end
+        return 1
+        """, Long.class);
     private static final DefaultRedisScript<Long> STORE = new DefaultRedisScript<>("""
         redis.call('HSET',KEYS[1],'digest',ARGV[1],'account',ARGV[2],'attempts','0')
         redis.call('EXPIRE',KEYS[1],600)
@@ -35,6 +41,9 @@ public class PasswordResetCodes {
         return account
         """, String.class);
     public PasswordResetCodes(StringRedisTemplate redis) { this.redis = redis; }
+    public boolean allowSubmission(String ipHash) {
+        return Long.valueOf(1).equals(redis.execute(SUBMIT, List.of("reset:submit:" + ipHash)));
+    }
     public boolean allow(String emailHash, String ipHash) {
         return Long.valueOf(1).equals(redis.execute(LIMIT, List.of("reset:cooldown:"+emailHash,
                 "reset:email:"+emailHash, "reset:ip:"+ipHash)));
