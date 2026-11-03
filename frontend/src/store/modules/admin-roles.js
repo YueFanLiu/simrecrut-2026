@@ -15,13 +15,11 @@ export const useAdminRolesStore = defineStore('adminRoles', {
       return row
     },
     async loadRoles(user, scenario = 'normal') {
-      if (!demoMode) { this.roles = await (await import('../../api/administration.js')).roles(); return this.roles }
       requireAdmin(user); await new Promise(resolve => setTimeout(resolve, 400))
       if (scenario === 'load-error') throw new Error('Unable to load roles. Please try again.')
       return scenario === 'empty' ? [] : this.listRoles(user)
     },
     async savePermissions(form, user, scenario = 'normal') {
-      if (!demoMode) { await (await import('../../api/administration.js')).rolePermissions(form); await this.loadRoles(user); return }
       requireAdmin(user)
       const snapshot = { ...form, permissions: Array.isArray(form.permissions) ? [...form.permissions] : form.permissions }, rows = this.roles
       const check = () => {

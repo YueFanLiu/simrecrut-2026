@@ -14,13 +14,11 @@ export const useAdminUsersStore = defineStore('adminUsers', {
       return accountProjection(row)
     },
     async loadUsers(user, scenario = 'normal') {
-      if (!demoMode) { this.users = await (await import('../../api/administration.js')).users(); return this.users }
       requireAdmin(user); await wait()
       if (scenario === 'load-error') throw new Error('Unable to load users. Please try again.')
       return scenario === 'empty' ? [] : this.listUsers(user)
     },
     async saveUser(form, user, scenario = 'normal') {
-      if (!demoMode) { await (await import('../../api/administration.js')).saveUser(form); await this.loadUsers(user); return }
       requireAdmin(user)
       const snapshot = { ...form }, rows = this.users
       const check = () => {
@@ -42,7 +40,6 @@ export const useAdminUsersStore = defineStore('adminUsers', {
       else this.users.unshift({ ...values, id: `USER-${String(Math.max(0, ...this.users.map(row => Number(row.id.slice(5)))) + 1).padStart(3, '0')}`, status: 'Active', createdAt: new Date().toISOString(), lastLogin: null, revision: 0 })
     },
     async changeStatus(id, expectedRevision, status, user, scenario = 'normal') {
-      if (!demoMode) { await (await import('../../api/administration.js')).changeUserStatus(id, status); await this.loadUsers(user); return }
       requireAdmin(user); const rows = this.users
       const check = () => {
         requireAdmin(user)

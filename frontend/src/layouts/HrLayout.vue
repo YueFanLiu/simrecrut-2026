@@ -1,5 +1,6 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
+import { demoMode } from '../config/runtime.js'
 import { ElButton } from 'element-plus'
 import BrandMark from '../components/simrecrut/BrandMark.vue'
 import { useAuthStore } from '../store/modules/auth.js'
@@ -20,8 +21,8 @@ async function signOut() { await auth.logout(); router.replace({ name: 'Login' }
       <RouterLink :to="{ name: 'HrJobNew' }" :aria-current="route.name === 'HrJobNew' ? 'page' : undefined">Create Job</RouterLink>
       <RouterLink :to="{ name: 'HrCases' }" :aria-current="['HrCases', 'HrCaseDetail'].includes(route.name) ? 'page' : undefined">Case Results</RouterLink>
       <RouterLink :to="{ name: 'MyReviewTasks' }" :aria-current="['MyReviewTasks', 'ReviewTaskDetail'].includes(route.name) ? 'page' : undefined">My Review Tasks</RouterLink>
-    </nav><p>Manage your demo job drafts and published versions.</p></aside><main><slot /></main></div>
-    <footer>SimRecrut · HR workspace · Frontend demonstration</footer>
+    </nav><p v-if="demoMode">Manage your demo job drafts and published versions.</p></aside><main><slot /></main></div>
+    <footer>SimRecrut · HR workspace {{ demoMode ? '· Frontend demonstration' : '' }}</footer>
   </div>
 </template>
 

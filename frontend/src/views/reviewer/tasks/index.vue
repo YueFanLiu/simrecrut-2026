@@ -1,4 +1,5 @@
 <script setup>
+import { demoMode } from '../../../config/runtime.js'
 import { useRouter } from 'vue-router'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { ElAlert, ElButton, ElEmpty, ElInput, ElOption, ElPagination, ElSelect, ElSkeleton, ElTag } from 'element-plus'
@@ -7,7 +8,7 @@ import ResearchLayout from '../../../layouts/ResearchLayout.vue'
 import { useAuthStore } from '../../../store/modules/auth.js'
 import { useResearchModuleStore } from '../../../store/modules/research-module.js'
 import { useReviewTasksStore } from '../../../store/modules/review-tasks.js'
-import { filterReviewTasks, reviewConditions, reviewStatuses } from '../../../mock/review-tasks.js'
+import { filterReviewTasks, reviewConditions, reviewStatuses as demoStatuses } from '../../../mock/review-tasks.js'
 import { reviewTasksScenario } from '../../../config/demo.js'
 
 const router = useRouter()
@@ -19,7 +20,8 @@ const rows = computed(() => loaded.value && (auth.hasDemoRole('HR') || auth.hasD
   ? tasks.listTasks(auth.demoUser, research, clock.value) : [])
 const filtered = computed(() => filterReviewTasks(rows.value, filters))
 const visible = computed(() => filtered.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value))
-const pending = computed(() => rows.value.filter(row => row.status === 'Pending').length)
+const reviewStatuses = demoMode ? demoStatuses : ['Pending', 'Opened', 'Submitted', 'Cancelled', 'Expired']
+const pending = computed(() => rows.value.filter(row => ['Pending', 'Opened'].includes(row.status)).length)
 const submitted = computed(() => rows.value.filter(row => row.status === 'Submitted').length)
 const formatDate = value => new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }).format(new Date(value))
 let active = true, sequence = 0
@@ -43,8 +45,8 @@ loadTasks()
 <template>
   <component :is="auth.hasDemoRole('HR') ? HrLayout : ResearchLayout">
     <section aria-labelledby="tasks-title" :aria-busy="loading">
-      <div class="page-heading"><div><h1 id="tasks-title">My Review Tasks</h1><p>Review responsibilities assigned to your current demo account.</p></div><ElButton :loading="loading" :disabled="loading" @click="loadTasks">Refresh</ElButton></div>
-      <ElAlert type="info" :closable="false" title="Frontend demonstration only. Reviewer is an assigned responsibility of an HR or Researcher account. This list contains no assessment scores, decisions or other reviewers' reasons." />
+      <div class="page-heading"><div><h1 id="tasks-title">My Review Tasks</h1><p>Review responsibilities assigned to your account.</p></div><ElButton :loading="loading" :disabled="loading" @click="loadTasks">Refresh</ElButton></div>
+      <ElAlert v-if="demoMode" type="info" :closable="false" title="Frontend demonstration only. Reviewer is an assigned responsibility of an HR or Researcher account. This list contains no assessment scores, decisions or other reviewers' reasons." />
       <p class="availability">Open a task to review its anonymised professional facts. Submitted tasks are read-only.</p>
       <div v-if="!loading && !error" class="stats"><article><span>Total Assigned Tasks</span><strong>{{ rows.length }}</strong></article><article><span>Pending</span><strong>{{ pending }}</strong></article><article><span>Submitted</span><strong>{{ submitted }}</strong></article></div>
       <div class="filters"><ElInput v-model="filters.keyword" aria-label="Search review tasks" placeholder="Search task ID, experiment ID or job" clearable /><ElSelect v-model="filters.status" aria-label="Filter by status" placeholder="All Statuses"><ElOption label="All Statuses" value="" /><ElOption v-for="value in reviewStatuses" :key="value" :value="value" :label="value" /></ElSelect><ElSelect v-model="filters.condition" aria-label="Filter by condition" placeholder="All Conditions"><ElOption label="All Conditions" value="" /><ElOption v-for="value in reviewConditions" :key="value" :value="value" :label="value" /></ElSelect><ElSelect v-model="filters.purpose" aria-label="Filter by purpose" placeholder="All Purposes"><ElOption label="All Purposes" value="" /><ElOption label="Primary" value="Primary" /><ElOption label="Research" value="Research" /></ElSelect><ElSelect v-model="filters.sort" aria-label="Sort review tasks"><ElOption label="Newest first" value="latest" /><ElOption label="Oldest first" value="oldest" /></ElSelect><ElButton @click="resetFilters">Reset Filters</ElButton></div>

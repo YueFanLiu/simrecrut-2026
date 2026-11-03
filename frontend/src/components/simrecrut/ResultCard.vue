@@ -15,7 +15,7 @@ defineProps({
   <article class="result-card" :aria-label="title">
     <div class="card-heading"><h3>{{ title }}</h3><ElTag type="info">{{ status }}</ElTag></div>
     <p v-if="decision" class="decision" :class="decision.toLowerCase()">{{ decision }}</p>
-    <p v-else class="pending">{{ status === 'Not assigned' ? 'No review assigned' : 'Awaiting review' }}</p>
+    <p v-else class="pending">{{ status === 'Not assigned' ? 'No review assigned' : status === 'Unavailable' ? 'Awaiting result' : 'Awaiting review' }}</p>
     <div v-if="score !== null" class="score"><strong>{{ score }}</strong><span>Scale {{ scale }}</span></div>
     <p class="note">{{ note }}</p>
     <slot />

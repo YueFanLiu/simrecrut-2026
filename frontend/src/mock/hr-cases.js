@@ -61,8 +61,9 @@ export function selectHrCaseSummaries(cases, user, jobs, now = Date.now()) {
 
 export function filterHrCases(rows, { keyword = '', jobId = '', sort = 'latest' }) {
   const query = keyword.trim().toLowerCase()
+  const date = row => row.createdAt || row.purgeAt || ''
   return rows.filter((row) => (!jobId || row.jobId === jobId)
     && (!query || [row.caseId, row.jobTitle].some((value) => value.toLowerCase().includes(query))))
-    .sort((a, b) => (sort === 'oldest' ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt))
+    .sort((a, b) => (sort === 'oldest' ? date(a).localeCompare(date(b)) : date(b).localeCompare(date(a)))
       || a.caseId.localeCompare(b.caseId, 'en'))
 }

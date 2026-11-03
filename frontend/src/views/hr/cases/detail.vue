@@ -47,7 +47,9 @@ async function loadDetail() {
     await new Promise((resolve) => setTimeout(resolve, 400))
     if (!current()) return
     if (hrDetailScenario === 'error') throw new Error('Unable to load case details. Please try again.')
-    data.value = await cases.readDetail(auth.demoUser, jobs.jobs, caseId, hrDetailScenario)
+    const result = await cases.readDetail(auth.demoUser, jobs.jobs, caseId, hrDetailScenario)
+    if (!current()) return
+    data.value = result
     clock.value = Date.now()
   } catch (failure) { if (current()) error.value = failure.message }
   finally { if (current()) loading.value = false }
@@ -61,14 +63,14 @@ onBeforeUnmount(() => { active = false; sequence += 1; data.value = null; clearI
     <section aria-labelledby="detail-title" :aria-busy="loading">
       <nav aria-label="Breadcrumb" class="breadcrumb"><RouterLink :to="resultsRoute">Authorized Cases</RouterLink><span>/</span><span>Case Details</span></nav>
       <div class="page-heading"><div><h1 id="detail-title">Authorized Case Details</h1><p>Read-only professional snapshot and recorded assessment results.</p></div><div class="actions"><ElButton @click="router.push(resultsRoute)">Back to Results</ElButton><ElButton :loading="loading" :disabled="loading" @click="loadDetail">Refresh</ElButton></div></div>
-      <ElAlert type="info" :closable="false" title="Frontend demonstration only. These fixed examples are unrelated to a real CV. Scores and contributions are stored mock values; no backend calculation or model request is performed." />
+      <ElAlert v-if="demoMode" type="info" :closable="false" title="Frontend demonstration only. These fixed examples are unrelated to a real CV. Scores and contributions are stored mock values; no backend calculation or model request is performed." />
       <div v-if="loading" class="panel" role="status"><p>Loading authorised case details...</p><ElSkeleton :rows="7" animated /></div>
       <div v-else-if="error || !accessible" class="panel state-panel" role="alert"><h2>Case Unavailable</h2><p>{{ error || 'This case is unavailable or access is no longer authorised.' }}</p><ElButton type="primary" @click="loadDetail">Try Again</ElButton></div>
       <template v-else-if="data">
-        <div class="panel summary"><div><span>Case ID</span><strong>{{ data.caseId }}</strong></div><div><span>Job / Fixed Version</span><strong>{{ data.jobTitle }} · {{ data.version }}</strong></div><div><span>Access</span><strong>{{ data.accessLabel }}</strong></div><ElTag :type="data.statusType">{{ data.processingLabel }}</ElTag></div>
+        <div class="panel summary"><div><span>Case ID</span><strong>{{ data.caseId }}</strong></div><div><span>Job / Fixed Version</span><strong>{{ data.jobTitle }} · {{ data.version }}</strong></div><div><span>Access</span><strong>{{ data.accessLabel }}</strong></div><ElTag v-if="data.processingLabel" :type="data.statusType">{{ data.processingLabel }}</ElTag></div>
         <div class="content-grid">
           <article class="panel"><h2>Professional Snapshot</h2><dl v-if="data.professional"><template v-for="row in data.professional" :key="row.category"><dt>{{ row.category }}</dt><dd>{{ row.value }}</dd></template></dl><p v-else>Awaiting confirmed professional facts. No confirmed snapshot is available yet.</p></article>
-          <article class="panel"><h2>Recorded Versions</h2><dl><dt>Job version ID</dt><dd>{{ data.versions.jobVersionId }}</dd><dt>Weight configuration</dt><dd>{{ data.versions.weights }}</dd><dt>Matching rules</dt><dd>{{ data.versions.matching }}</dd><dt>Protocol</dt><dd>{{ data.versions.protocol }}</dd><dt>Neutral model</dt><dd>{{ data.versions.neutral }}</dd><dt>Biased model</dt><dd>{{ data.versions.biased }}</dd></dl></article>
+          <article class="panel"><h2>Recorded Versions</h2><dl><dt>Job version ID</dt><dd>{{ data.versions.jobVersionId }}</dd><template v-if="data.versions.weights"><dt>Weight configuration</dt><dd>{{ data.versions.weights }}</dd></template><dt>Matching rules</dt><dd>{{ data.versions.matching }}</dd><dt>Protocol</dt><dd>{{ data.versions.protocol }}</dd><dt>Neutral model</dt><dd>{{ data.versions.neutral }}</dd><dt>Biased model</dt><dd>{{ data.versions.biased }}</dd></dl></article>
         </div>
         <div v-if="!data.resultsVisible" class="panel"><ElAlert type="warning" :closable="false" title="Results are hidden for the current blind-review visibility policy. Scores, decisions and matching contributions are not included in this view." /></div>
         <template v-else>

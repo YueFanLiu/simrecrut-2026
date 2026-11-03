@@ -1,5 +1,6 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
+import { demoMode } from '../config/runtime.js'
 import { ElButton } from 'element-plus'
 import BrandMark from '../components/simrecrut/BrandMark.vue'
 import { useAuthStore } from '../store/modules/auth.js'
@@ -24,7 +25,7 @@ async function signOut() { await auth.logout(); router.replace({ name: 'Login' }
       <RouterLink :to="{ name: 'AdminFailures' }" :aria-current="route.name === 'AdminFailures' ? 'page' : undefined">Failed Jobs &amp; Errors</RouterLink>
       <RouterLink :to="{ name: 'AdminAudit' }" :aria-current="route.name === 'AdminAudit' ? 'page' : undefined">Audit Logs</RouterLink>
 </nav><p>Administration uses synthetic frontend data.</p></aside><main><slot /></main></div>
-    <footer>SimRecrut · Administration · Frontend demonstration</footer>
+    <footer>SimRecrut · Administration {{ demoMode ? '· Frontend demonstration' : '' }}</footer>
   </div>
 </template>
 

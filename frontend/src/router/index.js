@@ -51,10 +51,10 @@ const router = createRouter({
       component: () => import('../views/admin/models/index.vue'),
       meta: { title: 'Model Versions and Release', requiresDemoSession: true, demoRole: 'Admin' } },
     { path: '/admin/roles', name: 'AdminRoles',
-      component: () => import('../views/admin/roles/index.vue'),
+      component: () => demoMode ? import('../views/admin/roles/index.vue') : import('../views/admin/ConnectedIdentity.vue'),
       meta: { title: 'Roles and Permissions', requiresDemoSession: true, demoRole: 'Admin' } },
     { path: '/admin/users', name: 'AdminUsers',
-      component: () => import('../views/admin/users/index.vue'),
+      component: () => demoMode ? import('../views/admin/users/index.vue') : import('../views/admin/ConnectedIdentity.vue'),
       meta: { title: 'User Management', requiresDemoSession: true, demoRole: 'Admin' } },
     { path: '/reviewer/tasks', name: 'MyReviewTasks',
       component: () => import('../views/reviewer/tasks/index.vue'),
@@ -62,6 +62,9 @@ const router = createRouter({
     { path: '/reviewer/tasks/:reviewId', name: 'ReviewTaskDetail',
       component: () => import('../views/reviewer/tasks/detail.vue'),
       meta: { title: 'Review Task Details and Submission', requiresDemoSession: true, demoRoles: ['HR', 'Researcher'] } },
+    ...(!demoMode ? [{ path: '/research/primary-reviews', name: 'AssignPrimaryReviews',
+      component: () => import('../views/research/AssignPrimaryReviews.vue'),
+      meta: { title: 'Assign Primary Reviews', requiresDemoSession: true, demoRole: 'Researcher' } }] : []),
     { path: '/research', component: () => import('../views/research/ResearchWorkspace.vue'),
       meta: { requiresDemoSession: true, demoRole: 'Researcher' }, redirect: '/research/experiments',
       children: [
@@ -121,7 +124,7 @@ const router = createRouter({
     {
       path: '/candidate/cases/:caseId/review',
       name: 'CvReview',
-      component: () => import('../views/candidate/cases/review.vue'),
+      component: () => demoMode ? import('../views/candidate/cases/review.vue') : import('../views/candidate/cases/ConnectedReview.vue'),
       meta: { title: 'Review your CV facts', requiresDemoSession: true, demoRole: 'Candidate' },
     },
     {

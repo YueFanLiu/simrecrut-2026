@@ -5,6 +5,8 @@ import { recordDemoAudit } from '../../mock/admin-audit.js'
 import { resolveReviewTask, validateReviewSubmission } from '../../mock/review-task-detail.js'
 import { createReviewTasks, researchAssignmentTasks, selectReviewTaskSummaries } from '../../mock/review-tasks.js'
 
+let pendingSubmission
+
 export const useReviewTasksStore = defineStore('reviewTasks', {
   state: () => ({ tasks: demoMode ? createReviewTasks() : [], details: {} }),
   actions: {
@@ -28,7 +30,15 @@ export const useReviewTasksStore = defineStore('reviewTasks', {
       return this.readDetail(id, user, research)
     },
     async submitReview(id, form, user, research, scenario = 'normal') {
-      if (!demoMode) { const row = await (await import('../../api/reviews.js')).submitReview(id, form); this.details[id] = row; return row }
+      if (!demoMode) {
+        const api = await import('../../api/reviews.js')
+        const signature = JSON.stringify([id, form.decision, form.reason.trim()])
+        if (pendingSubmission?.signature !== signature) pendingSubmission = { signature, key: crypto.randomUUID() }
+        await api.submitReview(id, form, pendingSubmission.key)
+        pendingSubmission = undefined
+        this.details[id] = { ...this.details[id], status: 'Submitted', submission: null }
+        return this.loadDetail(id, user, research, scenario)
+      }
       const failure = validateReviewSubmission(form)
       if (failure) throw new Error(failure)
       const payload = { decision: form.decision, reason: form.reason.trim() }
@@ -44,6 +54,6 @@ export const useReviewTasksStore = defineStore('reviewTasks', {
       recordDemoAudit('REVIEW_SUBMITTED', 'Review Task', id, user.username)
       return this.readDetail(id, user, research)
     },
-    clearTasks() { this.$reset() },
+    clearTasks() { pendingSubmission = undefined; this.$reset() },
   },
 })

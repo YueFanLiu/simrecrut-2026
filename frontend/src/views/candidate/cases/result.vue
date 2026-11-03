@@ -18,7 +18,7 @@ const cases = useCasesStore()
 const clock = ref(Date.now())
 const timer = setInterval(() => { clock.value = Date.now() }, 1000)
 const entry = computed(() => cases.getOwnedCase(route.params.caseId, clock.value))
-const ready = computed(() => entry.value?.processingStatus === 'AUTOMATED_COMPLETE')
+const ready = computed(() => demoMode ? entry.value?.processingStatus === 'AUTOMATED_COMPLETE' : Boolean(entry.value?.confirmedAt))
 const results = ref(null)
 const loading = ref(false)
 const busy = ref('')
@@ -33,9 +33,9 @@ const humanCards = computed(() => results.value ? [
   { key: 'instructedBias', title: 'Instructed-Bias Human Decision', ...results.value.humans.instructedBias },
 ] : [])
 const comparisonRows = computed(() => results.value ? [
-  { method: 'Objective Fit Score', score: results.value.objective.displayScore, scale: '0–100', decision: results.value.objective.decision, status: 'Complete' },
-  { method: 'Neutral ML Acceptance Score', score: results.value.neutral.acceptanceScore, scale: '0–1', decision: results.value.neutral.decision, status: 'Complete' },
-  { method: 'Biased ML Acceptance Score', score: results.value.biased.acceptanceScore, scale: '0–1', decision: results.value.biased.decision, status: 'Complete' },
+  { method: 'Objective Fit Score', score: results.value.objective?.displayScore ?? '—', scale: '0–100', decision: results.value.objective?.decision ?? '—', status: results.value.objective ? 'Complete' : 'Pending' },
+  { method: 'Neutral ML Acceptance Score', score: results.value.neutral?.acceptanceScore ?? '—', scale: '0–1', decision: results.value.neutral?.decision ?? '—', status: results.value.neutral ? 'Complete' : 'Pending' },
+  { method: 'Biased ML Acceptance Score', score: results.value.biased?.acceptanceScore ?? '—', scale: '0–1', decision: results.value.biased?.decision ?? '—', status: results.value.biased ? 'Complete' : 'Pending' },
   ...humanCards.value.map((human) => ({ method: human.title, score: 'Not applicable', scale: 'Decision only', decision: human.decision || 'No decision yet', status: human.status })),
 ] : [])
 const researchLabels = { schoolPrestige: 'School prestige', referral: 'Referral', gender: 'Gender', ethnicity: 'Ethnicity' }
@@ -55,7 +55,7 @@ async function loadResults(refreshHuman = false) {
     const data = await cases.loadResults(caseId, resultsScenario, refreshHuman)
     if (pageActive && request === sequence && route.params.caseId === caseId) {
       results.value = data
-      if (refreshHuman) feedback.value = 'Human results refreshed. Automated example results are unchanged.'
+      if (refreshHuman) feedback.value = 'Results refreshed.'
     }
   } catch (failure) {
     if (pageActive && request === sequence) error.value = failure.message
@@ -98,7 +98,7 @@ async function refreshConnectedCase() {
   if (demoMode) return
   const request = ++connectedRequest, id = String(route.params.caseId)
   try {
-    const row = await (await import('../../../api/cases.js')).caseDetail(id)
+    const row = await cases.loadConnectedCase(id)
     if (connectedActive && request === connectedRequest && route.params.caseId === id) cases.cases[id] = row
   } catch (error) {
     if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(error.message) }
@@ -106,15 +106,14 @@ async function refreshConnectedCase() {
 }
 watch(() => route.params.caseId, refreshConnectedCase)
 refreshConnectedCase()
-const connectedTimer = null
-onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterval(connectedTimer) })
+onBeforeUnmount(() => { connectedActive = false; connectedRequest++ })
 </script>
 
 <template>
   <CandidateLayout>
-    <section v-if="busy === 'delete'" class="panel state-panel" role="status"><h1>Deleting Demo Case...</h1><p>Removing local case data and all mock results from this session.</p></section>
+    <section v-if="busy === 'delete'" class="panel state-panel" role="status"><h1>Deleting Case...</h1><p>Revoking access and requesting removal of case data.</p></section>
     <section v-else-if="!entry" class="panel state-panel">
-      <h1>Demo Case Not Available</h1><p>This case was removed, has expired or is not available in your demo session.</p>
+      <h1>Case Not Available</h1><p>This case was removed, has expired or is not available to your account.</p>
       <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">Back to Jobs</ElButton>
     </section>
     <section v-else-if="!ready" class="panel state-panel"><h1>Results Not Ready</h1>
@@ -125,9 +124,9 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
       <nav class="breadcrumb" aria-label="Breadcrumb"><RouterLink :to="{ name: 'PublishedJobs' }">Jobs</RouterLink><span>/</span>
         <RouterLink :to="{ name: 'SimulationProgress', params: { caseId: entry.caseId } }">{{ entry.caseId }}</RouterLink><span>/</span><span aria-current="page">Results</span></nav>
       <h1 id="results-title">Simulation Results</h1><p class="subtitle">Three automated assessments and two separate human review conditions.</p>
-      <ElAlert type="info" :closable="false" title="Frontend demo: scores and decisions are fixed examples unrelated to your CV or selected job. No model or real reviewer is involved. Reload restores the checkpoint and regenerates fixed examples; optional research values and human updates are not retained. Sign out clears the case." />
-      <CaseProgressStepper :current-step="3" review-confirmed simulation-complete />
-      <div v-if="loading" class="panel" role="status"><p>Loading demo results...</p><ElSkeleton :rows="8" animated /></div>
+      <ElAlert v-if="demoMode" type="info" :closable="false" title="Frontend demo: scores and decisions are fixed examples unrelated to your CV or selected job. No model or real reviewer is involved. Reload restores the checkpoint and regenerates fixed examples; optional research values and human updates are not retained. Sign out clears the case." />
+      <CaseProgressStepper :current-step="3" review-confirmed :simulation-complete="entry.processingStatus === 'AUTOMATED_COMPLETE'" />
+      <div v-if="loading" class="panel" role="status"><p>Loading results...</p><ElSkeleton :rows="8" animated /></div>
       <div v-else-if="!results" class="panel state-panel" role="alert"><h2>Results Could Not Be Loaded</h2><p>{{ error }}</p>
         <ElButton type="primary" @click="loadResults()">Try Again</ElButton></div>
       <template v-else>
@@ -136,23 +135,23 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
         <div class="results-grid">
           <aside class="case-column">
             <section class="panel"><h2>Case Information</h2><dl>
-              <div><dt>Job</dt><dd>{{ results.job.title }}</dd></div><div><dt>Company</dt><dd>{{ results.job.company }}</dd></div>
-              <div><dt>Location</dt><dd>{{ results.job.location }}</dd></div><div><dt>Employment</dt><dd>{{ results.job.employmentType }}</dd></div>
+              <div><dt>Job</dt><dd>{{ results.job.title }}</dd></div><div v-if="results.job.company"><dt>Company</dt><dd>{{ results.job.company }}</dd></div>
+              <div v-if="results.job.location"><dt>Location</dt><dd>{{ results.job.location }}</dd></div><div v-if="results.job.employmentType"><dt>Employment</dt><dd>{{ results.job.employmentType }}</dd></div>
               <div><dt>Job version</dt><dd>{{ results.job.version }}</dd></div><div><dt>Case ID</dt><dd>{{ results.caseId }}</dd></div>
-              <div><dt>Completed</dt><dd>{{ formatDate(results.completedAt) }} (Paris)</dd></div><div><dt>Deletion deadline</dt><dd>{{ formatDate(results.expiresAt) }} (Paris)</dd></div>
+              <div v-if="results.completedAt"><dt>Completed</dt><dd>{{ formatDate(results.completedAt) }} (Paris)</dd></div><div><dt>Deletion deadline</dt><dd>{{ formatDate(results.expiresAt) }} (Paris)</dd></div>
             </dl><p class="small">All five methods refer to the same confirmed facts and retained job version. Results are read-only.</p></section>
             <ElButton @click="router.push({ name: 'SimulationProgress', params: { caseId: entry.caseId } })">Back to Progress</ElButton>
             <ElButton @click="router.push({ name: 'PublishedJobs' })">Choose Another Job</ElButton>
             <ElButton @click="router.push({ name: 'MySimulations' })">My simulations</ElButton>
-            <ElButton type="danger" plain :disabled="Boolean(busy)" @click="confirmDelete = true">Delete My Simulation Data</ElButton>
+            <ElButton type="danger" plain :disabled="Boolean(busy) || results.canDeleteNow === false" @click="confirmDelete = true">Delete My Simulation Data</ElButton>
           </aside>
           <div class="result-column">
             <ElTabs v-model="activeTab" class="result-tabs" aria-label="Result views">
               <ElTabPane label="Summary" name="summary">
                 <h2 class="section-title">Automated Results</h2><div class="automated-grid">
-                  <ResultCard title="Objective Fit Score" :score="results.objective.displayScore" scale="0–100" :decision="results.objective.decision" note="Fit under the example objective rule; a simulator outcome." />
-                  <ResultCard title="Neutral ML Acceptance Score" :score="results.neutral.acceptanceScore" scale="0–1" :decision="results.neutral.decision" note="An example model score, not a real hiring probability." />
-                  <ResultCard title="Biased ML Acceptance Score" :score="results.biased.acceptanceScore" scale="0–1" :decision="results.biased.decision" note="An experimental example model score, not a real hiring probability." />
+                  <ResultCard title="Objective Fit Score" :status="results.objective ? 'Complete' : 'Unavailable'" :score="results.objective?.displayScore" scale="0–100" :decision="results.objective?.decision" note="Fit under the published matching rule." />
+                  <ResultCard title="Neutral ML Acceptance Score" :status="results.neutral ? 'Complete' : 'Unavailable'" :score="results.neutral?.acceptanceScore" scale="0–1" :decision="results.neutral?.decision" note="Model acceptance score on a 0–1 scale." />
+                  <ResultCard title="Biased ML Acceptance Score" :status="results.biased ? 'Complete' : 'Unavailable'" :score="results.biased?.acceptanceScore" scale="0–1" :decision="results.biased?.decision" note="Acceptance score under the experimental condition." />
                 </div>
                 <div class="section-heading"><h2>Human Results</h2><ElButton :loading="busy === 'refresh'" :disabled="Boolean(busy)" @click="loadResults(true)">Refresh Human Results</ElButton></div>
                 <div class="human-grid"><ResultCard v-for="human in humanCards" :key="human.key" :title="human.title" :status="human.status" :decision="human.decision"
@@ -160,11 +159,11 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
                   <p v-if="human.reason" class="human-reason">{{ human.reason }}</p>
                 </ResultCard></div>
                 <h2 class="section-title chart-heading">Scores on Separate Scales</h2><div class="scales-grid">
-                  <ScoreScalePanel title="Objective Fit" :maximum="100" :items="[{ label: 'Objective', value: results.objective.displayScore }]" note="Objective fit uses its own 0–100 display scale." />
-                  <ScoreScalePanel title="ML Acceptance Scores" :maximum="1" :items="[{ label: 'Neutral ML', value: results.neutral.acceptanceScore }, { label: 'Biased ML', value: results.biased.acceptanceScore }]" note="ML scores use 0–1. Do not compare or subtract them from the Objective display score." />
+                  <ScoreScalePanel title="Objective Fit" :maximum="100" :items="[{ label: 'Objective', value: results.objective?.displayScore }]" note="Objective fit uses its own 0–100 display scale." />
+                  <ScoreScalePanel title="ML Acceptance Scores" :maximum="1" :items="[{ label: 'Neutral ML', value: results.neutral?.acceptanceScore }, { label: 'Biased ML', value: results.biased?.acceptanceScore }]" note="ML scores use 0–1. Do not compare or subtract them from the Objective display score." />
                 </div>
                 <section class="panel interpretation"><h2>How to Read These Results</h2><p>Accept and Reject are outcomes under each method's own rule or instruction. They are not a hiring recommendation.</p>
-                  <p>Pending and Not assigned mean no human decision exists yet. Different example outcomes do not establish the cause of a difference or prove discrimination.</p></section>
+                  <p>Pending and Not assigned mean no human decision exists yet. Different outcomes do not establish the cause of a difference or prove discrimination.</p></section>
               </ElTabPane>
               <ElTabPane label="Detailed Comparison" name="comparison" lazy>
                 <section class="panel"><h2>Five-Method Comparison</h2><p>Compare decisions with their status and score scale. Human results contain decisions only.</p>
@@ -174,12 +173,12 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
                 </section>
               </ElTabPane>
               <ElTabPane label="Explanations" name="explanations" lazy>
-                <section class="panel explanation"><h2>Objective Fit Score</h2><h3>Example Strengths</h3><ul><li v-for="strength in results.objective.strengths" :key="strength">{{ strength }}</li></ul>
-                  <h3>Example Gaps</h3><ul><li v-for="gap in results.objective.gaps" :key="gap">{{ gap }}</li></ul><p class="small">These fixed example explanations were not calculated from your confirmed facts.</p></section>
-                <section class="panel explanation"><h2>Neutral ML Acceptance Score</h2><p>The Neutral method uses professional information without research attributes. This demo shows a fixed example output; no model explanation is available.</p></section>
-                <section class="panel explanation"><h2>Biased ML Acceptance Score</h2><p>The Biased method represents an experimental condition. This fixed example does not measure the effect of any particular attribute.</p>
-                  <template v-if="results.biased.attributeSummary"><h3>Permitted Research Attribute Summary</h3><dl><div v-for="(value, key) in results.biased.attributeSummary" :key="key"><dt>{{ researchLabels[key] }}</dt><dd>{{ value }}</dd></div></dl>
-                    <p class="small">UNKNOWN means no value was provided. These saved values do not change the fixed demo score.</p></template>
+                <section class="panel explanation"><h2>Objective Fit Score</h2><h3>Strengths</h3><ul><li v-for="strength in results.objective?.strengths" :key="strength">{{ strength }}</li></ul>
+                  <h3>Gaps</h3><ul><li v-for="gap in results.objective?.gaps" :key="gap">{{ gap }}</li></ul><p v-if="demoMode" class="small">These fixed example explanations were not calculated from your confirmed facts.</p></section>
+                <section class="panel explanation"><h2>Neutral ML Acceptance Score</h2><p>The Neutral method uses professional information without research attributes. </p></section>
+                <section class="panel explanation"><h2>Biased ML Acceptance Score</h2><p>The Biased method represents an experimental condition. Its score reflects the configured research scenario.</p>
+                  <template v-if="results.biased?.attributeSummary"><h3>Permitted Research Attribute Summary</h3><dl><div v-for="(value, key) in results.biased?.attributeSummary" :key="key"><dt>{{ researchLabels[key] }}</dt><dd>{{ value }}</dd></div></dl>
+                    <p class="small">UNKNOWN means no value was provided. </p></template>
                 </section>
                 <section v-for="human in humanCards" :key="human.key" class="panel explanation"><div class="section-heading"><h2>{{ human.title }}</h2><ElTag type="info">{{ human.status }}</ElTag></div><p>{{ human.reason || 'No submitted decision or reason is available for this condition.' }}</p></section>
               </ElTabPane>

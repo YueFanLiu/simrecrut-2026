@@ -1,4 +1,5 @@
 <script setup>
+import { demoMode } from '../../../config/runtime.js'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElDialog, ElForm, ElFormItem, ElInput, ElRadio, ElRadioGroup, ElSkeleton, ElTag } from 'element-plus'
@@ -22,6 +23,7 @@ const detail = computed(() => {
   catch { return null }
 })
 const labels = { experience: 'Work Experience', education: 'Education', skills: 'Skills', projects: 'Projects', languages: 'Languages' }
+const editable = computed(() => ['Pending', 'Opened'].includes(detail.value?.status))
 const instructionMissing = computed(() => detail.value?.controlled?.instructionAvailable === false)
 let active = true, sequence = 0
 const timer = setInterval(() => { clock.value = Date.now() }, 1000)
@@ -39,7 +41,7 @@ async function openConfirmation() {
   submitError.value = ''
   if (!await formRef.value.validate().catch(() => false)) return
   clock.value = Date.now()
-  if (detail.value?.status === 'Pending' && !instructionMissing.value) confirm.value = true
+  if (editable.value && !instructionMissing.value) confirm.value = true
 }
 async function submit() {
   if (submitting.value || !confirm.value) return
@@ -58,23 +60,23 @@ load()
   <component :is="auth.hasDemoRole('HR') ? HrLayout : ResearchLayout">
     <section aria-labelledby="review-title" :aria-busy="loading">
       <div class="heading"><div><p class="breadcrumb">Reviews / My Review Tasks / {{ route.params.reviewId }}</p><h1 id="review-title">Review Candidate Profile</h1><p>Evaluate the anonymised professional facts against the public job requirements.</p></div><ElButton @click="router.push({ name: 'MyReviewTasks' })">Back to Tasks</ElButton></div>
-      <ElAlert type="info" :closable="false" title="Frontend demonstration only. Your review is independent. Model scores, hiring thresholds and other reviewers' decisions are hidden." />
+      <ElAlert type="info" :closable="false" title="Review the assigned material and submit an independent decision." />
       <div v-if="loading" class="panel state" role="status"><p>Loading review task...</p><ElSkeleton :rows="8" animated /></div>
       <div v-else-if="loadError || !detail" class="panel state" role="alert"><h2>Review Task Unavailable</h2><p>{{ loadError || 'This task is unavailable or access is no longer authorised.' }}</p><ElButton @click="load">Try Again</ElButton></div>
       <template v-else>
         <ol class="steps" aria-label="Review workflow"><li>1. Read Profile</li><li>2. Evaluate</li><li>{{ detail.status === 'Submitted' ? '3. Submitted' : '3. Confirm and Submit' }}</li></ol>
         <div class="review-grid">
-          <article class="panel profile"><h2>Candidate Profile (Anonymised)</h2><p>Personal identity information is withheld. All facts below are mock data.</p><section v-for="(label, key) in labels" :key="key"><h3>{{ label }}</h3><p>{{ detail.professional[key] }}</p></section></article>
+          <article class="panel profile"><h2>Candidate Profile (Anonymised)</h2><p>Personal identity information is withheld. {{ demoMode ? 'All facts below are mock data.' : '' }}</p><section v-for="(label, key) in labels" :key="key"><h3>{{ label }}</h3><p>{{ detail.professional[key] }}</p></section></article>
           <article class="panel evaluation"><h2>Your Evaluation</h2>
             <section v-if="detail.controlled" class="instruction"><h3>Assigned Instructed-Bias Condition</h3><p>{{ detail.controlled.attribute }}: {{ detail.controlled.value }}</p><p>{{ detail.controlled.instruction }}</p></section>
             <template v-if="detail.status === 'Submitted'"><ElAlert type="success" :closable="false" title="Review submitted. Your decision is locked and cannot be changed." /><div v-if="detail.submission" class="own-submission"><h3>Your Decision</h3><ElTag>{{ detail.submission.decision }}</ElTag><h3>Your Reason</h3><p>{{ detail.submission.reason }}</p><p v-if="detail.submission.submittedAt">Submitted: {{ new Date(detail.submission.submittedAt).toUTCString() }}</p></div><p v-else>Your original decision and reason are unavailable. This task remains locked.</p></template>
-            <ElForm v-else ref="formRef" :model="form" :rules="rules" label-position="top" :disabled="submitting || confirm || instructionMissing" @submit.prevent="openConfirmation">
+            <ElForm v-else-if="editable" ref="formRef" :model="form" :rules="rules" label-position="top" :disabled="submitting || confirm || instructionMissing" @submit.prevent="openConfirmation">
               <ElFormItem label="Overall Decision" prop="decision"><ElRadioGroup v-model="form.decision" aria-label="Overall Decision"><ElRadio value="Accept">Accept</ElRadio><ElRadio value="Reject">Reject</ElRadio></ElRadioGroup></ElFormItem>
               <ElFormItem label="Reason" prop="reason"><ElInput v-model="form.reason" type="textarea" :rows="7" maxlength="2000" show-word-limit aria-label="Reason" placeholder="Explain the relevant professional evidence or gaps (1 to 2000 characters)." /></ElFormItem>
               <p>Submission requires confirmation. Once confirmed, your decision and reason cannot be changed.</p><ElAlert v-if="submitError" type="error" :closable="false" :title="submitError" /><ElButton type="primary" native-type="submit" :loading="submitting" :disabled="submitting || confirm || instructionMissing">Submit Decision</ElButton>
             </ElForm>
           </article>
-          <aside class="context"><article class="panel"><h2>Task Information</h2><dl><dt>Task ID</dt><dd>{{ detail.reviewId }}</dd><dt>Experiment</dt><dd>{{ detail.experimentId || 'No research experiment' }}</dd><dt>Condition</dt><dd>{{ detail.condition }}</dd><dt>Purpose</dt><dd>{{ detail.purpose }}</dd><dt>Job</dt><dd>{{ detail.job }}</dd><dt>Assigned Date (UTC)</dt><dd>{{ new Date(detail.assignedAt).toUTCString() }}</dd><dt>Status</dt><dd><ElTag :type="detail.status === 'Submitted' ? 'success' : 'warning'">{{ detail.status }}</ElTag></dd></dl></article><article class="panel"><h2>Public Job Requirements</h2><h3>{{ detail.job }}</h3><ul><li v-for="requirement in detail.requirements" :key="requirement">{{ requirement }}</li></ul></article><article class="panel"><h2>Review Guidelines / Rubric</h2><ul><li v-for="guideline in detail.rubric" :key="guideline">{{ guideline }}</li></ul></article></aside>
+          <aside class="context"><article class="panel"><h2>Task Information</h2><dl><dt>Task ID</dt><dd>{{ detail.reviewId }}</dd><dt>Experiment</dt><dd>{{ detail.experimentId || 'No research experiment' }}</dd><dt>Condition</dt><dd>{{ detail.condition }}</dd><dt>Purpose</dt><dd>{{ detail.purpose }}</dd><dt>Job</dt><dd>{{ detail.job }}</dd><template v-if="detail.versions?.jobVersionId"><dt>Job Version</dt><dd>{{ detail.versions.jobVersionId }}</dd></template><template v-if="detail.assignedAt"><dt>Assigned Date (UTC)</dt><dd>{{ new Date(detail.assignedAt).toUTCString() }}</dd></template><dt>Status</dt><dd><ElTag :type="detail.status === 'Submitted' ? 'success' : 'warning'">{{ detail.status }}</ElTag></dd></dl></article><article class="panel"><h2>Public Job Requirements</h2><h3>{{ detail.job }}</h3><ul><li v-for="requirement in detail.requirements" :key="requirement">{{ requirement }}</li></ul></article><article class="panel"><h2>Review Guidelines / Rubric</h2><ul><li v-for="guideline in detail.rubric" :key="guideline">{{ guideline }}</li></ul></article></aside>
         </div>
       </template>
       <ElDialog v-model="confirm" title="Confirm Review Submission" width="min(520px, calc(100vw - 32px))" :close-on-click-modal="!submitting" :close-on-press-escape="!submitting" :show-close="!submitting" :before-close="done => { if (!submitting) done() }">

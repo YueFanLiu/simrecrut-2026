@@ -23,8 +23,7 @@ export const useAuthStore = defineStore('auth', {
     hasDemoRole(role) {
       if (!demoMode) {
         const roles = this.demoUser?.roles || []
-        return (role.toLowerCase() !== 'candidate' && roles.includes('admin'))
-          || roles.some(value => String(value).toLowerCase() === role.toLowerCase())
+        return roles.some(value => String(value).toLowerCase() === role.toLowerCase())
       }
       return this.demoUser?.role === role
     },

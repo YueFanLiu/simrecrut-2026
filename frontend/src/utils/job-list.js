@@ -17,7 +17,8 @@ export function filterPublishedJobs(jobs, filters) {
 }
 
 export function formatPublishedDate(value) {
+  if (!value) return '—'
   return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
-  }).format(new Date(`${value}T00:00:00Z`))
+  }).format(new Date(value))
 }

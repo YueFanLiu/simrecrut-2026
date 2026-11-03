@@ -15,6 +15,7 @@ const route = useRoute()
 const router = useRouter()
 const cases = useCasesStore()
 const selected = ref(null)
+const uploading = ref(false)
 const confirmDelete = ref(false)
 const clock = ref(Date.now())
 const expiryTimer = setInterval(() => { clock.value = Date.now() }, 5000)
@@ -22,15 +23,16 @@ const entry = computed(() => cases.getOwnedCase(route.params.caseId, clock.value
 const processing = computed(() => isCaseProcessing(entry.value))
 const ready = computed(() => entry.value?.processingStatus === 'REVIEW_REQUIRED')
 const failed = computed(() => ['FAILED_RETRYABLE', 'FAILED_FINAL'].includes(entry.value?.processingStatus))
-const canChooseFile = computed(() => entry.value && !entry.value.confirmedAt && !processing.value && !ready.value)
-const expiresAt = computed(() => entry.value ? new Intl.DateTimeFormat('en-GB', {
+const canChooseFile = computed(() => entry.value && !entry.value.confirmedAt && !processing.value && !ready.value && (demoMode || entry.value.processingStatus === 'AWAITING_UPLOAD'))
+const expiresAt = computed(() => entry.value?.expiresAt ? new Intl.DateTimeFormat('en-GB', {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris',
-}).format(new Date(entry.value.expiresAt)) : '')
+}).format(new Date(entry.value.expiresAt)) : '—')
 
 async function upload() {
-  if (!selected.value || !canChooseFile.value) return
+  if (!selected.value || !canChooseFile.value || uploading.value) return
+  uploading.value = true
   const metadata = selected.value
-  try { await cases.uploadCv(route.params.caseId, metadata, extractionScenario); selected.value = null } catch (error) { ElMessage.error(error.message) }
+  try { await cases.uploadCv(route.params.caseId, metadata, extractionScenario); selected.value = null } catch (error) { ElMessage.error(error.message) } finally { uploading.value = false }
 }
 async function retryCase(caseId, scenario) {
   try { await cases.retryCase(caseId, scenario) } catch (error) { ElMessage.error(error.message) }
@@ -48,30 +50,31 @@ watch(() => route.params.caseId, () => { selected.value = null; confirmDelete.va
 onBeforeUnmount(() => clearInterval(expiryTimer))
 
 // Direct navigation must load the authorized case instead of requiring demo memory.
-let connectedRequest = 0, connectedActive = true
+let connectedRequest = 0, connectedActive = true, polling = false
 async function refreshConnectedCase() {
   if (demoMode) return
   const request = ++connectedRequest, id = String(route.params.caseId)
+  polling = true
   try {
-    const row = await (await import('../../../api/cases.js')).caseDetail(id)
+    const row = await cases.loadConnectedCase(id)
     if (connectedActive && request === connectedRequest && route.params.caseId === id) cases.cases[id] = row
   } catch (error) {
     if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(error.message) }
-  }
+  } finally { if (request === connectedRequest) polling = false }
 }
 watch(() => route.params.caseId, refreshConnectedCase)
 refreshConnectedCase()
-const connectedTimer = null
+const connectedTimer = setInterval(() => { if (!demoMode && processing.value && !polling) refreshConnectedCase() }, 2000)
 onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterval(connectedTimer) })
 </script>
 
 <template>
   <CandidateLayout>
     <section v-if="!entry" class="unavailable-panel">
-      <ElEmpty description="Demo case not available" />
-      <h1>Demo Case Not Available</h1>
-      <p>This case does not exist, has expired or is not available in your demo session.</p>
-      <p>Start a simulation from a published job to create a new demo case.</p>
+      <ElEmpty description="Case not available" />
+      <h1>Case Not Available</h1>
+      <p>This case does not exist, has expired or is not available to your account.</p>
+      <p>Start a simulation from a published job to create a new case.</p>
       <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">Back to Jobs</ElButton>
     </section>
     <section v-else-if="entry.confirmedAt" class="unavailable-panel">
@@ -82,14 +85,14 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
     <section v-else aria-labelledby="upload-title">
       <nav class="breadcrumb" aria-label="Breadcrumb">
         <RouterLink :to="{ name: 'PublishedJobs' }">Jobs</RouterLink><span aria-hidden="true">/</span>
-        <RouterLink :to="{ name: 'JobDetail', params: { jobId: entry.jobId } }">{{ entry.jobTitle }}</RouterLink>
+        <RouterLink v-if="entry.jobId" :to="{ name: 'JobDetail', params: { jobId: entry.jobId } }">{{ entry.jobTitle }}</RouterLink>
         <span aria-hidden="true">/</span><span aria-current="page">Upload CV</span>
       </nav>
       <h1 id="upload-title">Upload Your CV</h1>
       <p class="subtitle">Choose a PDF and preview the recruitment simulation's extraction workflow.</p>
-      <div class="case-context"><span>{{ entry.jobTitle }} · Version {{ entry.version }}</span>
-        <span>Demo case: {{ entry.caseId }}</span><span>Expires: {{ expiresAt }} (Paris time)</span></div>
-      <ElAlert class="demo-notice" type="info" :closable="false"
+      <div class="case-context"><span v-if="entry.jobTitle">{{ entry.jobTitle }}<template v-if="entry.version"> · Version {{ entry.version }}</template></span>
+        <span>Case: {{ entry.caseId }}</span><span>Expires: {{ expiresAt }} (Paris time)</span></div>
+      <ElAlert v-if="demoMode" class="demo-notice" type="info" :closable="false"
         title="Frontend demo only: PDF checks run locally. No file is uploaded and no OCR or AI extraction occurs. Sample facts are unrelated to your PDF. Reload before confirmation requires a new upload; confirmed checkpoints survive reload in this tab." />
       <CaseProgressStepper :ready-for-review="ready" />
       <div class="upload-grid">
@@ -104,24 +107,24 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
           <aside class="tips-panel" aria-labelledby="tips-title">
             <h2 id="tips-title">Tips</h2>
             <ul><li>Use a clear, up-to-date CV.</li><li>Choose a readable PDF with no password or encryption.</li>
-              <li>Use a sample CV when exploring this frontend demonstration.</li></ul>
+              <li v-if="demoMode">Use a sample CV when exploring this frontend demonstration.</li></ul>
           </aside>
           <ElButton v-if="canChooseFile" class="upload-button" type="primary" :disabled="!selected"
-            @click="upload">Upload and Extract</ElButton>
+            :loading="uploading" @click="upload">Upload and Extract</ElButton>
         </div>
         <section class="extraction-panel" aria-labelledby="extraction-title" :aria-busy="processing">
           <h2 id="extraction-title">Extraction Status</h2>
           <div v-if="processing" class="processing-state" role="status" aria-live="polite">
             <span class="spinner" aria-hidden="true"></span>
             <h3>{{ entry.processingStatus === 'UPLOADED' ? 'Preparing the demo upload...' : 'Extracting information...' }}</h3>
-            <p>{{ entry.processingStatus === 'UPLOADED' ? 'Your PDF checks passed. Preparing the simulated extraction.' : 'The frontend is simulating extraction. Please wait.' }}</p>
+            <p>{{ entry.processingStatus === 'UPLOADED' ? 'Your PDF checks passed. Preparing the simulated extraction.' : 'Professional facts are being extracted. Please wait.' }}</p>
             <p>Stage: {{ entry.stage }}</p>
-            <p>Duplicate upload is unavailable while this demo is processing.</p>
+            <p>Duplicate upload is unavailable while extraction is running.</p>
           </div>
           <div v-else-if="failed" class="failure-state" role="alert">
-            <h3>{{ entry.stage === 'Upload' ? 'Demo upload failed' : 'Demo extraction failed' }}</h3>
+            <h3>{{ entry.stage === 'Upload' ? 'Demo upload failed' : 'Extraction failed' }}</h3>
             <p>{{ entry.failure }}</p>
-            <ElButton v-if="entry.processingStatus === 'FAILED_RETRYABLE' && entry.retryCount < 1"
+            <ElButton v-if="entry.processingStatus === 'FAILED_RETRYABLE' && (demoMode ? entry.retryCount < 1 : entry.retryable)"
               type="primary" @click="retryCase(entry.caseId, extractionScenario)">
               {{ entry.stage === 'Upload' ? 'Retry Upload' : 'Retry Extraction' }}
             </ElButton>
@@ -129,15 +132,15 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
           </div>
           <div v-else-if="ready" class="ready-state" role="status">
             <h3>Ready for Fact Review</h3>
-            <p>Demo extraction completed. These sample values were not read from your PDF.</p>
-            <dl><div><dt>Education</dt><dd>{{ entry.preview.education }}</dd></div>
+            <p v-if="demoMode">Demo extraction completed. These sample values were not read from your PDF.</p>
+            <dl v-if="entry.preview"><div><dt>Education</dt><dd>{{ entry.preview.education }}</dd></div>
               <div><dt>Work Experience</dt><dd>{{ entry.preview.experience }}</dd></div>
               <div><dt>Skills</dt><dd>{{ entry.preview.skills.join(', ') }}</dd></div></dl>
-            <p id="review-notice">Review the professional facts and short mock evidence in the next step.</p>
+            <p id="review-notice">Review the professional facts and their supporting evidence in the next step.</p>
           </div>
           <div v-else class="empty-state">
             <ElEmpty description="No file uploaded yet" />
-            <p>Select a valid PDF and choose Upload and Extract to begin the frontend demo.</p>
+            <p>Select a valid PDF and choose Upload and Extract to begin extraction.</p>
           </div>
         </section>
       </div>
@@ -147,12 +150,13 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
           @click="router.push({ name: 'CvReview', params: { caseId: entry.caseId } })">Review Extracted Facts</ElButton>
       </div>
     </section>
-    <ElDialog v-model="confirmDelete" title="Cancel and delete this demo case?" width="min(460px, calc(100% - 32px))"
+    <ElDialog v-model="confirmDelete" title="Cancel and delete this case?" width="min(460px, calc(100% - 32px))"
       :close-on-click-modal="false">
-      <p>The case, file metadata and mock preview will be removed from this session. No file was uploaded to a server.</p>
+      <p v-if="demoMode">The case, file metadata and mock preview will be removed from this session.</p>
+      <p v-else>Access ends immediately. The server will remove the case and its data.</p>
       <p>You will return to My simulations.</p>
       <template #footer><ElButton @click="confirmDelete = false">Keep Case</ElButton>
-        <ElButton type="danger" @click="cancelAndDelete">Delete Demo Case</ElButton></template>
+        <ElButton type="danger" @click="cancelAndDelete">Delete Case</ElButton></template>
     </ElDialog>
   </CandidateLayout>
 </template>

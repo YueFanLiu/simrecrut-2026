@@ -4,6 +4,7 @@ import { ElButton } from 'element-plus'
 import BrandMark from '../components/simrecrut/BrandMark.vue'
 import { useAuthStore } from '../store/modules/auth.js'
 import { computed } from 'vue'
+import { demoMode } from '../config/runtime.js'
 import { useResearchModuleStore } from '../store/modules/research-module.js'
 
 const router = useRouter()
@@ -29,8 +30,9 @@ async function signOut() { await auth.logout(); router.replace({ name: 'Login' }
       <RouterLink :to="{ name: 'ResearchModels' }" :aria-current="route.name === 'ResearchModels' ? 'page' : undefined">Models</RouterLink>
       <RouterLink :to="metricsTarget" :aria-current="route.name === 'ResearchMetrics' ? 'page' : undefined">Metrics</RouterLink>
       <RouterLink :to="{ name: 'MyReviewTasks' }" :aria-current="['MyReviewTasks', 'ReviewTaskDetail'].includes(route.name) ? 'page' : undefined">My Review Tasks</RouterLink>
-    </nav><p>Browse authorised demo experiments and their frozen versions.</p></aside><main><slot /></main></div>
-    <footer>SimRecrut - Research workspace - Frontend demonstration</footer>
+      <RouterLink v-if="!demoMode" :to="{ name: 'AssignPrimaryReviews' }" :aria-current="route.name === 'AssignPrimaryReviews' ? 'page' : undefined">Assign Primary Reviews</RouterLink>
+    </nav><p v-if="demoMode">Browse authorised demo experiments and their frozen versions.</p></aside><main><slot /></main></div>
+    <footer>SimRecrut - Research workspace{{ demoMode ? ' - Frontend demonstration' : '' }}</footer>
   </div>
 </template>
 

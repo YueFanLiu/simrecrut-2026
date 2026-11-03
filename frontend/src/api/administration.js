@@ -1,23 +1,19 @@
-// Reuse implemented RuoYi endpoints; SimRecrut-only actions need their own APIs.
-import { pageRequest, resourceId as id } from './page-request.js'
-export const users = async () => {
-  const rows = []
-  let page = 1, total = 0
-  do {
-    const response = await pageRequest(`/system/user/list?pageNum=${page++}&pageSize=100`, 'get', undefined, true)
-    rows.push(...response.rows); total = response.total
-    if (!response.rows.length) break
-  } while (rows.length < total)
-  return rows.map(row => ({ id: String(row.userId), username: row.userName, displayName: row.nickName,
-    email: row.email || '', role: row.userId === 1 ? 'Admin' : row.roles?.[0]?.roleName || 'Unassigned',
-    group: row.dept?.deptName || '', status: row.status === '0' ? 'Active' : 'Inactive',
-    createdAt: row.createTime, lastLogin: row.loginDate, revision: row.updateTime || row.createTime }))
-}
-export const changeUserStatus = (value, status) => pageRequest('/system/user/changeStatus', 'put', { userId: Number(value), status: status === 'Active' ? '0' : '1' })
-export const saveUser = form => pageRequest('/api/v1/admin/users', form.id ? 'put' : 'post', form)
+// Account management uses the independent Java identity API.
+import { pageItems, pageRequest, resourceId as id } from './page-request.js'
+const accounts = '/api/v1/admin/users'
+const user = value => `${accounts}/${id(value)}`
+export const users = filters => pageItems(accounts, filters)
+export const userDetail = value => pageRequest(user(value))
+export const createUser = ({ username, email, roles }) => pageRequest(accounts, 'post', { username, email, roles })
+export const saveUser = ({ userId, email, revision }) => pageRequest(user(userId), 'put', { email, revision })
+export const changeUserStatus = (value, status, revision) => pageRequest(`${user(value)}/status`, 'put', { status, revision })
+export const assignRole = (value, revision, roles) => pageRequest(`${user(value)}/roles`, 'put', { roles, revision })
 export const roles = () => pageRequest('/api/v1/admin/roles')
-export const rolePermissions = form => pageRequest(`/api/v1/admin/roles/${id(form.name)}/permissions`, 'put', form)
-export const assignRole = (accountId, expectedRevision, role) => pageRequest(`/api/v1/admin/users/${id(accountId)}/role`, 'put', { role, expectedRevision })
+const rolePath = value => `/api/v1/admin/roles/${id(value)}/permissions`
+export const readRolePermissions = value => pageRequest(rolePath(value))
+export const rolePermissions = ({ roleCode, permissions, revision }) =>
+  pageRequest(rolePath(roleCode), 'put', { permissions, revision })
+export const permissions = () => pageRequest('/api/v1/admin/permissions')
 export const models = () => pageRequest('/api/v1/admin/models')
 export const modelPackages = () => pageRequest('/api/v1/admin/model-packages')
 export const registerModel = value => pageRequest('/api/v1/admin/models', 'post', { packageId: value })

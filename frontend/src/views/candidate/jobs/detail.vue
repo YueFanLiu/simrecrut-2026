@@ -1,4 +1,6 @@
 <script setup>
+import { demoMode } from '../../../config/runtime.js'
+import { publicRequirementLabel } from '../../../api/jobs.js'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElEmpty, ElSkeleton, ElTag } from 'element-plus'
@@ -19,14 +21,14 @@ const loadError = ref('')
 let loadSequence = 0
 let pageActive = true
 
-const keyInformation = computed(() => job.value ? [
+const keyInformation = computed(() => job.value ? (!demoMode ? [['Published Version', job.value.version]] : [
   ['Employment Type', job.value.employmentType], ['Location', job.value.location],
   ['Category', job.value.category], ['Required Experience', job.value.requirements.experience],
   ['Education Level', job.value.requirements.education],
   ['Language Requirement', job.value.requirements.language],
   ['Application Deadline', formatPublishedDate(job.value.applicationDeadline)],
   ['Published Version', job.value.version],
-] : [])
+]) : [])
 const companyInformation = computed(() => job.value ? [
   ['Company', job.value.company], ['Industry', job.value.industry],
   ['Company Size', job.value.companySize],
@@ -63,7 +65,7 @@ async function startSimulation() {
     const caseId = await cases.createCase(displayedJob, caseCreationScenario)
     if (pageActive && route.name === 'JobDetail' && route.params.jobId === displayedJob.jobId) {
       await router.push({ name: 'CvUpload', params: { caseId } })
-    } else {
+    } else if (demoMode) {
       cases.deleteCase(caseId)
     }
   } catch (error) {
@@ -106,15 +108,15 @@ async function startSimulation() {
           <div>
             <h1>{{ job.title }}</h1>
             <div class="job-meta">
-              <span>{{ job.company }}</span><span>{{ job.location }}</span>
-              <ElTag>{{ job.employmentType }}</ElTag>
+              <span v-if="job.company">{{ job.company }}</span><span v-if="job.location">{{ job.location }}</span>
+              <ElTag v-if="job.employmentType">{{ job.employmentType }}</ElTag>
               <span>Published on <time :datetime="job.publishedAt">{{ formatPublishedDate(job.publishedAt) }}</time></span>
             </div>
           </div>
           <ElButton type="primary" size="large" :loading="creatingCase" :disabled="creatingCase"
-            aria-describedby="simulation-notice" @click="startSimulation">{{ creatingCase ? 'Creating Demo Case...' : 'Start Simulation' }}</ElButton>
+            :aria-describedby="demoMode ? 'simulation-notice' : undefined" @click="startSimulation">{{ creatingCase ? 'Creating Case...' : 'Start Simulation' }}</ElButton>
         </div>
-        <ElAlert id="simulation-notice" class="demo-notice" type="info" :closable="false"
+        <ElAlert v-if="demoMode" id="simulation-notice" class="demo-notice" type="info" :closable="false"
           title="Frontend demo: Start Simulation creates a temporary case in memory and opens the PDF upload demo. No backend case or real assessment is created." />
         <ElAlert v-if="creationError" class="demo-notice" type="error" :closable="false" :title="creationError" />
         <div class="detail-grid">
@@ -125,10 +127,11 @@ async function startSimulation() {
             </section>
             <section class="detail-panel" aria-labelledby="requirements-title">
               <h2 id="requirements-title">Requirements</h2>
-              <h3>Key Responsibilities</h3>
+              <template v-if="demoMode"><h3>Key Responsibilities</h3>
               <ul><li v-for="item in job.requirements.responsibilities" :key="item">{{ item }}</li></ul>
               <h3>Qualifications</h3>
-              <ul><li v-for="item in job.requirements.qualifications" :key="item">{{ item }}</li></ul>
+              <ul><li v-for="item in job.requirements.qualifications" :key="item">{{ item }}</li></ul></template>
+              <ul v-else><li v-for="item in job.requirements" :key="item.requirementCode">{{ publicRequirementLabel(item) }}</li></ul>
             </section>
           </div>
           <div class="panel-column">
@@ -136,7 +139,7 @@ async function startSimulation() {
               <h2 id="information-title">Key Information</h2>
               <dl><div v-for="[label, value] in keyInformation" :key="label"><dt>{{ label }}</dt><dd>{{ value }}</dd></div></dl>
             </section>
-            <section class="detail-panel" aria-labelledby="company-title">
+            <section v-if="demoMode" class="detail-panel" aria-labelledby="company-title">
               <h2 id="company-title">Additional Information</h2>
               <dl><div v-for="[label, value] in companyInformation" :key="label"><dt>{{ label }}</dt><dd>{{ value }}</dd></div></dl>
             </section>

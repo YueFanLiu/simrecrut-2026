@@ -1,4 +1,5 @@
 <script setup>
+import { demoMode } from '../../../config/runtime.js'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElAlert, ElButton, ElEmpty, ElInput, ElOption, ElPagination, ElSelect, ElSkeleton } from 'element-plus'
 import CandidateLayout from '../../../layouts/CandidateLayout.vue'
@@ -51,7 +52,7 @@ onMounted(loadJobs)
         <h1 id="jobs-title">Published Jobs</h1>
         <p>Browse available job postings for your next recruitment simulation.</p>
       </div>
-      <ElAlert class="demo-notice" type="info" :closable="false"
+      <ElAlert v-if="demoMode" class="demo-notice" type="info" :closable="false"
         title="Frontend demo: search, filters and sorting use local mock data. Open My simulations to continue or delete your retained demo cases." />
 
       <form class="job-filters" aria-label="Filter published jobs" @submit.prevent>
@@ -60,21 +61,21 @@ onMounted(loadJobs)
           <ElInput id="job-search" v-model="filters.keyword" clearable :disabled="loading || Boolean(loadError)"
             placeholder="Search by title, company or keyword" autocomplete="off" />
         </div>
-        <div>
+        <div v-if="demoMode">
           <label id="category-label">Category</label>
           <ElSelect v-model="filters.category" aria-label="Category" :empty-values="[null, undefined]" :disabled="loading || Boolean(loadError)">
             <ElOption label="All Categories" value="" />
             <ElOption v-for="category in categories" :key="category" :label="category" :value="category" />
           </ElSelect>
         </div>
-        <div>
+        <div v-if="demoMode">
           <label id="location-label">Location</label>
           <ElSelect v-model="filters.location" aria-label="Location" :empty-values="[null, undefined]" :disabled="loading || Boolean(loadError)">
             <ElOption label="All Locations" value="" />
             <ElOption v-for="location in locations" :key="location" :label="location" :value="location" />
           </ElSelect>
         </div>
-        <div>
+        <div v-if="demoMode">
           <label id="type-label">Type</label>
           <ElSelect v-model="filters.employmentType" aria-label="Type" :empty-values="[null, undefined]" :disabled="loading || Boolean(loadError)">
             <ElOption label="All Types" value="" />

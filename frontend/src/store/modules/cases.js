@@ -9,13 +9,32 @@ import { selectCaseSummary, sortCaseSummaries } from '../../utils/case-history.j
 import { copyProfessionalDraft, emptyResearchAttributes, normalizeResearchAttributes, validateReviewDraft } from '../../utils/review-validation.js'
 
 const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
+const connectedOperations = new Map()
+let uploadOperations = new WeakMap()
+async function caseMutation(operation, send) {
+  const signature = JSON.stringify(operation)
+  const key = connectedOperations.get(signature) || crypto.randomUUID()
+  connectedOperations.set(signature, key)
+  try {
+    const result = await send(key)
+    connectedOperations.delete(signature)
+    return result
+  } catch (error) {
+    if (error.status >= 400 && error.status < 500) connectedOperations.delete(signature)
+    throw error
+  }
+}
+
 const activeStatuses = ['UPLOADED', 'EXTRACTING']
 
 export const useCasesStore = defineStore('cases', {
   state: () => ({ cases: {}, nextCaseNumber: 1 }),
   actions: {
     getOwnedCase(caseId, now = Date.now()) {
-      if (!demoMode) { const entry = this.cases[caseId]; return entry && Date.parse(entry.expiresAt) > now && !['PURGING', 'DELETED'].includes(entry.processingStatus) ? entry : null }
+      if (!demoMode) {
+        const entry = this.cases[caseId]
+        return entry && (!entry.expiresAt || Date.parse(entry.expiresAt) > now) ? entry : null
+      }
       const entry = this.cases[caseId]
       const username = useAuthStore().demoUser?.username
       return entry && entry.owner === username && Date.parse(entry.expiresAt) > now
@@ -23,7 +42,15 @@ export const useCasesStore = defineStore('cases', {
         ? entry : null
     },
     async createCase(displayedJob, scenario = 'normal') {
-      if (!demoMode) { const row = await (await import('../../api/cases.js')).createCase(displayedJob.jobVersionId); this.cases[row.caseId] = row; return row.caseId }
+      if (!demoMode) {
+        const api = await import('../../api/cases.js')
+        const row = await caseMutation(['create', displayedJob.jobVersionId], key => api.createCase(displayedJob.jobVersionId, key))
+        this.cases[row.caseId] = {
+          ...row, jobId: displayedJob.jobId, jobTitle: displayedJob.title, version: displayedJob.version,
+          jobVersionId: displayedJob.jobVersionId, expiresAt: api.caseExpiry(row.expiresAt),
+        }
+        return row.caseId
+      }
       const owner = useAuthStore().demoUser?.username
       if (!owner) throw new Error('Sign in before starting a demo simulation.')
       const currentJob = await loadJobDetail(displayedJob.jobId)
@@ -48,7 +75,18 @@ export const useCasesStore = defineStore('cases', {
       return caseId
     },
     async uploadCv(caseId, metadata, scenario = 'normal') {
-      if (!demoMode) { const file = metadata.file; if (!file) throw new Error('Select the PDF again before uploading.'); const content = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result.split(',')[1]); reader.onerror = reject; reader.readAsDataURL(file) }); await (await import('../../api/cases.js')).caseAction(caseId, 'upload', { filename: metadata.name, content }); await this.loadConnectedCase(caseId); return }
+      if (!demoMode) {
+        const { file } = metadata
+        if (!file) throw new Error('Select a PDF before uploading.')
+        const api = await import('../../api/cases.js')
+        const keys = uploadOperations.get(file) || new Map()
+        if (!keys.has(caseId)) keys.set(caseId, crypto.randomUUID())
+        uploadOperations.set(file, keys)
+        const row = await api.uploadCaseCv(caseId, file, keys.get(caseId))
+        keys.delete(caseId)
+        this.cases[caseId] = { ...this.cases[caseId], ...row, expiresAt: api.caseExpiry(row.expiresAt) }
+        return
+      }
       const entry = this.getOwnedCase(caseId)
       if (!entry || entry.confirmedAt || !['AWAITING_UPLOAD', 'FAILED_RETRYABLE', 'FAILED_FINAL'].includes(entry.processingStatus)) return
       entry.file = { name: metadata.name, size: metadata.size, pageCount: metadata.pageCount }
@@ -62,7 +100,6 @@ export const useCasesStore = defineStore('cases', {
       await this.processCase(caseId, scenario)
     },
     async processCase(caseId, scenario) {
-      if (!demoMode) { throw new Error('The backend assessment workflow is not implemented.') }
       const entry = this.getOwnedCase(caseId)
       if (!entry) return
       const operation = ++entry.operation
@@ -92,7 +129,7 @@ export const useCasesStore = defineStore('cases', {
       }
     },
     async retryCase(caseId, scenario = 'normal') {
-      if (!demoMode) { await (await import('../../api/cases.js')).caseAction(caseId, 'retry', {}); await this.loadConnectedCase(caseId); return }
+      if (!demoMode) return this.runSimulation(caseId, scenario, true)
       const entry = this.getOwnedCase(caseId)
       if (!entry || entry.confirmedAt || entry.processingStatus !== 'FAILED_RETRYABLE' || entry.retryCount >= 1) return
       entry.retryCount += 1
@@ -101,7 +138,6 @@ export const useCasesStore = defineStore('cases', {
       await this.processCase(caseId, scenario)
     },
     async loadReview(caseId, scenario = 'normal', researchAllowed = false) {
-      if (!demoMode) { return (await import('../../api/cases.js')).caseReview(caseId) }
       const entry = this.getOwnedCase(caseId)
       if (!entry || entry.processingStatus !== 'REVIEW_REQUIRED') {
         throw new Error('This demo case is not ready for fact review.')
@@ -118,7 +154,7 @@ export const useCasesStore = defineStore('cases', {
       return copyProfessionalDraft(entry.reviewDraft)
     },
     async saveReview(caseId, draft, scenario = 'normal') {
-      if (!demoMode) { await (await import('../../api/cases.js')).caseAction(caseId, 'save', { draft, expectedRevision: this.cases[caseId]?.reviewRevision }); await this.loadConnectedCase(caseId); return }
+
       const entry = this.getOwnedCase(caseId)
       if (!entry || entry.processingStatus !== 'REVIEW_REQUIRED') throw new Error('This draft can no longer be edited.')
       const errors = validateReviewDraft(draft)
@@ -134,7 +170,7 @@ export const useCasesStore = defineStore('cases', {
       entry.reviewRevision += 1
     },
     async saveResearch(caseId, attributes, candidateConfirmed, scenario = 'normal') {
-      if (!demoMode) { await (await import('../../api/cases.js')).caseAction(caseId, 'research', { attributes, candidateConfirmed }); await this.loadConnectedCase(caseId); return }
+
       const entry = this.getOwnedCase(caseId)
       if (!entry || entry.processingStatus !== 'REVIEW_REQUIRED' || !entry.researchAllowed) {
         throw new Error('Optional research details are not available for this case.')
@@ -150,7 +186,7 @@ export const useCasesStore = defineStore('cases', {
       entry.researchAttributes = normalized
     },
     async confirmReview(caseId, draft, reviewed, scenario = 'normal') {
-      if (!demoMode) { await (await import('../../api/cases.js')).caseAction(caseId, 'confirm', { draft, reviewed, expectedRevision: this.cases[caseId]?.reviewRevision }); await this.loadConnectedCase(caseId); return }
+
       const entry = this.getOwnedCase(caseId)
       if (!entry) throw new Error('This demo case is no longer available.')
       if (entry.processingStatus === 'CONFIRMED') return
@@ -176,7 +212,13 @@ export const useCasesStore = defineStore('cases', {
       entry.reviewRevision += 1
     },
     async runSimulation(caseId, scenario = 'normal', retry = false) {
-      if (!demoMode) { await (await import('../../api/cases.js')).caseAction(caseId, 'run', { retry }); await this.loadConnectedCase(caseId); return }
+      if (!demoMode) {
+        const api = await import('../../api/cases.js')
+        const action = retry ? 'retry' : 'run'
+        const row = await caseMutation([action, caseId], key => api.caseAction(caseId, action, {}, key))
+        this.cases[caseId] = { ...this.cases[caseId], ...row, expiresAt: api.caseExpiry(row.expiresAt) }
+        return
+      }
       const entry = this.getOwnedCase(caseId)
       if (!entry?.confirmedAt) return
       const assessment = entry.assessment
@@ -269,7 +311,12 @@ export const useCasesStore = defineStore('cases', {
       return this.listOwnedCases()
     },
     async deleteSimulation(caseId, scenario = 'normal') {
-      if (!demoMode) { await (await import('../../api/cases.js')).deleteCase(caseId); delete this.cases[caseId]; return }
+      if (!demoMode) {
+        const api = await import('../../api/cases.js')
+        await caseMutation(['delete', caseId], key => api.deleteCase(caseId, key))
+        delete this.cases[caseId]
+        return
+      }
       const entry = this.getOwnedCase(caseId)
       if (!entry) throw new Error('This demo case is no longer available.')
       if (scenario === 'delete-error') {
@@ -281,17 +328,30 @@ export const useCasesStore = defineStore('cases', {
       if (this.cases[caseId] === entry) delete this.cases[caseId]
     },
     deleteCase(caseId) {
-      if (!demoMode) { return import('../../api/cases.js').then(api => api.deleteCase(caseId)).then(() => { delete this.cases[caseId] }) }
+      if (!demoMode) return this.deleteSimulation(caseId)
       if (this.getOwnedCase(caseId)) delete this.cases[caseId]
     },
     async loadConnectedCase(caseId) {
-      const row = await (await import('../../api/cases.js')).caseDetail(caseId)
-      this.cases[caseId] = row
-      return row
+      const { caseDetail, caseExpiry } = await import('../../api/cases.js')
+      const row = await caseDetail(caseId)
+      const confirmed = ['CONFIRMED', 'AUTOMATED_RUNNING', 'AUTOMATED_COMPLETE'].includes(row.processingStatus)
+        || (row.processingStatus.startsWith('FAILED') && !['UPLOAD', 'EXTRACTION'].includes(row.stage))
+      const stages = ['MATCHING', 'NEUTRAL', 'BIASED', 'FINALIZING', 'COMPLETE']
+      const stage = stages.indexOf(row.stage)
+      const methods = ['Objective', 'Neutral ML', 'Biased ML'].map((name, index) => ({
+        name, status: index < stage ? 'Complete' : index > stage ? 'Waiting'
+          : row.processingStatus.startsWith('FAILED') ? 'Failed' : 'Running',
+      }))
+      return {
+        ...this.cases[caseId], ...row, confirmedAt: confirmed ? true : null, failure: row.message,
+        assessment: { methods, retryable: row.retryable, updatedAt: caseExpiry(row.updatedAt), events: [] },
+      }
     },
     clearCases() {
       // Remove references so pending demo work cannot restore data after sign out.
       this.cases = {}
+      connectedOperations.clear()
+      uploadOperations = new WeakMap()
     },
   },
 })

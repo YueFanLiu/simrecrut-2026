@@ -13,9 +13,9 @@ const router = useRouter()
       <h2 :id="`job-title-${job.jobId}`">{{ job.title }}</h2>
       <time :datetime="job.publishedAt">{{ formatPublishedDate(job.publishedAt) }}</time>
     </div>
-    <p class="company">{{ job.company }}</p>
-    <p class="location">{{ job.location }}</p>
-    <div class="job-tags">
+    <p v-if="job.company" class="company">{{ job.company }}</p>
+    <p v-if="job.location" class="location">{{ job.location }}</p>
+    <div v-if="job.category || job.employmentType" class="job-tags">
       <ElTag size="small">{{ job.employmentType }}</ElTag>
       <ElTag size="small" type="info">{{ job.category }}</ElTag>
     </div>

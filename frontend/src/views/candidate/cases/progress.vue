@@ -12,6 +12,7 @@ import { simulationScenario } from '../../../config/demo.js'
 const route = useRoute()
 const router = useRouter()
 const cases = useCasesStore()
+const submitting = ref(false)
 const clock = ref(Date.now())
 const timer = setInterval(() => { clock.value = Date.now() }, 1000)
 onBeforeUnmount(() => clearInterval(timer))
@@ -20,39 +21,42 @@ const ready = computed(() => entry.value?.processingStatus === 'CONFIRMED')
 const running = computed(() => entry.value?.processingStatus === 'AUTOMATED_RUNNING')
 const complete = computed(() => entry.value?.processingStatus === 'AUTOMATED_COMPLETE')
 const failed = computed(() => Boolean(entry.value?.confirmedAt && ['FAILED_RETRYABLE', 'FAILED_FINAL'].includes(entry.value.processingStatus)))
-const canRetry = computed(() => failed.value && entry.value.assessment?.retryable && entry.value.assessment.retryCount < 1)
+const canRetry = computed(() => failed.value && entry.value.assessment?.retryable && (!demoMode || entry.value.assessment.retryCount < 1))
 const methods = computed(() => entry.value?.assessment?.methods || ['Objective', 'Neutral ML', 'Biased ML'].map((name) => ({ name, status: 'Waiting' })))
 const heading = computed(() => ready.value ? 'Ready to Run' : running.value ? 'Simulation in Progress' : complete.value ? 'Simulation Complete' : 'Simulation Failed')
 const tagType = (status) => status === 'Complete' ? 'success' : status === 'Failed' ? 'danger' : status === 'Running' ? 'primary' : 'info'
 const formatTime = (time) => new Intl.DateTimeFormat('en-GB', { timeStyle: 'medium', timeZone: 'Europe/Paris' }).format(new Date(time))
 
 async function runSimulation(caseId, scenario, retry = false) {
-  try { await cases.runSimulation(caseId, scenario, retry) } catch (error) { ElMessage.error(error.message) }
+  if (submitting.value) return
+  submitting.value = true
+  try { await cases.runSimulation(caseId, scenario, retry) } catch (error) { ElMessage.error(error.message) } finally { submitting.value = false }
 }
 
 // Direct navigation must load the authorized case instead of requiring demo memory.
-let connectedRequest = 0, connectedActive = true
+let connectedRequest = 0, connectedActive = true, polling = false
 async function refreshConnectedCase() {
   if (demoMode) return
   const request = ++connectedRequest, id = String(route.params.caseId)
+  polling = true
   try {
-    const row = await (await import('../../../api/cases.js')).caseDetail(id)
+    const row = await cases.loadConnectedCase(id)
     if (connectedActive && request === connectedRequest && route.params.caseId === id) cases.cases[id] = row
   } catch (error) {
     if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(error.message) }
-  }
+  } finally { if (request === connectedRequest) polling = false }
 }
 watch(() => route.params.caseId, refreshConnectedCase)
 refreshConnectedCase()
-const connectedTimer = setInterval(() => { if (!demoMode && entry.value && !complete.value) refreshConnectedCase() }, 2000)
+const connectedTimer = setInterval(() => { if (!demoMode && entry.value && running.value && !polling) refreshConnectedCase() }, 2000)
 onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterval(connectedTimer) })
 </script>
 
 <template>
   <CandidateLayout>
     <section v-if="!entry" class="panel unavailable">
-      <h1>Demo Case Not Available</h1>
-      <p>This case does not exist, has expired or is not available in your demo session.</p>
+      <h1>Case Not Available</h1>
+      <p>This case does not exist, has expired or is not available to your account.</p>
       <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">Back to Jobs</ElButton>
     </section>
     <section v-else-if="!entry.confirmedAt" class="panel unavailable">
@@ -65,28 +69,28 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
         <RouterLink :to="{ name: 'CvReview', params: { caseId: entry.caseId } }">{{ entry.caseId }}</RouterLink><span>/</span><span aria-current="page">Simulation Progress</span></nav>
       <h1 id="progress-title">Simulation Progress</h1>
       <p class="subtitle">Follow the three automated assessment stages for your confirmed case.</p>
-      <ElAlert type="info" :closable="false" title="Frontend demo only: fixed mock states, no model inference or API calls. Confirmed checkpoints survive reloads in this tab. Retry continues interrupted stages with the retained job version. Sign out clears case checkpoints." />
+      <ElAlert v-if="demoMode" type="info" :closable="false" title="Frontend demo only: fixed mock states, no model inference or API calls. Confirmed checkpoints survive reloads in this tab. Retry continues interrupted stages with the retained job version. Sign out clears case checkpoints." />
       <CaseProgressStepper :current-step="2" review-confirmed :simulation-complete="complete" />
       <div class="progress-grid">
         <div class="main-column">
           <section class="panel" :aria-busy="running" aria-labelledby="status-title">
             <div class="panel-heading"><h2 id="status-title">{{ heading }}</h2><ElTag :type="complete ? 'success' : failed ? 'danger' : 'info'">{{ ready ? 'Ready' : running ? 'Running' : complete ? 'Complete' : 'Failed' }}</ElTag></div>
             <div role="status" aria-live="polite">
-              <p v-if="ready">Your confirmed facts are locked. Run the demo to begin all three automated stages.</p>
-              <p v-else-if="running">Running the mock {{ entry.stage }} stage. Completed methods are retained.</p>
-              <p v-else-if="complete">All three automated demo stages have completed. Human review is pending.</p>
+              <p v-if="ready">Your confirmed facts are locked. Run the simulation to begin all three automated stages.</p>
+              <p v-else-if="running">Running the {{ entry.stage }} stage. Completed methods are retained.</p>
+              <p v-else-if="complete">All three automated stages have completed. Open results to see the current human review status.</p>
             </div>
             <div v-if="failed" role="alert"><p class="error">{{ entry.failure }}</p><p>Failed stage: {{ entry.stage }}. Confirmed facts and the job version remain locked.</p></div>
             <div class="method-grid"><article v-for="method in methods" :key="method.name" class="method-card" :aria-label="method.name">
               <h3>{{ method.name }}</h3><ElTag :type="tagType(method.status)">{{ method.status }}</ElTag>
-              <p>{{ method.status === 'Complete' ? 'Demo stage completed.' : method.status === 'Running' ? 'Demo stage running...' : method.status === 'Failed' ? 'No result was produced.' : 'Waiting for this stage.' }}</p>
+              <p>{{ method.status === 'Complete' ? 'Stage completed.' : method.status === 'Running' ? 'Stage running...' : method.status === 'Failed' ? 'No result was produced.' : 'Waiting for this stage.' }}</p>
             </article></div>
-            <ElButton v-if="ready" type="primary" @click="runSimulation(entry.caseId, simulationScenario)">Run Simulation</ElButton>
-            <ElButton v-if="canRetry" type="primary" @click="runSimulation(entry.caseId, simulationScenario, true)">Retry Simulation</ElButton>
-            <p v-if="failed && !canRetry">Retry is unavailable for this failure. Return to Jobs to start a new demo case.</p>
-            <div v-if="complete" class="result-action"><ElButton type="primary" @click="router.push({ name: 'SimulationResults', params: { caseId: entry.caseId } })">View Results</ElButton><p>View the five result cards and their separate score scales.</p></div>
+            <ElButton v-if="ready" type="primary" :loading="submitting" @click="runSimulation(entry.caseId, simulationScenario)">Run Simulation</ElButton>
+            <ElButton v-if="canRetry" type="primary" :loading="submitting" @click="runSimulation(entry.caseId, simulationScenario, true)">Retry Simulation</ElButton>
+            <p v-if="failed && !canRetry">Retry is unavailable for this failure. Return to Jobs to start a new case.</p>
+            <div v-if="complete || (!demoMode && (running || failed))" class="result-action"><ElButton type="primary" @click="router.push({ name: 'SimulationResults', params: { caseId: entry.caseId } })">View Results</ElButton><p>View the five result cards and their separate score scales.</p></div>
           </section>
-          <section class="panel log-panel" aria-labelledby="log-title"><h2 id="log-title">Simulation Log</h2>
+          <section v-if="demoMode" class="panel log-panel" aria-labelledby="log-title"><h2 id="log-title">Simulation Log</h2>
             <p v-if="!entry.assessment?.events.length">No run has started. Confirmed facts are ready.</p>
             <ol v-else><li v-for="(event, index) in entry.assessment.events" :key="index"><time :datetime="event.time">{{ formatTime(event.time) }}</time><span>{{ event.message }}</span></li></ol>
             <p class="muted">Log timestamps use Paris time and describe local mock events.</p>
@@ -94,12 +98,12 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
         </div>
         <aside class="side-column">
           <section class="panel"><h2>Simulation Parameters</h2><dl>
-            <div><dt>Case ID</dt><dd>{{ entry.caseId }}</dd></div><div><dt>Job</dt><dd>{{ entry.jobTitle }}</dd></div>
-            <div><dt>Job version</dt><dd>{{ entry.jobVersionId }}</dd></div><div><dt>Professional facts</dt><dd>Confirmed and locked</dd></div>
-            <div><dt>Assessment methods</dt><dd>Objective, Neutral ML, Biased ML</dd></div><div><dt>Configuration</dt><dd>Fixed frontend mock stages</dd></div>
+            <div><dt>Case ID</dt><dd>{{ entry.caseId }}</dd></div><div v-if="entry.jobTitle"><dt>Job</dt><dd>{{ entry.jobTitle }}</dd></div>
+            <div v-if="entry.jobVersionId"><dt>Job version</dt><dd>{{ entry.jobVersionId }}</dd></div><div><dt>Professional facts</dt><dd>Confirmed and locked</dd></div>
+            <div><dt>Assessment methods</dt><dd>Objective, Neutral ML, Biased ML</dd></div><div v-if="demoMode"><dt>Configuration</dt><dd>Fixed frontend mock stages</dd></div>
           </dl></section>
           <section class="panel"><h2>Progress Summary</h2><dl><div><dt>Current stage</dt><dd>{{ entry.stage === 'Ready for review' || ready ? 'Ready to run' : entry.stage }}</dd></div>
-            <div><dt>Last update</dt><dd>{{ entry.assessment?.updatedAt ? formatTime(entry.assessment.updatedAt) + ' (Paris)' : 'Not started' }}</dd></div><div><dt>Human review</dt><dd>Pending</dd></div></dl>
+            <div><dt>Last update</dt><dd>{{ entry.assessment?.updatedAt ? formatTime(entry.assessment.updatedAt) + ' (Paris)' : 'Not started' }}</dd></div><div v-if="demoMode"><dt>Human review</dt><dd>Pending</dd></div></dl>
             <p class="muted">No estimated duration or percentage is available.</p></section>
           <ElButton @click="router.push({ name: 'CvReview', params: { caseId: entry.caseId } })">Back to Case</ElButton>
           <ElButton @click="router.push({ name: 'PublishedJobs' })">Back to Jobs</ElButton>
