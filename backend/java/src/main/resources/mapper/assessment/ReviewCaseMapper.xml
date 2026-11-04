@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="fr.isep.simrecrut.mapper.assessment.ReviewCaseMapper">
+    <select id="protocolReference" resultType="fr.isep.simrecrut.mapper.assessment.ReviewCaseMapper$ProtocolReference">
+        SELECT p.version_code AS protocol_version, f.version_code AS feature_schema_version
+        FROM sim_protocol_version p JOIN sim_feature_schema_version f ON f.id = p.feature_schema_version_id
+        WHERE p.id = #{id}
+    </select>
+    <sql id="retained">c.privacy_status = 'ACTIVE' AND c.purge_after > UTC_TIMESTAMP(3) AND c.confirmed_at IS NOT NULL</sql>
+    <sql id="hrScope">
+        (j.owner_user_id = #{actor} OR EXISTS (SELECT 1 FROM sim_case_access_grant g
+            WHERE g.case_id = c.id AND g.user_id = #{actor} AND g.access_type = 'HR_READ'
+            AND (g.expires_at IS NULL OR g.expires_at > UTC_TIMESTAMP(3))))
+    </sql>
+    <sql id="researchScope">
+        EXISTS (SELECT 1 FROM sim_case_access_grant g WHERE g.case_id = c.id AND g.user_id = #{actor}
+            AND g.access_type = 'RESEARCH_READ' AND (g.expires_at IS NULL OR g.expires_at > UTC_TIMESTAMP(3)))
+    </sql>
+    <sql id="joins">FROM sim_assessment_case c JOIN sim_job_version v ON v.id = c.job_version_id JOIN sim_job j ON j.id = v.job_id</sql>
+    <sql id="hrWhere">
+        <include refid="retained"/> AND <include refid="hrScope"/>
+        <if test="job != ''">AND j.public_id = #{job}</if>
+    </sql>
+    <select id="hrCases" resultType="fr.isep.simrecrut.entity.assessment.AssessmentCase">
+        SELECT c.* <include refid="joins"/> WHERE <include refid="hrWhere"/>
+        ORDER BY c.created_at DESC, c.id DESC LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countHrCases" resultType="long">SELECT COUNT(*) <include refid="joins"/> WHERE <include refid="hrWhere"/></select>
+    <select id="hrAccess" resultType="boolean">
+        SELECT EXISTS(SELECT 1 <include refid="joins"/> WHERE c.id = #{caseId}
+            AND <include refid="retained"/> AND <include refid="hrScope"/>)
+    </select>
+    <select id="researchAccess" resultType="boolean">
+        SELECT EXISTS(SELECT 1 <include refid="joins"/> WHERE c.id = #{caseId}
+            AND <include refid="retained"/> AND <include refid="researchScope"/>)
+    </select>
+    <sql id="reviewerScope">
+        u.id != c.candidate_user_id AND EXISTS (SELECT 1 FROM sim_user_role ur JOIN sim_role r ON r.id = ur.role_id
+            WHERE ur.user_id = u.id AND ((r.role_code = 'HR' AND (j.owner_user_id = u.id OR EXISTS
+                (SELECT 1 FROM sim_case_access_grant g WHERE g.case_id = c.id AND g.user_id = u.id
+                AND g.access_type = 'HR_READ' AND (g.expires_at IS NULL OR g.expires_at > UTC_TIMESTAMP(3)))))
+            OR (r.role_code = 'RESEARCHER' AND EXISTS (SELECT 1 FROM sim_case_access_grant g
+                WHERE g.case_id = c.id AND g.user_id = u.id AND g.access_type = 'RESEARCH_READ'
+                AND (g.expires_at IS NULL OR g.expires_at > UTC_TIMESTAMP(3))))))
+        AND (SELECT COUNT(DISTINCT p.permission_code) FROM sim_user_role ur
+            JOIN sim_role_permission rp ON rp.role_id = ur.role_id JOIN sim_permission p ON p.id = rp.permission_id
+            WHERE ur.user_id = u.id AND p.permission_code IN
+            ('simrecrut:review:list', 'simrecrut:review:detail', 'simrecrut:review:submit')) = 3
+    </sql>
+    <select id="reviewerAccess" resultType="boolean">
+        SELECT EXISTS(SELECT 1 <include refid="joins"/> JOIN sim_user u ON u.id = #{actor}
+            WHERE c.id = #{caseId} AND <include refid="retained"/> AND u.status = 'ACTIVE'
+            AND u.email_verified_at IS NOT NULL AND <include refid="reviewerScope"/>)
+    </select>
+    <select id="eligible" resultType="fr.isep.simrecrut.dto.assessment.ReviewDtos$EligibleReviewer">
+        SELECT u.public_id AS user_id, u.username AS display_name <include refid="joins"/>
+        JOIN sim_user u ON u.status = 'ACTIVE' AND u.email_verified_at IS NOT NULL
+        WHERE c.id = #{caseId} AND <include refid="retained"/> AND <include refid="reviewerScope"/>
+        AND NOT EXISTS (SELECT 1 FROM sim_audit_event a WHERE a.actor_user_id = u.id
+            AND a.action = 'HR_CASE_RESULTS_READ' AND a.resource_type = 'CASE' AND a.resource_ref_hash = SHA2(c.public_id, 256))
+        AND (#{query} = '' OR LOCATE(#{query}, u.username) > 0)
+        ORDER BY u.public_id LIMIT #{limit}
+    </select>
+    <select id="hasResultExposure" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM sim_audit_event a JOIN sim_assessment_case c ON c.id = #{caseId}
+            WHERE a.actor_user_id = #{actor} AND a.action = 'HR_CASE_RESULTS_READ'
+            AND a.resource_type = 'CASE' AND a.resource_ref_hash = SHA2(c.public_id, 256))
+    </select>
+    <select id="lockReviewer" resultType="long">
+        SELECT id FROM sim_user WHERE public_id = #{publicId} AND status = 'ACTIVE'
+            AND email_verified_at IS NOT NULL FOR UPDATE
+    </select>
+    <sql id="taskScope">
+        h.reviewer_user_id = #{actor} AND h.case_id IS NOT NULL AND <include refid="retained"/>
+        AND EXISTS (SELECT 1 FROM sim_user u WHERE u.id = #{actor} AND u.status = 'ACTIVE'
+            AND u.email_verified_at IS NOT NULL AND <include refid="reviewerScope"/>)
+        <if test="status != ''">AND h.status = #{status}</if>
+    </sql>
+    <sql id="taskJoins">FROM sim_human_review h JOIN sim_assessment_case c ON c.id = h.case_id
+        JOIN sim_job_version v ON v.id = c.job_version_id JOIN sim_job j ON j.id = v.job_id</sql>
+    <select id="tasks" resultType="fr.isep.simrecrut.entity.assessment.HumanReview">
+        SELECT h.*, c.public_id AS case_public_id, v.title_snapshot AS job_title
+        <include refid="taskJoins"/> WHERE <include refid="taskScope"/>
+        ORDER BY h.created_at DESC, h.id DESC LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countTasks" resultType="long">SELECT COUNT(*) <include refid="taskJoins"/> WHERE <include refid="taskScope"/></select>
+    <select id="findReview" resultType="fr.isep.simrecrut.entity.assessment.HumanReview">
+        SELECT h.*, c.public_id AS case_public_id, v.title_snapshot AS job_title
+        <include refid="taskJoins"/> WHERE h.public_id = #{id}
+    </select>
+    <select id="lockReview" resultType="fr.isep.simrecrut.entity.assessment.HumanReview">
+        SELECT * FROM sim_human_review WHERE public_id = #{id} FOR UPDATE
+    </select>
+    <select id="hasUnfinished" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM sim_human_review WHERE case_id = #{caseId} AND reviewer_user_id = #{actor}
+            AND status IN ('PENDING', 'OPENED'))
+    </select>
+    <select id="caseReviews" resultType="fr.isep.simrecrut.entity.assessment.HumanReview">
+        SELECT * FROM sim_human_review WHERE case_id = #{caseId} ORDER BY id
+    </select>
+    <insert id="insertReview" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sim_human_review (case_id, reviewer_user_id, public_id, condition_type, purpose,
+            candidate_visible, protocol_text, instruction)
+        VALUES (#{caseId}, #{reviewerUserId}, #{publicId}, #{conditionType}, 'PRIMARY', 1, #{protocolText}, #{instruction})
+    </insert>
+    <update id="opened">
+        UPDATE sim_human_review SET status = 'OPENED', opened_at = UTC_TIMESTAMP(3) WHERE id = #{id} AND status = 'PENDING'
+    </update>
+    <update id="submit">
+        UPDATE sim_human_review SET status = 'SUBMITTED', decision = #{decision}, reason = #{reason},
+            submitted_at = UTC_TIMESTAMP(3) WHERE id = #{id} AND status IN ('PENDING', 'OPENED')
+    </update>
+    <update id="refreshHumanStatus">
+        UPDATE sim_assessment_case SET human_status = CASE
+            WHEN (SELECT COUNT(*) FROM sim_human_review WHERE case_id = #{caseId} AND purpose = 'PRIMARY'
+                AND candidate_visible = 1 AND status = 'SUBMITTED') = 2 THEN 'COMPLETE'
+            WHEN EXISTS (SELECT 1 FROM sim_human_review WHERE case_id = #{caseId} AND purpose = 'PRIMARY'
+                AND status = 'SUBMITTED') THEN 'PARTIAL'
+            WHEN EXISTS (SELECT 1 FROM sim_human_review WHERE case_id = #{caseId} AND purpose = 'PRIMARY'
+                AND status IN ('PENDING', 'OPENED')) THEN 'PENDING'
+            ELSE 'NOT_ASSIGNED' END WHERE id = #{caseId}
+    </update>
+</mapper>

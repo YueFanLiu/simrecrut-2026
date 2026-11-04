@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="fr.isep.simrecrut.mapper.identity.IdentityAdminMapper">
+    <select id="findPublic" resultMap="fr.isep.simrecrut.mapper.identity.UserAccountMapper.userAccountMap">
+        SELECT * FROM sim_user WHERE public_id = #{publicId}
+    </select>
+    <select id="lockUser" resultMap="fr.isep.simrecrut.mapper.identity.UserAccountMapper.userAccountMap">
+        SELECT * FROM sim_user WHERE public_id = #{publicId} FOR UPDATE
+    </select>
+    <sql id="filters">
+        <where>
+            <if test="keyword != ''">
+                (LOCATE(#{keyword}, u.username) > 0 OR LOCATE(#{keyword}, u.email) > 0)
+            </if>
+            <if test="status != null">AND u.status = #{status}</if>
+            <if test="role != null">
+                AND EXISTS (SELECT 1 FROM sim_user_role ur JOIN sim_role r ON r.id = ur.role_id
+                    WHERE ur.user_id = u.id AND r.role_code = #{role})
+            </if>
+        </where>
+    </sql>
+    <select id="listUsers" resultMap="fr.isep.simrecrut.mapper.identity.UserAccountMapper.userAccountMap">
+        SELECT u.* FROM sim_user u <include refid="filters"/>
+        ORDER BY u.created_at DESC, u.id DESC LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countUsers" resultType="long">
+        SELECT COUNT(*) FROM sim_user u <include refid="filters"/>
+    </select>
+    <!-- All administrative writes take these locks first, in the same order. -->
+    <select id="lockRoles" resultMap="fr.isep.simrecrut.mapper.identity.RoleMapper.roleMap">
+        SELECT * FROM sim_role ORDER BY id FOR UPDATE
+    </select>
+    <select id="countAvailableAdmins" resultType="long">
+        SELECT COUNT(*) FROM sim_user u WHERE u.status = 'ACTIVE' AND u.email_verified_at IS NOT NULL
+        AND EXISTS (SELECT 1 FROM sim_user_role ur JOIN sim_role r ON r.id = ur.role_id
+            WHERE ur.user_id = u.id AND r.role_code = 'ADMIN')
+    </select>
+    <update id="updateEmail">
+        UPDATE sim_user SET email = #{email}, email_verified_at = NULL,
+            revision = revision + 1, security_version = security_version + 1, updated_at = UTC_TIMESTAMP(3)
+        WHERE id = #{id} AND revision = #{revision}
+    </update>
+    <update id="updateStatus">
+        UPDATE sim_user SET status = #{status}, revision = revision + 1,
+            security_version = security_version + 1, updated_at = UTC_TIMESTAMP(3)
+        WHERE id = #{id} AND revision = #{revision}
+    </update>
+    <update id="touchRoles">
+        UPDATE sim_user SET revision = revision + 1, security_version = security_version + 1,
+            updated_at = UTC_TIMESTAMP(3) WHERE id = #{id} AND revision = #{revision}
+    </update>
+    <delete id="deleteUserRoles">DELETE FROM sim_user_role WHERE user_id = #{userId}</delete>
+    <select id="permissions" resultType="fr.isep.simrecrut.mapper.identity.IdentityAdminMapper$PermissionRow">
+        SELECT id, permission_code AS code, name, description FROM sim_permission ORDER BY permission_code
+    </select>
+    <select id="rolePermissions" resultType="string">
+        SELECT p.permission_code FROM sim_permission p JOIN sim_role_permission rp ON rp.permission_id = p.id
+        WHERE rp.role_id = #{roleId} ORDER BY p.permission_code
+    </select>
+    <delete id="deleteRolePermissions">DELETE FROM sim_role_permission WHERE role_id = #{roleId}</delete>
+    <insert id="insertRolePermission">
+        INSERT INTO sim_role_permission (role_id, permission_id) VALUES (#{roleId}, #{permissionId})
+    </insert>
+    <update id="touchRole">
+        UPDATE sim_role SET revision = revision + 1, updated_at = UTC_TIMESTAMP(3)
+        WHERE id = #{roleId} AND revision = #{revision}
+    </update>
+    <update id="invalidateRoleSessions">
+        UPDATE sim_user u JOIN sim_user_role ur ON ur.user_id = u.id
+        SET u.security_version = u.security_version + 1, u.revision = u.revision + 1,
+            u.updated_at = UTC_TIMESTAMP(3) WHERE ur.role_id = #{roleId}
+    </update>
+    <update id="resetPassword">
+        UPDATE sim_user SET password_hash = #{passwordHash}, password_updated_at = UTC_TIMESTAMP(3),
+            email_verified_at = COALESCE(email_verified_at, UTC_TIMESTAMP(3)),
+            security_version = security_version + 1, revision = revision + 1, updated_at = UTC_TIMESTAMP(3)
+        WHERE id = #{id} AND email = #{email} AND security_version = #{securityVersion} AND status = 'ACTIVE'
+    </update>
+    <insert id="audit">
+        INSERT INTO sim_audit_event (actor_user_id, action, resource_type, resource_ref_hash, status)
+        VALUES (#{actorId}, #{action}, #{resourceType}, #{resourceHash}, 'SUCCESS')
+    </insert>
+</mapper>

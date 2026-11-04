@@ -67,8 +67,9 @@ the application YAML files. See [local setup](local-setup.md) for the shared
 variable definitions.
 
 Flyway is enabled, with migrations kept in
-`backend/java/src/main/resources/db/migration/`. No business schema migrations
-have been implemented in this scaffold. A successful build does not establish
+`backend/java/src/main/resources/db/migration/`. The first 36-table business
+baseline is described in [initial schema](../database/initial-schema.md).
+A successful build does not establish
 database connectivity or prove that a complete business application is ready.
 
 The scaffold supplies the application entry point, dependency configuration, and

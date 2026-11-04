@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper">
+    <select id="lockActor" resultType="long">
+        SELECT id FROM sim_user WHERE id = #{userId} AND status = 'ACTIVE'
+        AND email_verified_at IS NOT NULL AND security_version = #{version} FOR UPDATE
+    </select>
+    <select id="find" resultType="fr.isep.simrecrut.entity.assessment.AssessmentCase">
+        SELECT * FROM sim_assessment_case WHERE public_id = #{publicId}
+    </select>
+    <select id="lock" resultType="fr.isep.simrecrut.entity.assessment.AssessmentCase">
+        SELECT * FROM sim_assessment_case WHERE public_id = #{publicId} FOR UPDATE
+    </select>
+    <sql id="retained">candidate_user_id = #{owner} AND privacy_status = 'ACTIVE' AND purge_after > UTC_TIMESTAMP(3)</sql>
+    <select id="retained" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM sim_assessment_case WHERE id = #{caseId} AND privacy_status = 'ACTIVE'
+            AND purge_after > UTC_TIMESTAMP(3))
+    </select>
+    <select id="list" resultType="fr.isep.simrecrut.entity.assessment.AssessmentCase">
+        SELECT * FROM sim_assessment_case WHERE <include refid="retained"/>
+        ORDER BY created_at DESC, id DESC LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="count" resultType="long">SELECT COUNT(*) FROM sim_assessment_case WHERE <include refid="retained"/></select>
+    <sql id="jobColumns">
+        v.*, j.public_id AS job_public_id, j.owner_user_id, v.title_snapshot AS title,
+        r.version_code AS matching_rule_version, r.status AS rule_status, r.config_path, r.config_sha256
+    </sql>
+    <sql id="jobJoins">
+        FROM sim_job_version v JOIN sim_job j ON j.id = v.job_id
+        JOIN sim_matching_rule_version r ON r.id = v.matching_rule_version_id
+    </sql>
+    <select id="job" resultType="fr.isep.simrecrut.entity.job.JobVersion">
+        SELECT <include refid="jobColumns"/> <include refid="jobJoins"/> WHERE v.id = #{versionId}
+    </select>
+    <select id="published" resultType="fr.isep.simrecrut.entity.job.JobVersion">
+        SELECT <include refid="jobColumns"/> <include refid="jobJoins"/>
+        WHERE v.public_id = #{publicId} AND v.status = 'PUBLISHED' AND j.status = 'ACTIVE'
+        AND NOT EXISTS (SELECT 1 FROM sim_job_version newer WHERE newer.job_id = v.job_id
+            AND newer.status = 'PUBLISHED' AND newer.version_no > v.version_no) FOR SHARE
+    </select>
+    <sql id="protocolColumns">
+        p.id, p.matching_rule_version_id, p.feature_schema_version_id, p.version_code, p.t_rule,
+        f.version_code AS schema_version, f.schema_path, f.schema_sha256, f.dimension_count
+    </sql>
+    <sql id="protocolJoins">
+        FROM sim_protocol_version p JOIN sim_feature_schema_version f ON f.id = p.feature_schema_version_id
+        JOIN sim_bias_protocol_version b ON b.id = p.bias_protocol_version_id
+        WHERE p.status = 'FROZEN' AND f.status = 'FROZEN' AND b.status = 'FROZEN'
+    </sql>
+    <select id="protocols" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Protocol">
+        SELECT <include refid="protocolColumns"/> <include refid="protocolJoins"/>
+        AND p.matching_rule_version_id = #{ruleId}<if test="code != ''"> AND p.version_code = #{code}</if>
+    </select>
+    <select id="protocol" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Protocol">
+        SELECT <include refid="protocolColumns"/> <include refid="protocolJoins"/> AND p.id = #{id}
+    </select>
+    <select id="activeModels" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Model">
+        SELECT id, feature_schema_version_id, protocol_version_id, version_code, model_type,
+            threshold, common_threshold, status FROM sim_model_version
+        WHERE protocol_version_id = #{protocolId} AND status = 'ACTIVE' ORDER BY id FOR SHARE
+    </select>
+    <select id="model" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Model">
+        SELECT id, feature_schema_version_id, protocol_version_id, version_code, model_type,
+            threshold, common_threshold, status FROM sim_model_version WHERE id = #{id}
+    </select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sim_assessment_case (candidate_user_id, job_version_id, protocol_version_id, public_id,
+            processing_status, human_status, privacy_status, stage, revision_no, purge_after)
+        VALUES (#{candidateUserId}, #{jobVersionId}, #{protocolVersionId}, #{publicId}, 'AWAITING_UPLOAD',
+            'NOT_ASSIGNED', 'ACTIVE', 'UPLOAD', 1, #{purgeAfter})
+    </insert>
+    <update id="update">
+        UPDATE sim_assessment_case SET processing_status = #{processingStatus}, privacy_status = #{privacyStatus},
+            stage = #{stage}, draft_json = #{draftJson}, confirmed_absent_json = #{confirmedAbsentJson}, revision_no = revision_no + 1,
+            cleanup_status = #{cleanupStatus}, safe_error_code = #{safeErrorCode},
+            assessment_reference_month = #{assessmentReferenceMonth}, confirmed_at = #{confirmedAt},
+            uploaded_at = #{uploadedAt},
+            automated_started_at = #{automatedStartedAt}, automated_completed_at = #{automatedCompletedAt},
+            neutral_model_version_id = #{neutralModelVersionId}, biased_model_version_id = #{biasedModelVersionId},
+            purge_after = #{purgeAfter}, deletion_reason = #{deletionReason}, updated_at = UTC_TIMESTAMP(3)
+        WHERE id = #{id} AND revision_no = #{revisionNo}
+    </update>
+    <select id="requirements" resultType="string">
+        SELECT JSON_OBJECT('criterionType', criterion_type, 'requirementCode', requirement_code,
+            'payload', payload_json, 'mandatory', mandatory, 'assessmentIncluded', assessment_included)
+        FROM sim_job_requirement WHERE job_version_id = #{versionId} ORDER BY display_order, id
+    </select>
+    <select id="snapshot" resultType="string">SELECT professional_json FROM sim_case_snapshot WHERE case_id = #{caseId}</select>
+    <insert id="insertSnapshot">
+        INSERT INTO sim_case_snapshot (case_id, schema_version, professional_json) VALUES (#{caseId}, #{schema}, #{data})
+    </insert>
+    <select id="attributes" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Attribute">
+        SELECT attribute_type AS type, attribute_value AS value, source_type AS source, confirmed
+        FROM sim_case_research_attribute WHERE case_id = #{caseId} ORDER BY attribute_type
+    </select>
+    <delete id="deleteAttributes">DELETE FROM sim_case_research_attribute WHERE case_id = #{caseId}</delete>
+    <insert id="insertAttribute">
+        INSERT INTO sim_case_research_attribute (case_id, attribute_type, attribute_value, source_type)
+        VALUES (#{caseId}, #{type}, #{value}, CASE WHEN #{value} = 'UNKNOWN' THEN 'UNKNOWN' ELSE 'USER_SUPPLIED' END)
+    </insert>
+    <update id="confirmAttributes">UPDATE sim_case_research_attribute SET confirmed = 1 WHERE case_id = #{caseId}</update>
+    <select id="receipt" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Receipt">
+        SELECT request_hash, case_public_id, action, http_status, response_json FROM sim_case_operation
+        WHERE user_id = #{owner} AND operation_key = #{key}
+    </select>
+    <insert id="insertReceipt">
+        INSERT INTO sim_case_operation (user_id, operation_key, request_hash, case_public_id, action, http_status, response_json)
+        VALUES (#{owner}, #{key}, #{hash}, #{caseId}, #{action}, #{status}, #{response})
+    </insert>
+    <insert id="insertArtifact">
+        INSERT INTO sim_case_temp_artifact (case_id, artifact_type, relative_path, delete_after, mime_type, size_bytes, sha256)
+        VALUES (#{caseId}, 'PDF', #{path}, #{deadline}, 'application/pdf', #{bytes}, #{hash})
+    </insert>
+    <select id="artifact" resultType="string">
+        SELECT relative_path FROM sim_case_temp_artifact WHERE case_id = #{caseId} AND status != 'DELETED' ORDER BY id DESC LIMIT 1
+    </select>
+    <update id="artifactsDeleted">
+        UPDATE sim_case_temp_artifact SET status = 'DELETED', deleted_at = UTC_TIMESTAMP(3) WHERE case_id = #{caseId}
+    </update>
+    <insert id="enqueue">
+        INSERT INTO sim_async_task (public_id, task_type, resource_type, resource_public_id)
+        VALUES (#{taskId}, #{type}, 'CASE', #{caseId})
+    </insert>
+    <select id="pendingTasks" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Task">
+        SELECT id, resource_public_id, task_type, status, attempt_count, lease_token, lease_until, max_attempts
+        FROM sim_async_task WHERE task_type IN ('CASE_EXTRACT', 'CASE_ASSESS', 'CASE_CLEANUP', 'CASE_PURGE')
+        AND (status = 'QUEUED' OR (status = 'RUNNING' AND lease_until &lt; UTC_TIMESTAMP(3))) ORDER BY id LIMIT 8
+    </select>
+    <select id="lockTask" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Task">
+        SELECT id, resource_public_id, task_type, status, attempt_count, lease_token, lease_until, max_attempts
+        FROM sim_async_task WHERE id = #{id} FOR UPDATE
+    </select>
+    <update id="claim">
+        UPDATE sim_async_task SET status = 'RUNNING', attempt_count = attempt_count + 1,
+            lease_token = #{token}, worker_id = #{worker}, lease_until = TIMESTAMPADD(SECOND, 180, UTC_TIMESTAMP(3))
+        WHERE id = #{id} AND attempt_count &lt; max_attempts
+        AND (status = 'QUEUED' OR (status = 'RUNNING' AND lease_until &lt; UTC_TIMESTAMP(3)))
+    </update>
+    <update id="heartbeat">
+        UPDATE sim_async_task SET lease_until = TIMESTAMPADD(SECOND, 180, UTC_TIMESTAMP(3))
+        WHERE id = #{id} AND lease_token = #{token} AND status = 'RUNNING' AND lease_until > UTC_TIMESTAMP(3)
+    </update>
+    <update id="finishTask">
+        UPDATE sim_async_task SET status = #{status}, lease_token = NULL, lease_until = NULL
+        WHERE id = #{id} AND lease_token = #{token} AND status = 'RUNNING' AND lease_until > UTC_TIMESTAMP(3)
+    </update>
+    <update id="cancelTasks">
+        UPDATE sim_async_task SET status = 'CANCELLED', lease_token = NULL, lease_until = NULL,
+            payload_json = NULL, output_json = NULL WHERE resource_type = 'CASE' AND resource_public_id = #{caseId}
+    </update>
+    <update id="expireTask">
+        UPDATE sim_async_task SET status = 'FAILED_FINAL', lease_token = NULL, lease_until = NULL
+        WHERE id = #{id} AND status = 'RUNNING' AND lease_until &lt; UTC_TIMESTAMP(3)
+    </update>
+    <update id="resetCleanupAttempts">
+        UPDATE sim_async_task SET status = 'QUEUED', attempt_count = 0, lease_token = NULL, lease_until = NULL
+        WHERE resource_type = 'CASE' AND resource_public_id = #{caseId} AND task_type = #{type}
+        AND status IN ('RETRYABLE', 'FAILED_FINAL')
+    </update>
+    <select id="hasOpenTask" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM sim_async_task WHERE resource_type = 'CASE' AND resource_public_id = #{caseId}
+        AND task_type = #{type} AND status IN ('QUEUED', 'RUNNING', 'RETRYABLE'))
+    </select>
+    <update id="requeue">
+        UPDATE sim_async_task SET status = 'QUEUED', lease_token = NULL, lease_until = NULL
+        WHERE resource_type = 'CASE' AND resource_public_id = #{caseId} AND task_type = #{type}
+        AND status = 'RETRYABLE' AND attempt_count &lt; max_attempts
+    </update>
+    <select id="savedResult" resultType="string">
+        SELECT result_json FROM sim_case_stage_result WHERE case_id = #{caseId} AND method = #{method}
+    </select>
+    <insert id="saveResult">
+        INSERT INTO sim_case_stage_result (case_id, method, result_json) VALUES (#{caseId}, #{method}, #{data})
+    </insert>
+    <select id="humans" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Human">
+        SELECT condition_type, status, decision, reason FROM sim_human_review WHERE case_id = #{caseId}
+        AND purpose = 'PRIMARY' AND candidate_visible = 1 AND status NOT IN ('CANCELLED', 'EXPIRED')
+    </select>
+    <insert id="writeMatching">
+        INSERT INTO sim_matching_result (case_id, matching_rule_version_id, match_skills, match_experience,
+            match_education, match_languages, match_projects, mandatory_pass)
+        SELECT #{caseId}, #{ruleId}, result_json->'$.professional.m[0]', result_json->'$.professional.m[1]',
+            result_json->'$.professional.m[2]', result_json->'$.professional.m[3]', result_json->'$.professional.m[4]',
+            result_json->'$.professional.g' FROM sim_case_stage_result WHERE case_id = #{caseId} AND method = 'PROFESSIONAL'
+    </insert>
+    <insert id="writeObjective">
+        INSERT INTO sim_objective_result (case_id, protocol_version_id, t_rule, contribution_skills,
+            contribution_experience, contribution_education, contribution_languages, contribution_projects, score, decision)
+        SELECT #{caseId}, #{protocolId}, #{cutoff}, result_json->'$.professional.mw[0]', result_json->'$.professional.mw[1]',
+            result_json->'$.professional.mw[2]', result_json->'$.professional.mw[3]', result_json->'$.professional.mw[4]',
+            result_json->'$.score', result_json->>'$.decision' FROM sim_case_stage_result
+        WHERE case_id = #{caseId} AND method = 'PROFESSIONAL'
+    </insert>
+    <insert id="writeMl">
+        INSERT INTO sim_ml_result (case_id, model_version_id, feature_schema_version_id, model_type,
+            logit, score, threshold, common_threshold, decision, common_decision)
+        SELECT #{caseId}, #{model.id}, #{model.featureSchemaVersionId}, #{method}, result_json->'$.logit',
+            result_json->'$.acceptanceScore', #{model.threshold}, #{model.commonThreshold}, result_json->>'$.decision',
+            result_json->>'$.commonThresholdDecision' FROM sim_case_stage_result WHERE case_id = #{caseId} AND method = #{method}
+    </insert>
+    <select id="maintenanceCases" resultType="fr.isep.simrecrut.entity.assessment.AssessmentCase">
+        SELECT * FROM sim_assessment_case WHERE privacy_status = 'PURGING' OR purge_after &lt;= UTC_TIMESTAMP(3)
+            OR cleanup_status = 'PENDING' ORDER BY id LIMIT 100
+    </select>
+    <update id="cancelReviews">
+        UPDATE sim_human_review SET status = 'CANCELLED' WHERE case_id = #{caseId} AND status IN ('PENDING', 'OPENED')
+    </update>
+    <sql id="subjectIds">SELECT id FROM sim_experiment_subject WHERE candidate_case_id = #{caseId}</sql>
+    <sql id="variantIds">SELECT id FROM sim_experiment_variant WHERE experiment_subject_id IN (<include refid="subjectIds"/>)</sql>
+    <select id="lockExperiments" resultType="long">
+        SELECT id FROM sim_experiment WHERE id IN (SELECT experiment_id FROM sim_experiment_subject
+            WHERE candidate_case_id = #{caseId}) ORDER BY id FOR UPDATE
+    </select>
+    <update id="invalidateExperiments">
+        UPDATE sim_experiment SET status = 'FAILED' WHERE id IN
+            (SELECT experiment_id FROM sim_experiment_subject WHERE candidate_case_id = #{caseId})
+    </update>
+    <update id="cancelExperimentTasks">
+        UPDATE sim_async_task SET status = 'CANCELLED', payload_json = NULL, output_json = NULL,
+            lease_token = NULL, lease_until = NULL WHERE resource_type = 'EXPERIMENT' AND resource_public_id IN
+            (SELECT e.public_id FROM sim_experiment e JOIN sim_experiment_subject s ON s.experiment_id = e.id
+                WHERE s.candidate_case_id = #{caseId})
+    </update>
+    <delete id="deleteMetrics">DELETE FROM sim_experiment_metric WHERE experiment_id IN
+        (SELECT experiment_id FROM sim_experiment_subject WHERE candidate_case_id = #{caseId})</delete>
+    <delete id="deleteVariantReviews">DELETE FROM sim_human_review WHERE experiment_variant_id IN (<include refid="variantIds"/>)</delete>
+    <delete id="deleteVariantResults">DELETE FROM sim_experiment_result WHERE variant_id IN (<include refid="variantIds"/>)</delete>
+    <delete id="deleteVariants">DELETE FROM sim_experiment_variant WHERE experiment_subject_id IN (<include refid="subjectIds"/>)</delete>
+    <delete id="deleteBaselines">DELETE FROM sim_experiment_subject_assessment WHERE experiment_subject_id IN (<include refid="subjectIds"/>)</delete>
+    <delete id="deleteSubjects">DELETE FROM sim_experiment_subject WHERE candidate_case_id = #{caseId}</delete>
+    <delete id="deleteReviews">DELETE FROM sim_human_review WHERE case_id = #{caseId}</delete>
+    <delete id="deleteGrants">DELETE FROM sim_case_access_grant WHERE case_id = #{caseId}</delete>
+    <delete id="deleteArtifacts">DELETE FROM sim_case_temp_artifact WHERE case_id = #{caseId}</delete>
+    <delete id="deleteSnapshots">DELETE FROM sim_case_snapshot WHERE case_id = #{caseId}</delete>
+    <delete id="deleteMatching">DELETE FROM sim_matching_result WHERE case_id = #{caseId}</delete>
+    <delete id="deleteObjective">DELETE FROM sim_objective_result WHERE case_id = #{caseId}</delete>
+    <delete id="deleteMl">DELETE FROM sim_ml_result WHERE case_id = #{caseId}</delete>
+    <delete id="deleteResults">DELETE FROM sim_case_stage_result WHERE case_id = #{caseId}</delete>
+    <delete id="deleteTasks">DELETE FROM sim_async_task WHERE resource_type = 'CASE' AND resource_public_id = #{caseId}</delete>
+    <update id="redactOperations">
+        UPDATE sim_case_operation SET request_hash = REPEAT('0', 64), http_status = 410,
+            response_json = JSON_OBJECT('deleted', CAST('true' AS JSON))
+        WHERE case_public_id = #{caseId} AND action != 'DELETE'
+    </update>
+    <update id="completeDeletionReceipts">
+        UPDATE sim_case_operation SET http_status = 200, response_json = #{response} WHERE case_public_id = #{caseId} AND action = 'DELETE'
+    </update>
+    <insert id="deletionReceipt">
+        INSERT INTO sim_privacy_deletion_receipt (case_public_id_hash, deletion_type, deleted_at, cleanup_status)
+        VALUES (#{hash}, #{reason}, UTC_TIMESTAMP(3), 'COMPLETE')
+    </insert>
+    <delete id="deleteCase">DELETE FROM sim_assessment_case WHERE id = #{caseId} AND privacy_status = 'PURGING'</delete>
+    <insert id="audit">
+        INSERT INTO sim_audit_event (actor_user_id, action, resource_type, resource_ref_hash, status)
+        VALUES (#{actor}, #{action}, 'CASE', #{hash}, 'SUCCESS')
+    </insert>
+</mapper>

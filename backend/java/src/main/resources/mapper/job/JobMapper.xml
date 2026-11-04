@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="fr.isep.simrecrut.mapper.job.JobMapper">
+    <sql id="columns">
+        v.*, j.public_id AS job_public_id, j.owner_user_id,
+        v.title_snapshot AS title, r.version_code AS matching_rule_version,
+        r.status AS rule_status, r.config_path, r.config_sha256
+    </sql>
+    <sql id="joins">
+        FROM sim_job_version v JOIN sim_job j ON j.id = v.job_id
+        JOIN sim_matching_rule_version r ON r.id = v.matching_rule_version_id
+    </sql>
+    <select id="lockActor" resultType="long">
+        SELECT id FROM sim_user WHERE id = #{userId} AND status = 'ACTIVE' FOR UPDATE
+    </select>
+    <select id="lockJob" resultType="long">
+        SELECT id FROM sim_job WHERE public_id = #{publicId} AND owner_user_id = #{owner}
+        AND status != 'ARCHIVED' FOR UPDATE
+    </select>
+    <select id="receipt" resultType="map">
+        SELECT request_hash AS requestHash, job_public_id AS jobPublicId, response_json AS responseJson
+        FROM sim_job_operation WHERE user_id = #{owner} AND operation_key = #{key}
+    </select>
+    <insert id="insertReceipt">
+        INSERT INTO sim_job_operation (user_id, operation_key, request_hash, job_public_id, response_json)
+        VALUES (#{owner}, #{key}, #{hash}, #{jobId}, #{response})
+    </insert>
+    <select id="rule" resultType="fr.isep.simrecrut.entity.job.JobVersion">
+        SELECT id AS matching_rule_version_id, version_code AS matching_rule_version,
+        status AS rule_status, config_path, config_sha256
+        FROM sim_matching_rule_version WHERE version_code = #{code}
+    </select>
+    <insert id="insertJob" useGeneratedKeys="true" keyProperty="jobId">
+        INSERT INTO sim_job (owner_user_id, public_id, source_type, title, status)
+        VALUES (#{ownerUserId}, #{jobPublicId}, 'HR_CREATED', #{title}, 'DRAFT')
+    </insert>
+    <insert id="insertVersion" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sim_job_version (job_id, matching_rule_version_id, created_by, public_id,
+        version_no, description, public_requirements_json, title_snapshot, active_criteria_json,
+        weight_skills, weight_experience, weight_education, weight_languages, weight_projects, revision_no)
+        VALUES (#{jobId}, #{matchingRuleVersionId}, #{createdBy}, #{publicId}, #{versionNo},
+        #{description}, #{publicRequirementsJson}, #{title}, #{activeCriteriaJson}, #{weightSkills},
+        #{weightExperience}, #{weightEducation}, #{weightLanguages}, #{weightProjects}, 1)
+    </insert>
+    <select id="nextVersion" resultType="int">
+        SELECT COALESCE(MAX(version_no), 0) + 1 FROM sim_job_version WHERE job_id = #{jobId}
+    </select>
+    <select id="draft" resultType="fr.isep.simrecrut.entity.job.JobVersion">
+        SELECT <include refid="columns"/> <include refid="joins"/>
+        WHERE j.public_id = #{jobPublicId} AND j.status != 'ARCHIVED' AND v.status = 'DRAFT'
+    </select>
+    <select id="version" resultType="fr.isep.simrecrut.entity.job.JobVersion">
+        SELECT <include refid="columns"/> <include refid="joins"/>
+        WHERE j.public_id = #{jobPublicId} AND v.public_id = #{versionPublicId}
+        AND j.status != 'ARCHIVED'
+    </select>
+    <select id="published" resultType="fr.isep.simrecrut.entity.job.JobVersion">
+        SELECT <include refid="columns"/> <include refid="joins"/>
+        WHERE j.public_id = #{jobPublicId} AND j.status = 'ACTIVE' AND v.status = 'PUBLISHED'
+        ORDER BY v.version_no DESC LIMIT 1
+    </select>
+    <select id="versions" resultType="fr.isep.simrecrut.entity.job.JobVersion">
+        SELECT <include refid="columns"/> <include refid="joins"/>
+        WHERE j.public_id = #{jobPublicId} AND j.status != 'ARCHIVED' ORDER BY v.version_no DESC
+    </select>
+    <sql id="listFilter">
+        <choose>
+            <when test="owner != null">
+                j.owner_user_id = #{owner} AND j.status != 'ARCHIVED'
+                AND v.version_no = (SELECT MAX(x.version_no) FROM sim_job_version x WHERE x.job_id = j.id)
+            </when>
+            <otherwise>
+                j.status = 'ACTIVE' AND v.status = 'PUBLISHED'
+                AND v.version_no = (SELECT MAX(x.version_no) FROM sim_job_version x
+                    WHERE x.job_id = j.id AND x.status = 'PUBLISHED')
+            </otherwise>
+        </choose>
+        <if test="keyword != null and keyword != ''">
+            AND (LOCATE(#{keyword}, v.title_snapshot) &gt; 0 OR LOCATE(#{keyword}, v.description) &gt; 0)
+        </if>
+    </sql>
+    <select id="list" resultType="fr.isep.simrecrut.entity.job.JobVersion">
+        SELECT <include refid="columns"/> <include refid="joins"/>
+        WHERE <include refid="listFilter"/>
+        ORDER BY v.created_at DESC, v.id DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(*) <include refid="joins"/> WHERE <include refid="listFilter"/>
+    </select>
+    <update id="updateDraft">
+        UPDATE sim_job_version SET title_snapshot = #{title}, description = #{description},
+        active_criteria_json = #{activeCriteriaJson}, public_requirements_json = #{publicRequirementsJson},
+        weight_skills = #{weightSkills}, weight_experience = #{weightExperience},
+        weight_education = #{weightEducation}, weight_languages = #{weightLanguages},
+        weight_projects = #{weightProjects}, status = #{status}, published_by = #{publishedBy},
+        published_at = #{publishedAt}, extraction_status = #{extractionStatus},
+        extraction_token = #{extractionToken}, extraction_error = #{extractionError},
+        extraction_started_at = #{extractionStartedAt}, revision_no = revision_no + 1
+        WHERE id = #{id} AND revision_no = #{revisionNo} AND status = 'DRAFT'
+    </update>
+    <update id="updateJob">
+        UPDATE sim_job SET title = #{title}<if test="published">, status = 'ACTIVE'</if> WHERE id = #{id}
+    </update>
+    <select id="requirements" resultType="string">
+        SELECT JSON_OBJECT('criterionType', criterion_type, 'requirementCode', requirement_code,
+        'payload', payload_json, 'assessmentIncluded', IF(assessment_included, CAST('true' AS JSON), CAST('false' AS JSON)),
+        'mandatory', IF(mandatory, CAST('true' AS JSON), CAST('false' AS JSON)),
+        'publicVisible', IF(public_visible, CAST('true' AS JSON), CAST('false' AS JSON)),
+        'reviewed', IF(reviewed, CAST('true' AS JSON), CAST('false' AS JSON)),
+        'evidenceExcerpt', source_excerpt, 'evidenceLocation', evidence_location, 'warnings', warnings_json)
+        FROM sim_job_requirement WHERE job_version_id = #{versionId} ORDER BY display_order, id
+    </select>
+    <delete id="deleteRequirements">
+        DELETE FROM sim_job_requirement WHERE job_version_id = #{versionId}
+    </delete>
+    <insert id="insertRequirement">
+        INSERT INTO sim_job_requirement (job_version_id, criterion_type, requirement_code, payload_json,
+        mandatory, public_visible, assessment_included, reviewed, source_excerpt, evidence_location,
+        warnings_json, display_order)
+        VALUES (#{versionId}, #{criterion}, #{code}, #{payload}, #{mandatory}, #{visible}, #{included},
+        #{reviewed}, #{excerpt}, #{location}, #{warnings}, #{order})
+    </insert>
+</mapper>
