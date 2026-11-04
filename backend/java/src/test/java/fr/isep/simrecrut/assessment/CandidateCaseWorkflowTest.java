@@ -20,6 +20,7 @@ import org.apache.pdfbox.pdmodel.font.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class CandidateCaseWorkflowTest {
     @TempDir Path temporary;
@@ -125,6 +126,21 @@ class CandidateCaseWorkflowTest {
         assertEquals("CONFIRMED", f.cases.get(id).processingStatus);
         assertNotNull(f.snapshots.get(f.cases.get(id).id));
         verify(f.db, never()).activeModels(anyLong());
+    }
+
+    @Test void objectiveOnlyAssessmentCompletesWithoutModelVersionsOrPredictions() throws Exception {
+        String id = confirmed();
+        ReflectionTestUtils.setField(f.service, "objectiveOnly", true);
+        f.service.run(f.actor, id, key());
+        f.worker.execute(f.task(id, "CASE_ASSESS"));
+
+        var result = f.service.results(f.actor, id);
+        assertEquals("AUTOMATED_COMPLETE", result.automatedStatus());
+        assertEquals(100, result.objective().path("displayScore").asInt());
+        assertNull(result.neutralMl());
+        assertNull(result.biasedMl());
+        verify(f.db, never()).activeModels(anyLong());
+        verifyNoInteractions(f.predictions);
     }
 
     @Test void completeAssessmentSavesRealStagesAndReturnsOnlyPublicResults() throws Exception {

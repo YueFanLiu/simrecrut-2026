@@ -83,7 +83,7 @@ invalidated after five wrong attempts. Sending is limited to one per email per
 minute, five per email per hour and ten per IP per hour. Submissions, including
 unknown challenges, are limited to sixty per IP per ten minutes.
 
-Passwords contain 15-128 Unicode code points and must match confirmation.
+Passwords contain 12-128 Unicode code points and must match confirmation.
 Consumption and password hashing precede the short MySQL transaction. A guarded
 update checks email, ACTIVE status and frozen security version, preventing stale
 proofs from undoing later password, role, email or status changes. Success verifies

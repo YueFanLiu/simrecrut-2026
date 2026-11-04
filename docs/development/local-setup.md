@@ -80,7 +80,7 @@ PDF, extracts professional facts and opens review. Review supports draft saving,
 explicit confirmation, publication, cleanup retry and deletion. See
 [Connected resume workflow](standard-resume-workflow.md) for permissions and retention.
 Public registration supports Candidate and HR accounts, email verification and
-15-128 character passwords. Password recovery has no endpoint in this backend
+12-128 character passwords. Password recovery has no endpoint in this backend
 and has no link in the connected login form.
 
 Production builds use `.env.production`; the deployment must proxy `/prod-api`

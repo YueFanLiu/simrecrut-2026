@@ -65,7 +65,7 @@ onBeforeUnmount(()=>{active=false;clearInterval(timer);form.password='';form.con
         <p>The email code expires in 10 minutes. Check your spam folder too.</p>
         <ElFormItem label="Email verification code" prop="emailCode"><ElInput v-model="form.emailCode" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="Six-digit code" /></ElFormItem>
         <ElFormItem label="New password" prop="password"><PasswordInput v-model="form.password" :disabled="loading" /></ElFormItem>
-        <p>Use a password of 15-128 characters.</p>
+        <p>Use at least 12 characters.</p>
         <ElFormItem label="Confirm new password" prop="confirmation"><PasswordInput v-model="form.confirmation" :disabled="loading" /></ElFormItem>
         <ElButton type="primary" native-type="submit" class="wide" :loading="loading" :disabled="loading||!form.challengeId">Reset password</ElButton>
       </ElForm>

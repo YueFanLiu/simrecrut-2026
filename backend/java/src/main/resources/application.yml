@@ -45,6 +45,8 @@ spring:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
       mail.smtp.starttls.required: true
+      # The server has already accepted the message before the connection closes.
+      mail.smtp.quitwait: false
       mail.smtp.connectiontimeout: 5000
       mail.smtp.timeout: 5000
       mail.smtp.writetimeout: 5000
@@ -111,6 +113,7 @@ management:
 simrecrut:
   cases:
     protocol-version: ${CASE_PROTOCOL_VERSION:}
+    objective-only: ${CASE_OBJECTIVE_ONLY:false}
   jobs:
     matching-rule-version: ${JOB_MATCHING_RULE_VERSION:}
     rule-root: ${JOB_RULE_ROOT:model_artifacts/rules}

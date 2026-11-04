@@ -113,3 +113,70 @@ test('connected page adapters use the Java contracts and preserve access errors'
     await assert.rejects(jobs.managedJobs(), /has not implemented/)
   } finally { await server.close() }
 })
+
+test('HR job writes follow Java revisions and publish a candidate-visible version', async () => {
+  const server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)),
+    server: { middlewareMode: true, hmr: false }, appType: 'custom' })
+  try {
+    const { default: request } = await server.ssrLoadModule('/src/utils/request.js')
+    const jobs = await server.ssrLoadModule('/src/api/jobs.js')
+    const base = '/api/v1/hr/jobs'
+    const path = `${base}/JOB`
+    const writes = []
+    let extractionStarted = false
+    let row = { jobId: 'JOB', jobVersionId: 'VERSION', status: 'DRAFT', version: 1, revision: 1,
+      createdAt: '2026-11-04T12:00:00Z', requirements: [], activeCriteria: [],
+      weights: { skills: 0, experience: 0, education: 0, languages: 0, projects: 0 } }
+    request.defaults.adapter = async config => {
+      const body = config.data ? JSON.parse(config.data) : undefined
+      const { pathname } = new URL(config.url, 'http://local')
+      const reply = data => ({ config, status: 200, data: { code: 0, data: structuredClone(data) } })
+      if (config.method !== 'get') assert.match(config.headers.get('Idempotency-Key'), /^[\w-]{16,128}$/)
+      if (pathname === base && config.method === 'post') {
+        assert.deepEqual(body, { title: 'Engineer', description: 'Build Java services.' })
+        row = { ...row, ...body }
+        return reply(row)
+      }
+      if (pathname === path && config.method === 'get') return reply(row)
+      if (pathname === `${path}/extraction-status`) {
+        return reply({ status: extractionStarted ? 'COMPLETE' : 'IDLE', revision: row.revision })
+      }
+      if (pathname === `${path}/extract-requirements`) {
+        assert.equal(config.method, 'post')
+        extractionStarted = true
+        return reply({ status: 'RUNNING', revision: row.revision })
+      }
+      if (config.method === 'put' || pathname === `${path}/publish`) {
+        assert.equal(body.revision, row.revision)
+        writes.push([pathname, body.revision])
+        row = { ...row, ...body, revision: row.revision + 1 }
+        if (pathname.endsWith('/publish')) row.status = 'PUBLISHED'
+        return reply(row)
+      }
+      if (pathname === `${path}/validate`) return reply({ valid: true, errors: [], warnings: [] })
+      if (pathname === `${path}/versions`) return reply([row])
+      if (pathname === `${path}/drafts`) {
+        assert.deepEqual(body, { sourceJobVersionId: 'VERSION' })
+        return reply({ ...row, status: 'DRAFT', version: 2 })
+      }
+      assert.equal(pathname, '/api/v1/candidate/jobs')
+      return reply({ items: row.status === 'PUBLISHED' ? [row] : [], total: 1 })
+    }
+    await jobs.createJob({ title: 'Engineer', description: 'Build Java services.', department: 'Demo only' })
+    assert.equal((await jobs.extractJob('JOB', 'one-extraction-key', 1)).revision, 1)
+    const draft = await jobs.jobDraft('JOB')
+    Object.assign(draft.form, { title: 'Backend Engineer', activeCriteria: ['Skills'], percentages: ['100', '0', '0', '0', '0'] })
+    draft.form.requirements.push({ id: 'java', category: 'Skills', payloadText: '{"assessedSkillCodes":["JAVA"]}',
+      assessmentIncluded: true, mandatory: false, publicVisible: true, reviewed: true, warnings: [] })
+    const saved = await jobs.saveJob('JOB', draft.form, draft.revision)
+    assert.deepEqual(writes, [[path, 1], [`${path}/requirements`, 2], [`${path}/weights`, 3]])
+    assert.equal(saved.revision, 4)
+    assert.deepEqual(row.requirements[0].payload, { assessedSkillCodes: ['JAVA'] })
+    assert.equal(row.weights.skills, 1)
+    assert.equal((await jobs.validateJob('JOB')).valid, true)
+    await jobs.publishJob('JOB', saved.revision)
+    assert.equal((await jobs.publishedJobs())[0].title, 'Backend Engineer')
+    assert.equal((await jobs.jobVersions('JOB')).versions[0].versionId, 'VERSION')
+    assert.equal((await jobs.cloneJob('JOB', 'VERSION')).version, 2)
+  } finally { await server.close() }
+})

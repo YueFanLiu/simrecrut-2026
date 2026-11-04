@@ -178,7 +178,8 @@ function goToLogin() {
                 @click="requestCode">{{ cooldown ? `Resend in ${cooldown}s` : 'Send code' }}</ElButton>
             </div>
           </ElFormItem>
-          <p v-if="codeNotice" class="field-hint" role="status">{{ codeNotice }}
+          <p v-if="sendingCode" class="field-hint" role="status">Sending your code. This may take a few seconds.</p>
+          <p v-else-if="codeNotice" class="field-hint" role="status">{{ codeNotice }}
             {{ challenge && !challengeValid ? 'Code expired. Request a new code.' : '' }}</p>
           <ElFormItem label="Account type">
             <ElRadioGroup v-model="form.accountType" aria-label="Account type">
@@ -192,7 +193,7 @@ function goToLogin() {
           <PasswordInput v-model="form.password" placeholder="Create a password" :disabled="loading"
             aria-describedby="password-hint" @input="passwordChanged" />
         </ElFormItem>
-        <p id="password-hint" class="field-hint">{{ demoMode ? '8-20 characters, including letters and numbers.' : '15-128 characters. A long passphrase is welcome.' }}</p>
+        <p id="password-hint" class="field-hint">{{ demoMode ? '8-20 characters, including letters and numbers.' : 'Use at least 12 characters.' }}</p>
 
         <ElFormItem label="Confirm password" prop="confirmation">
           <PasswordInput v-model="form.confirmation" placeholder="Confirm your password"

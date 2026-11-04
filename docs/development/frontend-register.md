@@ -3,7 +3,7 @@
 `/register` shares the responsive login layout and password visibility controls.
 Connected registration supports Candidate and HR accounts, matching the Java API.
 The form validates a 3-20 character username, an email up to 254 characters, a
-15-128 Unicode code-point password, password confirmation and notice acknowledgement.
+12-128 Unicode code-point password, password confirmation and notice acknowledgement.
 It offers no Admin or Researcher registration option.
 
 Send code calls `POST /api/v1/auth/registration/code` with the normalized email.

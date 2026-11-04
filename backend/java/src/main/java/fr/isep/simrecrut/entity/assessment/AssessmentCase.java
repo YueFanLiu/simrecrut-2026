@@ -29,4 +29,8 @@ public class AssessmentCase {
     public LocalDateTime createdAt;
     public LocalDateTime updatedAt;
     public String deletionReason;
+
+    public boolean hasPinnedModels() {
+        return neutralModelVersionId != null || biasedModelVersionId != null;
+    }
 }

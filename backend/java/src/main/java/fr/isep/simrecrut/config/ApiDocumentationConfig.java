@@ -381,7 +381,7 @@ public class ApiDocumentationConfig {
         if (controller.equals("PasswordResetController")) return "Public mailbox proof flow; no RuoYi endpoint or CAPTCHA. "
                 + "Codes expire after 600 seconds, are single-use, allow five failures, and are bound to email and challenge. "
                 + "Unknown/disabled accounts receive the same code-request response. Sending and verification are rate limited. "
-                + "Passwords must contain 15-128 characters. Successful reset invalidates all old sessions. "
+                + "Passwords must contain 12-128 characters. Successful reset invalidates all old sessions. "
                 + "A changed account security version invalidates outstanding proofs. No password or code is returned.";
         if (controller.equals("AuthenticationController")) {
             return switch (method) {

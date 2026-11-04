@@ -124,6 +124,7 @@ public class CandidateCaseWorker {
         if (row == null) return;
         JobVersion job = db.job(row.jobVersionId);
         CaseConfiguration.Bundle config = configuration.load(job, db.protocol(row.protocolVersionId));
+        List<String> modelTypes = row.hasPinnedModels() ? List.of("NEUTRAL", "BIASED") : List.of();
         String existing = db.savedResult(row.id, "PROFESSIONAL");
         JsonNode professional;
         if (existing == null) {
@@ -136,10 +137,10 @@ public class CandidateCaseWorker {
                 changed(db.saveResult(current.id, "PROFESSIONAL", result.toString()));
                 changed(db.writeMatching(current.id, job.matchingRuleVersionId));
                 changed(db.writeObjective(current.id, current.protocolVersionId, config.protocol().tRule()));
-                current.stage = "NEUTRAL"; save(current);
+                current.stage = modelTypes.isEmpty() ? "FINALIZING" : "NEUTRAL"; save(current);
             });
         } else professional = read(existing);
-        for (String type : List.of("NEUTRAL", "BIASED")) {
+        for (String type : modelTypes) {
             if (db.savedResult(row.id, type) != null) continue;
             Model model = db.model(type.equals("NEUTRAL") ? row.neutralModelVersionId : row.biasedModelVersionId);
             if (model == null || !model.modelType().equals(type) || model.protocolVersionId() != row.protocolVersionId
@@ -162,7 +163,8 @@ public class CandidateCaseWorker {
             });
         }
         guarded(lease, current -> {
-            for (String type : List.of("PROFESSIONAL", "NEUTRAL", "BIASED")) {
+            if (db.savedResult(current.id, "PROFESSIONAL") == null) throw CaseException.conflict();
+            for (String type : modelTypes) {
                 if (db.savedResult(current.id, type) == null) throw CaseException.conflict();
             }
             current.processingStatus = "AUTOMATED_COMPLETE"; current.stage = "COMPLETE";

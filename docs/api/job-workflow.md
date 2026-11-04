@@ -160,8 +160,8 @@ integrity, extraction failure, stale workers and MyBatis XML parsing. They use
 isolated persistence doubles. Real MySQL migration/concurrency and live provider
 integration require target-environment verification.
 
-The frontend is unchanged and retains its existing request paths and mock-era
-data fields. Future integration must align those paths with this contract and
-add typed requirement mapping, extraction polling and sequential revision
-handling. Authentication also needs its previously identified adapter migration.
-This backend implementation does not establish complete browser integration.
+In connected mode, the HR wizard edits structured requirement payloads, polls
+extraction status and carries the returned revision across draft writes. Use
+codes from the configured matching rule when editing requirement JSON. When a
+description change clears evidence and review flags, review the saved
+requirements again before validating publication.
