@@ -24,7 +24,7 @@ async function signOut() { await auth.logout(); router.replace({ name: 'Login' }
       <RouterLink :to="{ name: 'AdminHealth' }" :aria-current="route.name === 'AdminHealth' ? 'page' : undefined">Service Health</RouterLink>
       <RouterLink :to="{ name: 'AdminFailures' }" :aria-current="route.name === 'AdminFailures' ? 'page' : undefined">Failed Jobs &amp; Errors</RouterLink>
       <RouterLink :to="{ name: 'AdminAudit' }" :aria-current="route.name === 'AdminAudit' ? 'page' : undefined">Audit Logs</RouterLink>
-</nav><p>Administration uses synthetic frontend data.</p></aside><main><slot /></main></div>
+</nav><p v-if="demoMode">Administration uses synthetic frontend data.</p></aside><main><slot /></main></div>
     <footer>SimRecrut · Administration {{ demoMode ? '· Frontend demonstration' : '' }}</footer>
   </div>
 </template>

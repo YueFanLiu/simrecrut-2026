@@ -1,4 +1,5 @@
 <script setup>
+import { demoMode } from '../../../config/runtime.js'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElEmpty, ElOption, ElPagination, ElSelect, ElSkeleton, ElTabPane, ElTabs, ElTag } from 'element-plus'
@@ -51,10 +52,10 @@ async function loadVersions() {
   detail.value = null
   data.value = null
   try {
-    await waitForVersionDemo(hrVersionsScenario, 'load')
+    if (demoMode) await waitForVersionDemo(hrVersionsScenario, 'load')
     if (!stillCurrent(request, username)) return
     data.value = await store.readVersions(auth.demoUser, jobId)
-    if (hrVersionsScenario === 'empty') data.value.versions = []
+    if (demoMode && hrVersionsScenario === 'empty') data.value.versions = []
     page.value = 1
   } catch (failure) { if (stillCurrent(request, username)) error.value = failure.message }
   finally { if (stillCurrent(request, username)) loading.value = false }
@@ -72,7 +73,7 @@ async function viewVersion(versionId) {
   draftConflict.value = false
   tab.value = 'basic'
   try {
-    await waitForVersionDemo(hrVersionsScenario, 'detail')
+    if (demoMode) await waitForVersionDemo(hrVersionsScenario, 'detail')
     if (stillCurrent(request, username)) detail.value = await store.readVersion(auth.demoUser, jobId, versionId)
   } catch (failure) { if (stillCurrent(request, username)) detailError.value = failure.message }
   finally { if (stillCurrent(request, username)) busy.value = false }
@@ -86,14 +87,14 @@ async function newDraft(versionId) {
   cloneError.value = ''
   draftConflict.value = false
   try {
-    await waitForVersionDemo(hrVersionsScenario, 'clone')
+    if (demoMode) await waitForVersionDemo(hrVersionsScenario, 'clone')
     if (!stillCurrent(request, username)) return
     await store.cloneVersion(auth.demoUser, jobId, versionId)
     await router.push({ name: 'HrJobEdit', params: { jobId } })
   } catch (failure) {
     if (stillCurrent(request, username)) {
       cloneError.value = failure.message
-      draftConflict.value = failure.code === 'DRAFT_EXISTS'
+      draftConflict.value = failure.code === 'DRAFT_EXISTS' || (!demoMode && failure.status === 409)
       if (draftConflict.value) data.value = await store.readVersions(auth.demoUser, jobId)
     }
   } finally { if (stillCurrent(request, username)) busy.value = false }
@@ -108,7 +109,7 @@ onBeforeUnmount(() => { active = false; sequence += 1; data.value = null; detail
   <HrLayout>
     <section aria-labelledby="versions-title" :aria-busy="loading || busy">
       <div class="page-heading"><div><h1 id="versions-title">Job Versions</h1><p>View published history and the current draft of a job you manage.</p></div><ElButton @click="router.push({ name: 'HrJobs' })">Back to Jobs</ElButton></div>
-      <ElAlert type="info" :closable="false" title="Frontend demo only. Version history and new drafts use local mock data. Published configurations are read-only. Saved version metadata survives sign out and reload in this browser tab." />
+      <ElAlert v-if="demoMode" type="info" :closable="false" title="Frontend demo only. Version history and new drafts use local mock data. Published configurations are read-only. Saved version metadata survives sign out and reload in this browser tab." />
       <div v-if="loading" class="panel state-panel" role="status"><p>Loading job versions...</p><ElSkeleton :rows="6" animated /></div>
       <div v-else-if="error" class="panel state-panel" role="alert"><h2>Versions Unavailable</h2><p>{{ error }}</p><ElButton type="primary" @click="loadVersions">Try Again</ElButton></div>
       <template v-else-if="data">
@@ -125,14 +126,14 @@ onBeforeUnmount(() => { active = false; sequence += 1; data.value = null; detail
             <div class="page-heading"><div><h2>{{ detail.title }} — Version {{ detail.version }}</h2><p>{{ formatDate(detail.createdAt) }} · {{ detail.createdBy }} · Revision {{ detail.revision }}</p></div><ElTag :type="detail.status === 'Published' ? 'success' : 'info'">{{ detail.status }} · Read-only view</ElTag></div>
             <p>{{ detail.changeSummary }}</p><p v-if="detail.status === 'Draft'">This panel previews saved draft data. Continue editing and publish through the job wizard.</p>
             <ElTabs v-model="tab">
-              <ElTabPane label="Basic Information" name="basic"><template #label><span class="desktop-tab-label">Basic Information</span><span class="mobile-tab-label">Basic</span></template><dl><dt>Job Title</dt><dd>{{ detail.title }}</dd><dt>Department</dt><dd>{{ detail.department }}</dd><dt>Employment Type</dt><dd>{{ detail.employmentType }}</dd><dt>Experience Level</dt><dd>{{ detail.experienceLevel }}</dd><dt>Location</dt><dd>{{ detail.location || 'Not specified' }}</dd><dt>Positions</dt><dd>{{ detail.positions }}</dd></dl><h3>Job Description</h3><blockquote>{{ detail.description }}</blockquote></ElTabPane>
-              <ElTabPane label="Requirements" name="requirements"><section v-for="category in criteria" :key="category" :aria-label="`${category} version requirements`"><h3>{{ category }}</h3><p v-if="!detail.requirements.some(row => row.category === category)">No requirements in this group.</p><article v-for="row in detail.requirements.filter(item => item.category === category)" :key="row.id" class="requirement"><p>{{ row.text || 'No requirement text saved' }}</p><p v-if="row.equivalents">Accepted equivalents: {{ row.equivalents }}</p><div class="flags"><ElTag :type="row.mandatory ? 'warning' : 'info'">{{ row.mandatory ? 'Mandatory' : 'Optional' }}</ElTag><ElTag>{{ row.assessmentIncluded ? 'Assessed' : 'Excluded from assessment' }}</ElTag><ElTag>{{ row.publicVisible ? 'Visible to Candidates' : 'Hidden from Candidates' }}</ElTag><ElTag :type="row.reviewed ? 'success' : 'warning'">{{ row.reviewed ? 'Reviewed' : 'Needs review' }}</ElTag></div><details v-if="row.evidenceExcerpt"><summary>Source Evidence</summary><p>{{ row.evidenceLocation }}</p><blockquote>{{ row.evidenceExcerpt }}</blockquote></details></article></section></ElTabPane>
+              <ElTabPane label="Basic Information" name="basic"><template #label><span class="desktop-tab-label">Basic Information</span><span class="mobile-tab-label">Basic</span></template><dl><dt>Job Title</dt><dd>{{ detail.title }}</dd><template v-if="demoMode"><dt>Department</dt><dd>{{ detail.department }}</dd></template><template v-if="demoMode"><dt>Employment Type</dt><dd>{{ detail.employmentType }}</dd></template><template v-if="demoMode"><dt>Experience Level</dt><dd>{{ detail.experienceLevel }}</dd></template><template v-if="demoMode"><dt>Location</dt><dd>{{ detail.location || 'Not specified' }}</dd></template><template v-if="demoMode"><dt>Positions</dt><dd>{{ detail.positions }}</dd></template></dl><h3>Job Description</h3><blockquote>{{ detail.description }}</blockquote></ElTabPane>
+              <ElTabPane label="Requirements" name="requirements"><section v-for="category in criteria" :key="category" :aria-label="`${category} version requirements`"><h3>{{ category }}</h3><p v-if="!detail.requirements.some(row => row.category === category)">No requirements in this group.</p><article v-for="row in detail.requirements.filter(item => item.category === category)" :key="row.id" class="requirement"><pre v-if="!demoMode">{{ row.payloadText }}</pre><p>{{ row.text || 'No requirement text saved' }}</p><p v-if="row.equivalents">Accepted equivalents: {{ row.equivalents }}</p><div class="flags"><ElTag :type="row.mandatory ? 'warning' : 'info'">{{ row.mandatory ? 'Mandatory' : 'Optional' }}</ElTag><ElTag>{{ row.assessmentIncluded ? 'Assessed' : 'Excluded from assessment' }}</ElTag><ElTag>{{ row.publicVisible ? 'Visible to Candidates' : 'Hidden from Candidates' }}</ElTag><ElTag :type="row.reviewed ? 'success' : 'warning'">{{ row.reviewed ? 'Reviewed' : 'Needs review' }}</ElTag></div><details v-if="row.evidenceExcerpt"><summary>Source Evidence</summary><p>{{ row.evidenceLocation }}</p><blockquote>{{ row.evidenceExcerpt }}</blockquote></details></article></section></ElTabPane>
               <ElTabPane label="Weights" name="weights"><p>Values are saved fractions displayed as percentages. Inactive categories are not assessed.</p><dl><template v-for="(category, index) in criteria" :key="category"><dt>{{ category }}</dt><dd>{{ detail.percentages[index] }}% · {{ detail.activeCriteria.includes(category) ? 'Active' : 'Not assessed' }}</dd></template></dl><p v-if="detail.status === 'Draft'">Draft weights may be incomplete. The wizard validates them before publication.</p></ElTabPane>
             </ElTabs>
             <div class="detail-actions"><ElButton v-if="detail.status === 'Draft'" type="primary" :disabled="busy" @click="editDraft">Edit Current Draft</ElButton><ElButton v-else :disabled="busy || Boolean(data.draftVersion)" :loading="busy" @click="newDraft(detail.versionId)">New Draft from Version {{ detail.version }}</ElButton></div>
           </article>
         </template>
-        <div v-else-if="!data.versions.length" class="panel state-panel"><ElEmpty description="No versions available" /><p>No version history is available in this mock view.</p></div>
+        <div v-else-if="!data.versions.length" class="panel state-panel"><ElEmpty description="No versions available" /><p>No version history is available.</p></div>
         <template v-else>
           <div class="panel desktop-list"><div class="table-scroll" tabindex="0" role="region" aria-label="Job versions table"><table><caption>Published history is immutable. Drafts are published through the wizard.</caption><thead><tr><th scope="col">Version</th><th scope="col">Status</th><th scope="col">Created Date (UTC)</th><th scope="col">Created By</th><th scope="col">Changes Summary</th><th scope="col">Actions</th></tr></thead><tbody><tr v-for="version in visible" :key="version.versionId"><th scope="row">{{ version.version }}<span v-if="version.current" class="current-label">Current published</span></th><td><ElTag :type="version.status === 'Published' ? 'success' : 'info'">{{ version.status }}</ElTag></td><td>{{ formatDate(version.createdAt) }}</td><td>{{ version.createdBy }}</td><td>{{ version.changeSummary }}</td><td><div class="row-actions"><ElButton size="small" :disabled="busy" @click="viewVersion(version.versionId)">View Version {{ version.version }}</ElButton><ElButton v-if="version.status === 'Draft'" size="small" :disabled="busy" @click="editDraft">Edit Draft</ElButton></div></td></tr></tbody></table></div></div>
           <div class="mobile-list"><article v-for="version in visible" :key="version.versionId" class="panel"><div class="card-heading"><h3>Version {{ version.version }}</h3><ElTag :type="version.status === 'Published' ? 'success' : 'info'">{{ version.status }}</ElTag></div><p v-if="version.current" class="current-label">Current published</p><p>{{ formatDate(version.createdAt) }} · {{ version.createdBy }}</p><p>{{ version.changeSummary }}</p><div class="row-actions"><ElButton :disabled="busy" @click="viewVersion(version.versionId)">View Version {{ version.version }}</ElButton><ElButton v-if="version.status === 'Draft'" :disabled="busy" @click="editDraft">Edit Draft</ElButton></div></article></div>

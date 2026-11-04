@@ -14,13 +14,14 @@ function errorMessage(validator, value) {
 }
 
 test('connected registration follows backend password code points and email limits', () => {
-  for (const value of ['', 'a'.repeat(14), 'a'.repeat(129)]) {
-    assert.match(errorMessage(validateConnectedPassword, value), /15-128/)
+  for (const value of ['', 'a'.repeat(11)]) {
+    assert.match(errorMessage(validateConnectedPassword, value), /at least 12/)
   }
-  for (const value of ['a'.repeat(15), 'a'.repeat(128), 'a long passphrase', '\u{1f600}'.repeat(15)]) {
+  assert.match(errorMessage(validateConnectedPassword, 'a'.repeat(129)), /too long/)
+  for (const value of ['a'.repeat(12), 'a'.repeat(128), 'a long passphrase', '\u{1f600}'.repeat(12)]) {
     assert.equal(errorMessage(validateConnectedPassword, value), undefined)
   }
-  assert.match(errorMessage(validateConnectedPassword, '\u{1f600}'.repeat(14)), /15-128/)
+  assert.match(errorMessage(validateConnectedPassword, '\u{1f600}'.repeat(11)), /at least 12/)
   assert.equal(errorMessage(validateConnectedEmail, 'user@' + 'a'.repeat(120) + '.test'), undefined)
   assert.match(errorMessage(validateConnectedEmail, 'user@' + 'a'.repeat(250) + '.test'), /254/)
 })

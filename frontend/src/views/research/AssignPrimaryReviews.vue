@@ -23,9 +23,13 @@ const assignments = computed(() => Object.entries(selected.value)
   .map(([condition, reviewerId]) => ({ condition, reviewerId })))
 
 async function search() {
-  if (saving.value || !caseId.value.trim()) return
-  const request = ++sequence
+  if (saving.value) return
   const id = caseId.value.trim()
+  if (!id) {
+    error.value = 'Enter a Case ID.'
+    return
+  }
+  const request = ++sequence
   loading.value = true
   error.value = ''
   target.value = ''
@@ -77,8 +81,8 @@ onBeforeUnmount(() => { sequence++ })
   <ResearchLayout>
     <h1>Assign Primary Reviews</h1>
     <p>Enter the ID of a confirmed case you have research access to. Choose an eligible reviewer for one or both conditions.</p>
-    <ElForm label-position="top" :disabled="saving" @submit.prevent="search">
-      <ElFormItem label="Case ID"><ElInput v-model="caseId" maxlength="26" required /></ElFormItem>
+    <ElForm label-position="top" :disabled="saving" novalidate @submit.prevent="search">
+      <ElFormItem label="Case ID" required><ElInput v-model="caseId" maxlength="26" aria-required="true" /></ElFormItem>
       <ElFormItem label="Reviewer username (optional)"><ElInput v-model="query" maxlength="100" /></ElFormItem>
       <ElButton native-type="submit" :loading="loading">Find Eligible Reviewers</ElButton>
     </ElForm>

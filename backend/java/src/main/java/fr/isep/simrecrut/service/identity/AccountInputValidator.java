@@ -47,9 +47,11 @@ public class AccountInputValidator {
 
         int length = password.codePointCount(0, password.length());
 
-        if (length < 15 || length > 128) {
-            throw new IllegalArgumentException(
-                "Use a password of 15-128 characters.");
+        if (length < 12) {
+            throw new IllegalArgumentException("Use at least 12 characters.");
+        }
+        if (length > 128) {
+            throw new IllegalArgumentException("This password is too long.");
         }
 
         if (!Objects.equals(password, confirmation)) {

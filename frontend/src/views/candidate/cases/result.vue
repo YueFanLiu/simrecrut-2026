@@ -20,6 +20,8 @@ const timer = setInterval(() => { clock.value = Date.now() }, 1000)
 const entry = computed(() => cases.getOwnedCase(route.params.caseId, clock.value))
 const ready = computed(() => demoMode ? entry.value?.processingStatus === 'AUTOMATED_COMPLETE' : Boolean(entry.value?.confirmedAt))
 const results = ref(null)
+const objectiveOnly = computed(() => !demoMode && results.value?.automatedStatus === 'AUTOMATED_COMPLETE'
+  && !results.value.neutral && !results.value.biased)
 const loading = ref(false)
 const busy = ref('')
 const error = ref('')
@@ -34,8 +36,8 @@ const humanCards = computed(() => results.value ? [
 ] : [])
 const comparisonRows = computed(() => results.value ? [
   { method: 'Objective Fit Score', score: results.value.objective?.displayScore ?? '—', scale: '0–100', decision: results.value.objective?.decision ?? '—', status: results.value.objective ? 'Complete' : 'Pending' },
-  { method: 'Neutral ML Acceptance Score', score: results.value.neutral?.acceptanceScore ?? '—', scale: '0–1', decision: results.value.neutral?.decision ?? '—', status: results.value.neutral ? 'Complete' : 'Pending' },
-  { method: 'Biased ML Acceptance Score', score: results.value.biased?.acceptanceScore ?? '—', scale: '0–1', decision: results.value.biased?.decision ?? '—', status: results.value.biased ? 'Complete' : 'Pending' },
+  { method: 'Neutral ML Acceptance Score', score: results.value.neutral?.acceptanceScore ?? '—', scale: '0–1', decision: results.value.neutral?.decision ?? '—', status: objectiveOnly.value ? 'Skipped' : results.value.neutral ? 'Complete' : 'Pending' },
+  { method: 'Biased ML Acceptance Score', score: results.value.biased?.acceptanceScore ?? '—', scale: '0–1', decision: results.value.biased?.decision ?? '—', status: objectiveOnly.value ? 'Skipped' : results.value.biased ? 'Complete' : 'Pending' },
   ...humanCards.value.map((human) => ({ method: human.title, score: 'Not applicable', scale: 'Decision only', decision: human.decision || 'No decision yet', status: human.status })),
 ] : [])
 const researchLabels = { schoolPrestige: 'School prestige', referral: 'Referral', gender: 'Gender', ethnicity: 'Ethnicity' }
@@ -150,8 +152,11 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++ })
               <ElTabPane label="Summary" name="summary">
                 <h2 class="section-title">Automated Results</h2><div class="automated-grid">
                   <ResultCard title="Objective Fit Score" :status="results.objective ? 'Complete' : 'Unavailable'" :score="results.objective?.displayScore" scale="0–100" :decision="results.objective?.decision" note="Fit under the published matching rule." />
-                  <ResultCard title="Neutral ML Acceptance Score" :status="results.neutral ? 'Complete' : 'Unavailable'" :score="results.neutral?.acceptanceScore" scale="0–1" :decision="results.neutral?.decision" note="Model acceptance score on a 0–1 scale." />
-                  <ResultCard title="Biased ML Acceptance Score" :status="results.biased ? 'Complete' : 'Unavailable'" :score="results.biased?.acceptanceScore" scale="0–1" :decision="results.biased?.decision" note="Acceptance score under the experimental condition." />
+                  <ElAlert v-if="objectiveOnly" title="This assessment used the objective rule only. AI scoring was skipped." type="info" :closable="false" />
+                  <template v-else>
+                    <ResultCard title="Neutral ML Acceptance Score" :status="results.neutral ? 'Complete' : 'Unavailable'" :score="results.neutral?.acceptanceScore" scale="0–1" :decision="results.neutral?.decision" note="Model acceptance score on a 0–1 scale." />
+                    <ResultCard title="Biased ML Acceptance Score" :status="results.biased ? 'Complete' : 'Unavailable'" :score="results.biased?.acceptanceScore" scale="0–1" :decision="results.biased?.decision" note="Acceptance score under the experimental condition." />
+                  </template>
                 </div>
                 <div class="section-heading"><h2>Human Results</h2><ElButton :loading="busy === 'refresh'" :disabled="Boolean(busy)" @click="loadResults(true)">Refresh Human Results</ElButton></div>
                 <div class="human-grid"><ResultCard v-for="human in humanCards" :key="human.key" :title="human.title" :status="human.status" :decision="human.decision"
@@ -160,7 +165,7 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++ })
                 </ResultCard></div>
                 <h2 class="section-title chart-heading">Scores on Separate Scales</h2><div class="scales-grid">
                   <ScoreScalePanel title="Objective Fit" :maximum="100" :items="[{ label: 'Objective', value: results.objective?.displayScore }]" note="Objective fit uses its own 0–100 display scale." />
-                  <ScoreScalePanel title="ML Acceptance Scores" :maximum="1" :items="[{ label: 'Neutral ML', value: results.neutral?.acceptanceScore }, { label: 'Biased ML', value: results.biased?.acceptanceScore }]" note="ML scores use 0–1. Do not compare or subtract them from the Objective display score." />
+                  <ScoreScalePanel v-if="!objectiveOnly" title="ML Acceptance Scores" :maximum="1" :items="[{ label: 'Neutral ML', value: results.neutral?.acceptanceScore }, { label: 'Biased ML', value: results.biased?.acceptanceScore }]" note="ML scores use 0–1. Do not compare or subtract them from the Objective display score." />
                 </div>
                 <section class="panel interpretation"><h2>How to Read These Results</h2><p>Accept and Reject are outcomes under each method's own rule or instruction. They are not a hiring recommendation.</p>
                   <p>Pending and Not assigned mean no human decision exists yet. Different outcomes do not establish the cause of a difference or prove discrimination.</p></section>

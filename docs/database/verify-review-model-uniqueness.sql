@@ -50,7 +50,7 @@ FROM information_schema.table_constraints
 WHERE `constraint_schema` = DATABASE() AND `constraint_type` = 'FOREIGN KEY'
   AND `table_name` IN ('sim_human_review', 'sim_model_version');
 
--- After Flyway: version 2 must have success=1. No entry is changed by this script.
+-- Expect a successful V2 migration or a successful B8 baseline migration.
 SELECT `version`, `script`, `checksum`, `success`
 FROM `flyway_schema_history`
-WHERE `version` = '2';
+WHERE `version` = '2' OR `script` = 'B8__initialize_schema_through_v8.sql';

@@ -107,6 +107,8 @@ before that stack exists.
 The initial 36-table business migration is available for review and controlled
 installation. See [initial schema](docs/database/initial-schema.md) for its
 scope, identity boundary, remaining business rules and execution checks.
+See [schema version 8](docs/database/schema-version-8.md) for fresh installation
+and upgrade checks.
 
 The planned frontend feature clients are `candidateJobs.js`, `candidateCases.js`,
 `hrJobs.js`, `hrCases.js`, `researchExperiments.js`, `reviewerTasks.js`, and

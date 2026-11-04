@@ -1,4 +1,6 @@
 <script setup>
+import { demoMode } from '../../../config/runtime.js'
+import { managedJobs } from '../../../api/jobs.js'
 import { useRouter } from 'vue-router'
 import { useHrJobsStore } from '../../../store/modules/hr-jobs.js'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
@@ -34,7 +36,7 @@ async function loadJobs() {
   error.value = ''
   jobs.value = []
   try {
-    const data = await loadHrJobs(auth.demoUser, hrJobsScenario, store.jobs)
+    const data = await (demoMode ? loadHrJobs(auth.demoUser, hrJobsScenario, store.jobs) : managedJobs())
     if (active && request === sequence && auth.hasDemoRole('HR') && auth.demoUser.username === username) {
       jobs.value = data
       page.value = 1
@@ -52,7 +54,7 @@ onBeforeUnmount(() => { active = false; sequence += 1; jobs.value = [] })
     <section aria-labelledby="jobs-title" :aria-busy="loading">
       <div class="page-heading"><div><h1 id="jobs-title">Job Management</h1><p>View the drafts and published versions of jobs you manage.</p></div>
         <div class="heading-actions"><ElButton :loading="loading" :disabled="loading" @click="loadJobs">Refresh</ElButton><ElButton type="primary" @click="router.push({ name: 'HrJobNew' })">Create New Job</ElButton></div></div>
-      <ElAlert type="info" :closable="false" title="Frontend demo only: this list contains tab-scoped mock jobs managed by the HR demo account. No real authentication or API request is performed. Published versions are read-only." />
+      <ElAlert v-if="demoMode" type="info" :closable="false" title="Frontend demo only: this list contains tab-scoped mock jobs managed by the HR demo account. No real authentication or API request is performed. Published versions are read-only." />
       <p class="availability">Create and edit drafts in the shared wizard, or view version history. Case Results in the sidebar opens authorised cases.</p>
       <div class="filters"><ElInput v-model="filters.keyword" aria-label="Search managed jobs" placeholder="Search by job title, department or keyword" clearable :disabled="loading" />
         <ElSelect v-model="filters.status" aria-label="Job status" placeholder="All Statuses" :disabled="loading"><ElOption label="All Statuses" value="" /><ElOption label="Draft" value="Draft" /><ElOption label="Published" value="Published" /></ElSelect>
@@ -63,12 +65,12 @@ onBeforeUnmount(() => { active = false; sequence += 1; jobs.value = [] })
       <div v-else-if="!filtered.length" class="panel state-panel"><ElEmpty description="No jobs match your filters" /><ElButton @click="resetFilters">Reset Filters</ElButton></div>
       <template v-else>
         <div class="panel desktop-list"><div class="table-scroll" role="region" tabindex="0" aria-label="Managed jobs table"><table><caption>{{ filtered.length }} managed jobs · Published history cannot be edited directly</caption>
-          <thead><tr><th scope="col">Job ID</th><th scope="col">Job Title</th><th scope="col">Department</th><th scope="col">Created Date</th><th scope="col">Status</th><th scope="col">Versions</th><th scope="col">Actions</th></tr></thead>
-          <tbody><tr v-for="job in visible" :key="job.jobId"><th scope="row">{{ job.jobId }}</th><td>{{ job.title }}</td><td>{{ job.department }}</td><td>{{ formatDate(job.createdAt) }}</td><td><ElTag :type="job.status === 'Published' ? 'success' : 'info'">{{ job.status }}</ElTag></td>
+          <thead><tr><th scope="col">Job ID</th><th scope="col">Job Title</th><th v-if="demoMode" scope="col">Department</th><th scope="col">Created Date</th><th scope="col">Status</th><th scope="col">Versions</th><th scope="col">Actions</th></tr></thead>
+          <tbody><tr v-for="job in visible" :key="job.jobId"><th scope="row">{{ job.jobId }}</th><td>{{ job.title }}</td><td v-if="demoMode">{{ job.department }}</td><td>{{ formatDate(job.createdAt) }}</td><td><ElTag :type="job.status === 'Published' ? 'success' : 'info'">{{ job.status }}</ElTag></td>
             <td><span v-if="job.publishedVersion">Published {{ job.publishedVersion }}</span><span v-if="job.draftVersion" class="draft-version">Draft {{ job.draftVersion }}</span></td>
             <td><div class="row-actions"><ElButton size="small" @click="router.push({ name: 'HrJobVersions', params: { jobId: job.jobId } })">Versions</ElButton><ElButton v-if="job.draftVersion" size="small" @click="router.push({ name: 'HrJobEdit', params: { jobId: job.jobId } })">Edit Draft</ElButton></div></td></tr></tbody></table></div></div>
         <div class="mobile-list"><article v-for="job in visible" :key="job.jobId" class="panel" :aria-label="job.title"><div class="card-heading"><span>{{ job.jobId }}</span><ElTag :type="job.status === 'Published' ? 'success' : 'info'">{{ job.status }}</ElTag></div>
-          <h2>{{ job.title }}</h2><p>{{ job.department }} · {{ formatDate(job.createdAt) }}</p><p><span v-if="job.publishedVersion">Published {{ job.publishedVersion }}</span><span v-if="job.draftVersion" class="draft-version">Draft {{ job.draftVersion }}</span></p>
+          <h2>{{ job.title }}</h2><p><template v-if="demoMode">{{ job.department }} · </template>{{ formatDate(job.createdAt) }}</p><p><span v-if="job.publishedVersion">Published {{ job.publishedVersion }}</span><span v-if="job.draftVersion" class="draft-version">Draft {{ job.draftVersion }}</span></p>
           <div class="row-actions"><ElButton @click="router.push({ name: 'HrJobVersions', params: { jobId: job.jobId } })">Versions</ElButton><ElButton v-if="job.draftVersion" @click="router.push({ name: 'HrJobEdit', params: { jobId: job.jobId } })">Edit Draft</ElButton></div></article></div>
         <div class="pagination"><div class="page-info"><span>Showing {{ (page - 1) * pageSize + 1 }}–{{ Math.min(page * pageSize, filtered.length) }} of {{ filtered.length }} jobs</span><ElSelect v-model="pageSize" aria-label="Jobs per page"><ElOption v-for="size in [5, 10, 20]" :key="size" :value="size" :label="`${size} / page`" /></ElSelect></div>
           <ElPagination v-model:current-page="page" :page-size="pageSize" :total="filtered.length" layout="prev, pager, next" :pager-count="5" background /></div>

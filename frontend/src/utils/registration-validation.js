@@ -38,8 +38,8 @@ export function validatePasswordConfirmation(password, confirmation) {
 
 export function validateConnectedPassword(_rule, value, callback) {
   const length = [...value].length
-  callback(length >= 15 && length <= 128 ? undefined
-    : new Error('Use a password of 15-128 characters.'))
+  if (length < 12) return callback(new Error('Use at least 12 characters.'))
+  callback(length <= 128 ? undefined : new Error('This password is too long.'))
 }
 
 export function validateConnectedEmail(_rule, value, callback) {

@@ -40,6 +40,8 @@ public class CandidateCaseService {
     private final CasePredictionGateway predictions;
     private final TransactionTemplate tx;
     private final String protocolCode;
+    @Value("${simrecrut.cases.objective-only:false}")
+    private boolean objectiveOnly;
 
     public CandidateCaseService(CandidateCaseMapper db, RoleMapper roles, ObjectMapper json, PublicIdGenerator ids,
             CaseFileStore files, CaseConfiguration configuration, CaseMatchingEngine matching,
@@ -180,11 +182,13 @@ public class CandidateCaseService {
             state(row, "CONFIRMED");
             CaseConfiguration.Bundle bundle = bundle(row);
             matching.calculate(snapshot(row), job(row), requirements(row), bundle, row.assessmentReferenceMonth);
-            if (!predictions.available()) throw CaseException.dependency();
-            List<Model> models = db.activeModels(row.protocolVersionId);
-            Model neutral = selectModel(models, "NEUTRAL", bundle.protocol());
-            Model biased = selectModel(models, "BIASED", bundle.protocol());
-            row.neutralModelVersionId = neutral.id(); row.biasedModelVersionId = biased.id();
+            if (!objectiveOnly) {
+                if (!predictions.available()) throw CaseException.dependency();
+                List<Model> models = db.activeModels(row.protocolVersionId);
+                Model neutral = selectModel(models, "NEUTRAL", bundle.protocol());
+                Model biased = selectModel(models, "BIASED", bundle.protocol());
+                row.neutralModelVersionId = neutral.id(); row.biasedModelVersionId = biased.id();
+            }
             row.processingStatus = "AUTOMATED_RUNNING"; row.stage = "MATCHING"; row.automatedStartedAt = now();
             save(row); enqueue(row, "CASE_ASSESS"); return new Applied(row, 202, action(row));
         });
@@ -195,7 +199,9 @@ public class CandidateCaseService {
         return mutation(actor, key, id, "RETRY", Map.of(), row -> {
             state(row, "FAILED_RETRYABLE");
             String type = row.confirmedAt == null ? "CASE_EXTRACT" : "CASE_ASSESS";
-            if (type.equals("CASE_ASSESS") && !predictions.available()) throw CaseException.dependency();
+            if (type.equals("CASE_ASSESS") && row.hasPinnedModels() && !predictions.available()) {
+                throw CaseException.dependency();
+            }
             if (db.requeue(id, type) != 1) throw CaseException.conflict();
             row.processingStatus = row.confirmedAt == null ? "EXTRACTING" : "AUTOMATED_RUNNING";
             row.safeErrorCode = null; save(row); return new Applied(row, 202, action(row));

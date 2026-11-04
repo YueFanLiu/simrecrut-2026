@@ -25,8 +25,8 @@ export const useHrJobsStore = defineStore('hrJobs', {
       if (!this.drafts[jobId]) this.drafts[jobId] = { revision: 1, form: createJobForm(job) }
       return copy(this.drafts[jobId])
     },
-    createDraft(user, form) {
-      if (!demoMode) { return import('../../api/jobs.js').then(api => api.createJob(form)).then(row => row.jobId) }
+    createDraft(user, form, key) {
+      if (!demoMode) { return import('../../api/jobs.js').then(api => api.createJob(form, key)).then(row => row.jobId) }
       if (user?.role !== 'HR') throw new Error('An HR demo session is required.')
       const errors = validateDescription(form)
       if (errors.length) throw new Error(errors[0])
@@ -37,8 +37,8 @@ export const useHrJobsStore = defineStore('hrJobs', {
       this.drafts[jobId] = { revision: 1, form: copy(form), createdAt: new Date().toISOString() }
       return jobId
     },
-    saveDraft(user, jobId, form, revision) {
-      if (!demoMode) { return import('../../api/jobs.js').then(api => api.saveJob(jobId, form, revision)).then(row => row.revision) }
+    saveDraft(user, jobId, form, revision, onSaved) {
+      if (!demoMode) { return import('../../api/jobs.js').then(api => api.saveJob(jobId, form, revision, onSaved)) }
       const draft = this.readDraft(user, jobId)
       if (draft.revision !== revision) throw new Error('This draft changed elsewhere. Reload the saved draft before trying again. Your unsaved inputs have been kept.')
       const job = this.ownedJob(user, jobId)
@@ -47,8 +47,8 @@ export const useHrJobsStore = defineStore('hrJobs', {
       Object.assign(job, { title: form.title.trim(), department: form.department.trim(), summary: form.description.trim() })
       return revision + 1
     },
-    publishDraft(user, jobId, revision) {
-      if (!demoMode) { return import('../../api/jobs.js').then(api => api.publishJob(jobId, revision)) }
+    publishDraft(user, jobId, revision, key) {
+      if (!demoMode) { return import('../../api/jobs.js').then(api => api.publishJob(jobId, revision, key)) }
       const draft = this.readDraft(user, jobId)
       if (draft.revision !== revision) throw new Error('This draft changed elsewhere. Reload and validate the saved draft again.')
       const report = validateJob(draft.form)

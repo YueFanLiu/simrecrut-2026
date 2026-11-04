@@ -15,6 +15,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +25,8 @@ import org.springframework.stereotype.Service;
 @Service
 @Profile("!resume-workspace")
 public class RegistrationApplicationService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RegistrationApplicationService.class);
 
     private final AccountInputValidator inputs;
     private final EmailVerificationService verification;
@@ -50,7 +55,9 @@ public class RegistrationApplicationService {
 
     public CodeResponse requestCode(String email, String clientIp) {
         String normalizedEmail = inputs.normalizeEmail(email);
+        long started = System.nanoTime();
         var issued = verification.issue(normalizedEmail, clientIp);
+        long smtpStarted = System.nanoTime();
 
         try {
             mail.sendRegistrationCode(normalizedEmail, issued.code());
@@ -58,6 +65,9 @@ public class RegistrationApplicationService {
             verification.discard(normalizedEmail, issued.challengeId());
             throw exception;
         }
+        LOGGER.info("Registration code sent: verificationMs={}, smtpMs={}",
+                TimeUnit.NANOSECONDS.toMillis(smtpStarted - started),
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - smtpStarted));
 
         long remainingSeconds = Duration.between(Instant.now(), issued.expiresAt()).toSeconds();
         if (remainingSeconds <= 0) {
