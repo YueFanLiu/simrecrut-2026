@@ -14,17 +14,15 @@ export default { setup: useWorkspace };
     >
       <div class="panel-title">
         <h2 id="drawer-title">
-          {{
-            drawer.kind === "release"
+          {{ $t(drawer.kind === "release"
               ? "Confirm model transition"
               : drawer.kind === "retry"
                 ? "Queue retry"
                 : drawer.kind === "user"
                   ? "Account details"
-                  : "Record details"
-          }}
+                  : "Record details") }}
         </h2>
-        <button class="close" @click="drawer = null" aria-label="Close details">
+        <button class="close" @click="drawer = null" :aria-label="$t(&quot;Close details&quot;)">
           ×
         </button>
       </div>
@@ -37,33 +35,22 @@ export default { setup: useWorkspace };
         </div>
         <template v-if="drawer.kind === 'release'"
           ><div class="callout">
-            {{ drawer.item.status }} → {{ drawer.next }}. Activation retires the
-            previous demo slot of the same type.
-          </div>
-          <button class="primary" @click="apply">
-            Confirm demo transition
-          </button></template
+            {{ $t(drawer.item.status) }} → {{ drawer.next }}{{ $t(". Activation retires the previous demo slot of the same type.") }} </div>
+          <button class="primary" @click="apply"> {{ $t("Confirm demo transition") }} </button></template
         ><template v-if="drawer.kind === 'retry'"
-          ><div class="callout">
-            A retry acknowledgement means Queued. It does not mean the failure
-            is resolved.
-          </div>
-          <button class="primary" @click="apply">
-            Queue demo retry
-          </button></template
+          ><div class="callout"> {{ $t("A retry acknowledgement means Queued. It does not mean the failure is resolved.") }} </div>
+          <button class="primary" @click="apply"> {{ $t("Queue demo retry") }} </button></template
         ><template v-if="drawer.kind === 'user'"
           ><label
-            >Role<select v-model="role">
-              <option>Candidate</option>
-              <option>HR</option>
-              <option>Researcher</option>
-              <option>Admin</option>
+            >{{ $t("Role") }}<select v-model="role">
+              <option value="Candidate">{{ $t("Candidate") }}</option>
+              <option value="HR">{{ $t("HR") }}</option>
+              <option value="Researcher">{{ $t("Researcher") }}</option>
+              <option value="Admin">{{ $t("Admin") }}</option>
             </select></label
           >
-          <div class="callout">
-            Production changes require authorization from the server.
-          </div>
-          <button class="primary" @click="apply">Save demo role</button
+          <div class="callout"> {{ $t("Production changes require authorization from the server.") }} </div>
+          <button class="primary" @click="apply">{{ $t("Save demo role") }}</button
           ><button
             class="secondary"
             @click="
@@ -72,9 +59,7 @@ export default { setup: useWorkspace };
               drawer = null;
               notify('Demo account status changed.');
             "
-          >
-            Toggle demo account status
-          </button></template
+          > {{ $t("Toggle demo account status") }} </button></template
         >
       </div>
     </section>

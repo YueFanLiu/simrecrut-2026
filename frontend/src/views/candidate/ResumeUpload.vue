@@ -1,4 +1,5 @@
 <script setup>
+import { dateLocale } from '../../i18n/index.js'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import CandidateLayout from '../../layouts/CandidateLayout.vue'
@@ -89,46 +90,45 @@ onUnmounted(() => {
 
 <template>
   <CandidateLayout>
-    <div class="page-heading"><div><p class="eyebrow">CANDIDATE WORKSPACE</p>
-      <h1>My CVs</h1><p>Upload a CV, review the extracted facts and save your confirmed profile.</p>
+    <div class="page-heading"><div><p class="eyebrow">{{ $t("CANDIDATE WORKSPACE") }}</p>
+      <h1>{{ $t("My CVs") }}</h1><p>{{ $t("Upload a CV, review the extracted facts and save your confirmed profile.") }}</p>
     </div></div>
-    <el-alert v-if="demoMode" title="Sign in to the connected service to upload a real CV."
+    <el-alert v-if="demoMode" :title="$t(&quot;Sign in to the connected service to upload a real CV.&quot;)"
       type="info" :closable="false" />
     <section class="upload-section" aria-labelledby="upload-title">
-      <h2 id="upload-title">Upload your CV</h2>
-      <p>Your original PDF stays temporary. Review the extracted facts before confirming them.</p>
+      <h2 id="upload-title">{{ $t("Upload your CV") }}</h2>
+      <p>{{ $t("Your original PDF stays temporary. Review the extracted facts before confirming them.") }}</p>
       <CvUploadCard :selected="selected" :disabled="busy || !canUpload" @select="selectFile" />
-      <el-alert v-if="uploadError" :title="uploadError" type="error" show-icon :closable="false" />
+      <el-alert v-if="uploadError" :title="$t(uploadError)" type="error" show-icon :closable="false" />
       <div class="upload-actions">
         <el-button type="primary" size="large" :loading="busy"
           :disabled="!selected || !canUpload || busy" @click="upload">
-          {{ busy ? stage : uploadError ? 'Retry upload' : 'Upload and extract facts' }}
+          {{ $t(busy ? stage : uploadError ? 'Retry upload' : 'Upload and extract facts') }}
         </el-button>
-        <span role="status" aria-live="polite">{{ busy ? 'Keep this page open while your PDF uploads.' : 'PDF only · Up to 10 MB · 1–20 pages' }}</span>
+        <span role="status" aria-live="polite">{{ $t(busy ? 'Keep this page open while your PDF uploads.' : 'PDF only · Up to 10 MB · 1–20 pages') }}</span>
       </div>
-      <p class="retention">Unconfirmed CVs expire after 24 hours. Confirmed CVs expire after 30 days.
-        The temporary original is removed after successful publication of your confirmed facts.</p>
+      <p class="retention">{{ $t("Unconfirmed CVs expire after 24 hours. Confirmed CVs expire after 30 days. The temporary original is removed after successful publication of your confirmed facts.") }}</p>
     </section>
     <section class="library" aria-labelledby="library-title" :aria-busy="loading">
-      <div class="library-heading"><h2 id="library-title">Your CV library</h2>
-        <el-button :loading="loading" :disabled="busy || demoMode" @click="refresh">Refresh list</el-button>
+      <div class="library-heading"><h2 id="library-title">{{ $t("Your CV library") }}</h2>
+        <el-button :loading="loading" :disabled="busy || demoMode" @click="refresh">{{ $t("Refresh list") }}</el-button>
       </div>
-      <el-alert v-if="listError" :title="listError" type="error" show-icon :closable="false" />
-      <p v-if="loading" role="status">Loading your CVs...</p>
-      <el-empty v-else-if="!records.length && !listError" description="No CVs yet. Upload your first PDF above." />
+      <el-alert v-if="listError" :title="$t(listError)" type="error" show-icon :closable="false" />
+      <p v-if="loading" role="status">{{ $t("Loading your CVs...") }}</p>
+      <el-empty v-else-if="!records.length && !listError" :description="$t(&quot;No CVs yet. Upload your first PDF above.&quot;)" />
       <el-table v-if="records.length" :data="records" class="cv-table">
-        <el-table-column prop="filename" label="CV" min-width="180" />
-        <el-table-column label="Status" min-width="160"><template #default="{ row }">
+        <el-table-column prop="filename" :label="$t(&quot;CV&quot;)" min-width="180" />
+        <el-table-column :label="$t(&quot;Status&quot;)" min-width="160"><template #default="{ row }">
           <el-tag :type="row.status === 'FAILED' ? 'danger' : row.confirmed ? 'success' : 'info'">
-            {{ row.cloud_revision === row.revision ? 'Published' : statusLabels[row.status] || row.status }}
+            {{ $t(row.cloud_revision === row.revision ? 'Published' : statusLabels[row.status] || row.status) }}
           </el-tag>
         </template></el-table-column>
-        <el-table-column label="Expires" min-width="160"><template #default="{ row }">
-          {{ row.expires_at ? new Date(row.expires_at).toLocaleString('en-GB') : '—' }}
+        <el-table-column :label="$t(&quot;Expires&quot;)" min-width="160"><template #default="{ row }">
+          {{ $t(row.expires_at ? new Date(row.expires_at).toLocaleString(dateLocale) : '—') }}
         </template></el-table-column>
-        <el-table-column label="Action" width="140"><template #default="{ row }">
+        <el-table-column :label="$t(&quot;Action&quot;)" width="140"><template #default="{ row }">
           <el-button :disabled="busy" @click="router.push({ name: 'ConnectedResumeReview', params: { id: row.id } })">
-            {{ row.confirmed ? 'View facts' : 'Review facts' }}</el-button>
+            {{ $t(row.confirmed ? 'View facts' : 'Review facts') }}</el-button>
         </template></el-table-column>
       </el-table>
     </section>

@@ -39,19 +39,19 @@ onBeforeUnmount(() => { selection += 1 })
   <div class="upload-card">
     <div class="drop-zone" @dragover.prevent @drop.prevent="!disabled && !checking && chooseFiles($event.dataTransfer.files)">
       <svg class="upload-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M18 44H13a11 11 0 0 1-1-22 20 20 0 0 1 38-4 13 13 0 0 1 2 26h-6" fill="#d6e8ff" /><path d="M32 50V25m-9 9 9-9 9 9" fill="none" stroke="#176bdf" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" /></svg>
-      <h2>Drag and drop your CV here</h2>
-      <p>Choose one PDF, up to 10 MB and 20 pages.<br />Encrypted PDFs are not supported.</p>
+      <h2>{{ $t("Drag and drop your CV here") }}</h2>
+      <p>{{ $t("Choose one PDF, up to 10 MB and 20 pages.") }}<br />{{ $t("Encrypted PDFs are not supported.") }}</p>
       <input ref="input" class="file-input" type="file" accept=".pdf,application/pdf"
-        aria-label="Choose a PDF CV" :disabled="disabled || checking" @change="chooseFiles($event.target.files)" />
+        :aria-label="$t(&quot;Choose a PDF CV&quot;)" :disabled="disabled || checking" @change="chooseFiles($event.target.files)" />
       <ElButton type="primary" :loading="checking" :disabled="disabled || checking"
-        @click="input.click()">{{ checking ? 'Checking PDF...' : selected ? 'Replace File' : 'Choose File' }}</ElButton>
+        @click="input.click()">{{ $t(checking ? 'Checking PDF...' : selected ? 'Replace File' : 'Choose File') }}</ElButton>
     </div>
-    <p v-if="error" class="file-error" role="alert">{{ error }}</p>
+    <p v-if="error" class="file-error" role="alert">{{ $t(error) }}</p>
     <div v-if="selected" class="selected-file" role="status">
       <strong>{{ selected.name }}</strong>
-      <span>{{ formatCvSize(selected.size) }} · {{ selected.pageCount }} {{ selected.pageCount === 1 ? 'page' : 'pages' }}</span>
-      <span>{{ demoMode ? 'PDF checks passed. Ready for the frontend demo.' : 'PDF checks passed. Ready to upload.' }}</span>
-      <ElButton text :disabled="disabled || checking" @click="emit('select', null)">Remove File</ElButton>
+      <span>{{ formatCvSize(selected.size) }} · {{ selected.pageCount }} {{ $t(selected.pageCount === 1 ? 'page' : 'pages') }}</span>
+      <span>{{ $t(demoMode ? 'PDF checks passed. Ready for the frontend demo.' : 'PDF checks passed. Ready to upload.') }}</span>
+      <ElButton text :disabled="disabled || checking" @click="emit('select', null)">{{ $t("Remove File") }}</ElButton>
     </div>
   </div>
 </template>

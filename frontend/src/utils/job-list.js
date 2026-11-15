@@ -1,3 +1,4 @@
+import { dateLocale } from '../i18n/index.js'
 /** Apply demo filters and return a new, sorted array without changing the source data. */
 export function filterPublishedJobs(jobs, filters) {
   const keyword = filters.keyword.trim().toLowerCase()
@@ -18,7 +19,7 @@ export function filterPublishedJobs(jobs, filters) {
 
 export function formatPublishedDate(value) {
   if (!value) return '—'
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(dateLocale.value, {
     day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
   }).format(new Date(value))
 }

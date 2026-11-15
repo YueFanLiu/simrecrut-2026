@@ -56,37 +56,37 @@ load()
 <template>
   <AdminLayout>
     <section aria-labelledby="protocols-title" :aria-busy="loading">
-      <div class="heading"><div><p class="breadcrumb">Administration / Protocols</p><h1 id="protocols-title">Frozen Protocols</h1><p>Inspect fixed assessment configuration and version references.</p></div><ElButton :loading="loading" :disabled="loading" @click="load">Refresh</ElButton></div>
-      <ElAlert type="info" :closable="false" title="Read-only frontend demonstration. This synthetic summary does not execute matching, generate labels or change models and historical results. Missing configuration is marked Unavailable." />
+      <div class="heading"><div><p class="breadcrumb">{{ $t("Administration / Protocols") }}</p><h1 id="protocols-title">{{ $t("Frozen Protocols") }}</h1><p>{{ $t("Inspect fixed assessment configuration and version references.") }}</p></div><ElButton :loading="loading" :disabled="loading" @click="load">{{ $t("Refresh") }}</ElButton></div>
+      <ElAlert type="info" :closable="false" :title="$t(&quot;Read-only frontend demonstration. This synthetic summary does not execute matching, generate labels or change models and historical results. Missing configuration is marked Unavailable.&quot;)" />
       <form class="filters panel" @submit.prevent="page = 1">
-        <label>Search<ElInput v-model="filters.keyword" aria-label="Search protocols" placeholder="Name, version, schema or description" clearable /></label>
-        <label>Model Type<ElSelect v-model="filters.type" aria-label="Model Type" placeholder="All model types" clearable><ElOption label="Neutral ML" value="Neutral ML" /><ElOption label="Biased ML" value="Biased ML" /></ElSelect></label>
-        <label>Status<ElSelect v-model="filters.status" aria-label="Status" placeholder="All statuses" clearable><ElOption label="Frozen" value="Frozen" /></ElSelect></label>
-        <ElButton native-type="button" @click="resetFilters">Reset</ElButton>
+        <label>{{ $t("Search") }}<ElInput v-model="filters.keyword" :aria-label="$t(&quot;Search protocols&quot;)" :placeholder="$t(&quot;Name, version, schema or description&quot;)" clearable /></label>
+        <label>{{ $t("Model Type") }}<ElSelect v-model="filters.type" :aria-label="$t(&quot;Model Type&quot;)" :placeholder="$t(&quot;All model types&quot;)" clearable><ElOption :label="$t(&quot;Neutral ML&quot;)" value="Neutral ML" /><ElOption :label="$t(&quot;Biased ML&quot;)" value="Biased ML" /></ElSelect></label>
+        <label>{{ $t("Status") }}<ElSelect v-model="filters.status" :aria-label="$t(&quot;Status&quot;)" :placeholder="$t(&quot;All statuses&quot;)" clearable><ElOption :label="$t(&quot;Frozen&quot;)" value="Frozen" /></ElSelect></label>
+        <ElButton native-type="button" @click="resetFilters">{{ $t("Reset") }}</ElButton>
       </form>
       <div class="panel results">
-        <div class="list-heading"><h2>Protocol Versions</h2><span>{{ filtered.length }} {{ filtered.length === 1 ? 'version' : 'versions' }}</span></div>
+        <div class="list-heading"><h2>{{ $t("Protocol Versions") }}</h2><span>{{ filtered.length }} {{ $t(filtered.length === 1 ? 'version' : 'versions') }}</span></div>
         <ElSkeleton v-if="loading" :rows="5" animated />
-        <ElAlert v-else-if="error" type="error" :closable="false" :title="error" />
-        <ElEmpty v-else-if="!filtered.length" :description="rows.length ? 'No protocols match your filters.' : 'No frozen protocols are available.'" />
+        <ElAlert v-else-if="error" type="error" :closable="false" :title="$t(error)" />
+        <ElEmpty v-else-if="!filtered.length" :description="$t(rows.length ? 'No protocols match your filters.' : 'No frozen protocols are available.')" />
         <template v-else>
-          <table class="protocol-table"><thead><tr><th>Protocol / Version</th><th>Model Type</th><th>Feature Schema</th><th>Cutoff</th><th>Status</th><th>Action</th></tr></thead><tbody><tr v-for="row in visible" :key="row.version"><td><strong>{{ row.name }}</strong><p>{{ row.version }}</p><small>{{ row.description }}</small></td><td>{{ row.modelTypes.join(' / ') }}</td><td>{{ row.schema }}</td><td>{{ row.cutoff }}</td><td><ElTag type="info">{{ row.status }}</ElTag></td><td><ElButton type="primary" plain @click="viewProtocol(row.version)">View Protocol</ElButton></td></tr></tbody></table>
-          <div class="protocol-cards"><article v-for="row in visible" :key="row.version"><div class="list-heading"><h3>{{ row.name }}</h3><ElTag type="info">Frozen</ElTag></div><p>{{ row.version }}</p><p>{{ row.description }}</p><dl><dt>Feature Schema</dt><dd>{{ row.schema }}</dd><dt>Cutoff</dt><dd>{{ row.cutoff }}</dd><dt>Model Type</dt><dd>{{ row.modelTypes.join(' / ') }}</dd></dl><ElButton type="primary" plain @click="viewProtocol(row.version)">View Protocol</ElButton></article></div>
-          <ElPagination v-model:current-page="page" v-model:page-size="pageSize" :total="filtered.length" :page-sizes="[10, 20]" layout="prev, pager, next" aria-label="Protocol pagination" />
+          <table class="protocol-table"><thead><tr><th>{{ $t("Protocol / Version") }}</th><th>{{ $t("Model Type") }}</th><th>{{ $t("Feature Schema") }}</th><th>{{ $t("Cutoff") }}</th><th>{{ $t("Status") }}</th><th>{{ $t("Action") }}</th></tr></thead><tbody><tr v-for="row in visible" :key="row.version"><td><strong>{{ row.name }}</strong><p>{{ row.version }}</p><small>{{ row.description }}</small></td><td>{{ $t(row.modelTypes.join(' / ')) }}</td><td>{{ row.schema }}</td><td>{{ row.cutoff }}</td><td><ElTag type="info">{{ $t(row.status) }}</ElTag></td><td><ElButton type="primary" plain @click="viewProtocol(row.version)">{{ $t("View Protocol") }}</ElButton></td></tr></tbody></table>
+          <div class="protocol-cards"><article v-for="row in visible" :key="row.version"><div class="list-heading"><h3>{{ row.name }}</h3><ElTag type="info">{{ $t("Frozen") }}</ElTag></div><p>{{ row.version }}</p><p>{{ row.description }}</p><dl><dt>{{ $t("Feature Schema") }}</dt><dd>{{ row.schema }}</dd><dt>{{ $t("Cutoff") }}</dt><dd>{{ row.cutoff }}</dd><dt>{{ $t("Model Type") }}</dt><dd>{{ $t(row.modelTypes.join(' / ')) }}</dd></dl><ElButton type="primary" plain @click="viewProtocol(row.version)">{{ $t("View Protocol") }}</ElButton></article></div>
+          <ElPagination v-model:current-page="page" v-model:page-size="pageSize" :total="filtered.length" :page-sizes="[10, 20]" layout="prev, pager, next" :aria-label="$t(&quot;Protocol pagination&quot;)" />
         </template>
       </div>
     </section>
-    <ElDrawer v-model="drawer" title="Protocol Details" size="min(620px, 100%)" @closed="detailRequest += 1">
+    <ElDrawer v-model="drawer" :title="$t(&quot;Protocol Details&quot;)" size="min(620px, 100%)" @closed="detailRequest += 1">
       <ElSkeleton v-if="detailLoading" :rows="8" animated />
-      <div v-else-if="detailError"><ElAlert type="error" :closable="false" :title="detailError" /><ElButton class="retry" @click="viewProtocol(selectedVersion)">Refresh</ElButton></div>
+      <div v-else-if="detailError"><ElAlert type="error" :closable="false" :title="$t(detailError)" /><ElButton class="retry" @click="viewProtocol(selectedVersion)">{{ $t("Refresh") }}</ElButton></div>
       <div v-else-if="selected" class="details">
-        <ElTag type="info">Frozen / Read only</ElTag><h2>{{ selected.name }}</h2><p>{{ selected.description }}</p>
-        <dl><dt>Protocol Version</dt><dd>{{ selected.version }}</dd><dt>Feature Schema</dt><dd>{{ selected.schema }}</dd><dt>Preprocessing Version</dt><dd>{{ selected.preprocessing }}</dd><dt>ML Cutoff</dt><dd>{{ selected.cutoff }}</dd><dt>Model Type</dt><dd>{{ selected.modelTypes.join(' / ') }}</dd><dt>Frozen At</dt><dd>Unavailable in this demo fixture</dd></dl>
-        <h3>Frozen Matching Configuration</h3><p>{{ selected.matching }}</p>
-        <h3>Frozen Label Configuration</h3><p>{{ selected.labels }}</p>
-        <h3>Feature Schema &amp; Preprocessing</h3><p>{{ selected.inputs }}</p><p>{{ selected.encoding }}</p>
-        <h3>Cutoff Context</h3><p>{{ selected.threshold }}</p>
-        <h3>Configuration Summary</h3><p>Read-only JSON. Null means configuration is unavailable; it is never interpreted as zero.</p><pre tabindex="0" aria-label="Read-only protocol configuration">{{ configuration }}</pre>
+        <ElTag type="info">{{ $t("Frozen / Read only") }}</ElTag><h2>{{ selected.name }}</h2><p>{{ selected.description }}</p>
+        <dl><dt>{{ $t("Protocol Version") }}</dt><dd>{{ selected.version }}</dd><dt>{{ $t("Feature Schema") }}</dt><dd>{{ selected.schema }}</dd><dt>{{ $t("Preprocessing Version") }}</dt><dd>{{ selected.preprocessing }}</dd><dt>{{ $t("ML Cutoff") }}</dt><dd>{{ selected.cutoff }}</dd><dt>{{ $t("Model Type") }}</dt><dd>{{ $t(selected.modelTypes.join(' / ')) }}</dd><dt>{{ $t("Frozen At") }}</dt><dd>{{ $t("Unavailable in this demo fixture") }}</dd></dl>
+        <h3>{{ $t("Frozen Matching Configuration") }}</h3><p>{{ selected.matching }}</p>
+        <h3>{{ $t("Frozen Label Configuration") }}</h3><p>{{ $t(selected.labels) }}</p>
+        <h3>{{ $t("Feature Schema & Preprocessing") }}</h3><p>{{ selected.inputs }}</p><p>{{ selected.encoding }}</p>
+        <h3>{{ $t("Cutoff Context") }}</h3><p>{{ selected.threshold }}</p>
+        <h3>{{ $t("Configuration Summary") }}</h3><p>{{ $t("Read-only JSON. Null means configuration is unavailable; it is never interpreted as zero.") }}</p><pre tabindex="0" :aria-label="$t(&quot;Read-only protocol configuration&quot;)">{{ configuration }}</pre>
       </div>
     </ElDrawer>
   </AdminLayout>

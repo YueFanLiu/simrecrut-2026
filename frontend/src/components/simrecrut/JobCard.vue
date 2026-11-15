@@ -21,9 +21,9 @@ const router = useRouter()
     </div>
     <p class="summary">{{ job.summary }}</p>
     <div class="card-footer">
-      <span class="version">Version {{ job.currentVersion }}</span>
+      <span class="version">{{ $t("Version") }} {{ job.currentVersion }}</span>
       <ElButton type="primary" size="small"
-        @click="router.push({ name: 'JobDetail', params: { jobId: job.jobId } })">View Details</ElButton>
+        @click="router.push({ name: 'JobDetail', params: { jobId: job.jobId } })">{{ $t("View Details") }}</ElButton>
     </div>
   </article>
 </template>

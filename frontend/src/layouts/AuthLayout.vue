@@ -9,19 +9,19 @@ defineProps({ titleId: { type: String, default: 'login-title' } })
 <template>
   <main class="auth-layout">
     <div class="auth-content">
-      <section class="brand-panel" aria-label="About SimRecrut">
+      <section class="brand-panel" :aria-label="$t(&quot;About SimRecrut&quot;)">
         <div class="brand-intro">
           <BrandMark />
-          <p>A recruitment simulator for<br class="desktop-break" /> fairness research</p>
+          <p>{{ $t("A recruitment simulator for") }}<br class="desktop-break" /> {{ $t("fairness research") }}</p>
         </div>
         <img class="recruitment-illustration" :src="illustration" alt="" />
-        <p class="brand-caption">Compare <span>·</span> Understand <span>·</span> Support Fairer Decisions</p>
+        <p class="brand-caption">{{ $t("Compare") }} <span>·</span> {{ $t("Understand") }} <span>·</span> {{ $t("Support Fairer Decisions") }}</p>
       </section>
       <section class="auth-card" :aria-labelledby="titleId">
         <slot />
       </section>
     </div>
-    <footer>SimRecrut <span>·</span> {{ demoMode ? 'Frontend demonstration' : 'Recruitment and fairness research' }}</footer>
+    <footer>{{ $t("SimRecrut") }} <span>·</span> {{ $t(demoMode ? 'Frontend demonstration' : 'Recruitment and fairness research') }}</footer>
   </main>
 </template>
 

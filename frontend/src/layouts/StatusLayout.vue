@@ -20,15 +20,15 @@ async function signOut() {
         <BrandMark />
         <div v-if="auth.isDemoSignedIn" class="session-controls">
           <span class="user-name">{{ auth.demoUser?.displayName }}</span>
-          <ElButton @click="signOut">Sign out</ElButton>
+          <ElButton @click="signOut">{{ $t("Sign out") }}</ElButton>
         </div>
-        <ElButton v-else @click="router.replace({ name: 'Login' })">Sign in</ElButton>
+        <ElButton v-else @click="router.replace({ name: 'Login' })">{{ $t("Sign in") }}</ElButton>
       </div>
     </header>
     <main class="status-main">
       <slot />
     </main>
-    <footer>SimRecrut <span>·</span> Frontend demonstration</footer>
+    <footer>{{ $t("SimRecrut") }} <span>·</span> {{ $t("Frontend demonstration") }}</footer>
   </div>
 </template>
 

@@ -1,26 +1,28 @@
 <script setup>
+import { dateLocale } from '../../i18n/index.js'
+
 import { ElButton, ElTag } from 'element-plus'
 
 defineProps({ entry: { type: Object, required: true }, busy: Boolean })
 defineEmits(['continue', 'delete'])
-const formatDate = (value) => value ? new Intl.DateTimeFormat('en-GB', {
+const formatDate = (value) => value ? new Intl.DateTimeFormat(dateLocale.value, {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris',
 }).format(new Date(value)) : 'Not uploaded'
 </script>
 
 <template>
-  <article class="history-card" :aria-label="`${entry.caseId} ${entry.jobTitle}`">
+  <article class="history-card" :aria-label="$t(`${entry.caseId} ${entry.jobTitle}`)">
     <div class="card-heading"><div><span class="case-id">{{ entry.caseId }}</span><h2>{{ entry.jobTitle }}</h2></div>
-      <ElTag :type="entry.statusType">{{ entry.status }}</ElTag></div>
-    <p class="metadata">Version {{ entry.version }} · Uploaded: {{ formatDate(entry.uploadedAt) }}</p>
-    <dl><div><dt>Objective (0–100)</dt><dd>{{ entry.objective ?? '—' }}</dd></div>
-      <div><dt>Neutral ML (0–1)</dt><dd>{{ entry.neutral ?? '—' }}</dd></div>
-      <div><dt>Biased ML (0–1)</dt><dd>{{ entry.biased ?? '—' }}</dd></div>
-      <div><dt>Standard Human</dt><dd>{{ entry.standardHuman ?? '—' }}</dd></div>
-      <div><dt>Instructed-Bias Human</dt><dd>{{ entry.instructedBiasHuman ?? '—' }}</dd></div>
-    </dl><p class="metadata">Available until: {{ formatDate(entry.expiresAt) }} (Paris)</p>
-    <div class="card-actions"><ElButton type="primary" :disabled="busy || !entry.destination" :aria-label="`${entry.actionLabel} ${entry.caseId}`" @click="$emit('continue', entry)">{{ entry.actionLabel }}</ElButton>
-      <ElButton type="danger" plain :disabled="busy" :aria-label="`Delete ${entry.caseId}`" @click="$emit('delete', entry)">Delete</ElButton></div>
+      <ElTag :type="entry.statusType">{{ $t(entry.status) }}</ElTag></div>
+    <p class="metadata">{{ $t("Version") }} {{ entry.version }} {{ $t("· Uploaded:") }} {{ formatDate(entry.uploadedAt) }}</p>
+    <dl><div><dt>{{ $t("Objective (0–100)") }}</dt><dd>{{ $t(entry.objective ?? '—') }}</dd></div>
+      <div><dt>{{ $t("Neutral ML (0–1)") }}</dt><dd>{{ $t(entry.neutral ?? '—') }}</dd></div>
+      <div><dt>{{ $t("Biased ML (0–1)") }}</dt><dd>{{ $t(entry.biased ?? '—') }}</dd></div>
+      <div><dt>{{ $t("Standard Human") }}</dt><dd>{{ $t(entry.standardHuman ?? '—') }}</dd></div>
+      <div><dt>{{ $t("Instructed-Bias Human") }}</dt><dd>{{ $t(entry.instructedBiasHuman ?? '—') }}</dd></div>
+    </dl><p class="metadata">{{ $t("Available until:") }} {{ formatDate(entry.expiresAt) }} {{ $t("(Paris)") }}</p>
+    <div class="card-actions"><ElButton type="primary" :disabled="busy || !entry.destination" :aria-label="$t(entry.actionLabel) + ' ' + entry.caseId" @click="$emit('continue', entry)">{{ $t(entry.actionLabel) }}</ElButton>
+      <ElButton type="danger" plain :disabled="busy" :aria-label="$t('Delete') + ' ' + entry.caseId" @click="$emit('delete', entry)">{{ $t("Delete") }}</ElButton></div>
   </article>
 </template>
 

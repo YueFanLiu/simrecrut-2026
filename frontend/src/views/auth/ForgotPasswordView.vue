@@ -1,5 +1,6 @@
 <!-- Reuse the existing authentication layout for mailbox-based password recovery. -->
 <script setup>
+import { useLocalizedValidation, t } from '../../i18n/index.js'
 import { onMounted, onBeforeUnmount, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElForm, ElFormItem, ElInput } from 'element-plus'
@@ -17,7 +18,7 @@ const error=ref(''), feedback=ref(''), done=ref(false), cooldown=ref(0)
 let active=true, timer
 const rules={ email:[{validator:validateConnectedEmail,trigger:'blur'}], password:[{validator:validateConnectedPassword,trigger:'blur'}],
   confirmation:[{validator:(_rule,value,callback)=>{ const message=validatePasswordConfirmation(form.password,value); callback(message?new Error(message):undefined) },trigger:'blur'}],
-  emailCode:[{pattern:/^\d{6}$/,required:true,message:'Enter the six-digit email code.',trigger:'blur'}] }
+  emailCode:[{pattern:/^\d{6}$/,required:true,get message() { return t('Enter the six-digit email code.') },trigger:'blur'}] }
 onMounted(async()=>{
   if (demoMode) { checking.value=false; return }
   try { const response=await passwordResetOptions(); if(active) enabled.value=response.data?.emailEnabled===true }
@@ -47,30 +48,32 @@ async function submit() {
   finally { if(active) loading.value=false }
 }
 onBeforeUnmount(()=>{active=false;clearInterval(timer);form.password='';form.confirmation='';form.emailCode=''})
+
+useLocalizedValidation(formRef)
 </script>
 
 <template>
   <AuthLayout title-id="reset-title">
-    <h1 id="reset-title">{{ done ? 'Password reset successfully' : 'Forgot password' }}</h1>
-    <p v-if="done">Sign in again with your new password. Previous sessions have been signed out.</p>
-    <p v-else>Verify your registered email address to set a new password.</p>
-    <ElAlert v-if="error" :title="error" type="error" :closable="false" />
-    <p v-if="checking" role="status">Loading email settings...</p>
-    <ElAlert v-else-if="!enabled" :title="demoMode ? 'Password recovery is unavailable in the frontend demo. Use a built-in demo account to sign in.' : 'Email verification is not configured. Contact the administrator.'" type="info" :closable="false" />
+    <h1 id="reset-title">{{ $t(done ? 'Password reset successfully' : 'Forgot password') }}</h1>
+    <p v-if="done">{{ $t("Sign in again with your new password. Previous sessions have been signed out.") }}</p>
+    <p v-else>{{ $t("Verify your registered email address to set a new password.") }}</p>
+    <ElAlert v-if="error" :title="$t(error)" type="error" :closable="false" />
+    <p v-if="checking" role="status">{{ $t("Loading email settings...") }}</p>
+    <ElAlert v-else-if="!enabled" :title="$t(demoMode ? 'Password recovery is unavailable in the frontend demo. Use a built-in demo account to sign in.' : 'Email verification is not configured. Contact the administrator.')" type="info" :closable="false" />
     <template v-else-if="!done">
-      <ElAlert v-if="feedback" :title="feedback" type="success" :closable="false" />
+      <ElAlert v-if="feedback" :title="$t(feedback)" type="success" :closable="false" />
       <ElForm ref="formRef" :model="form" :rules="rules" label-position="top" :disabled="loading" @submit.prevent="submit">
-        <ElFormItem label="Registered email" prop="email"><ElInput v-model="form.email" autocomplete="email" placeholder="Enter your registered email" @input="emailChanged" /></ElFormItem>
-        <ElButton :loading="loading" :disabled="loading||cooldown>0" @click="send">{{ cooldown>0 ? `Send again in ${cooldown}s` : 'Send email code' }}</ElButton>
-        <p>The email code expires in 10 minutes. Check your spam folder too.</p>
-        <ElFormItem label="Email verification code" prop="emailCode"><ElInput v-model="form.emailCode" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="Six-digit code" /></ElFormItem>
-        <ElFormItem label="New password" prop="password"><PasswordInput v-model="form.password" :disabled="loading" /></ElFormItem>
-        <p>Use at least 12 characters.</p>
-        <ElFormItem label="Confirm new password" prop="confirmation"><PasswordInput v-model="form.confirmation" :disabled="loading" /></ElFormItem>
-        <ElButton type="primary" native-type="submit" class="wide" :loading="loading" :disabled="loading||!form.challengeId">Reset password</ElButton>
+        <ElFormItem :label="$t(&quot;Registered email&quot;)" prop="email"><ElInput v-model="form.email" autocomplete="email" :placeholder="$t(&quot;Enter your registered email&quot;)" @input="emailChanged" /></ElFormItem>
+        <ElButton :loading="loading" :disabled="loading||cooldown>0" @click="send">{{ cooldown>0 ? $t('Send again in {seconds}s', { seconds: cooldown }) : $t('Send email code') }}</ElButton>
+        <p>{{ $t("The email code expires in 10 minutes. Check your spam folder too.") }}</p>
+        <ElFormItem :label="$t(&quot;Email verification code&quot;)" prop="emailCode"><ElInput v-model="form.emailCode" maxlength="6" inputmode="numeric" autocomplete="one-time-code" :placeholder="$t(&quot;Six-digit code&quot;)" /></ElFormItem>
+        <ElFormItem :label="$t(&quot;New password&quot;)" prop="password"><PasswordInput v-model="form.password" :disabled="loading" /></ElFormItem>
+        <p>{{ $t("Use at least 12 characters.") }}</p>
+        <ElFormItem :label="$t(&quot;Confirm new password&quot;)" prop="confirmation"><PasswordInput v-model="form.confirmation" :disabled="loading" /></ElFormItem>
+        <ElButton type="primary" native-type="submit" class="wide" :loading="loading" :disabled="loading||!form.challengeId">{{ $t("Reset password") }}</ElButton>
       </ElForm>
     </template>
-    <ElButton class="wide back" :disabled="loading" @click="router.push({name:'Login'})">Back to sign in</ElButton>
+    <ElButton class="wide back" :disabled="loading" @click="router.push({name:'Login'})">{{ $t("Back to sign in") }}</ElButton>
   </AuthLayout>
 </template>
 

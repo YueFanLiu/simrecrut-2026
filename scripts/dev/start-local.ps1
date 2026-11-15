@@ -2,6 +2,9 @@
 param([switch]$Demo)
 $ErrorActionPreference = 'Stop'
 $repository = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+. (Join-Path $PSScriptRoot 'local-environment.ps1')
+$values = Import-LocalEnvironment $repository
+$backendPort = Get-LocalBackendPort $repository
 $logs = Join-Path $repository 'runtime/local-logs'
 New-Item -ItemType Directory -Force -Path $logs | Out-Null
 function Test-LocalPort([int]$Port) {
@@ -11,9 +14,8 @@ if (-not $Demo) {
     if (-not (Test-Path (Join-Path $repository '.env'))) { throw 'Configure the root .env first.' }
     $mysqlIni = Join-Path $env:LOCALAPPDATA 'SimRecrut/RuoYiMySQL/my.ini'
     $mysqlExecutable = Join-Path $env:LOCALAPPDATA 'Programs/SimRecrut/mysql-8.4.9-winx64/bin/mysqld.exe'
-    $databaseLine = Get-Content (Join-Path $repository '.env') | Where-Object { $_ -like 'DB_URL=*' } | Select-Object -First 1
     # Cloud deployments do not need the optional local MySQL instance.
-    if ($databaseLine -like 'DB_URL=jdbc:mysql://127.0.0.1:3307/*' -and -not (Test-LocalPort 3307)) {
+    if ($values['DB_URL'] -like 'jdbc:mysql://127.0.0.1:3307/*' -and -not (Test-LocalPort 3307)) {
         if (-not (Test-Path $mysqlIni)) { throw 'The local database is not initialized.' }
         Start-Process -FilePath $mysqlExecutable -ArgumentList "--defaults-file=$mysqlIni" -WindowStyle Hidden
     }
@@ -22,8 +24,8 @@ if (-not $Demo) {
         if (-not $redis) { throw 'Install the local Redis runtime first.' }
         Start-Process -FilePath $redis.FullName -ArgumentList @('--bind', '127.0.0.1', '--port', '6379', '--protected-mode', 'yes', '--save', '""', '--appendonly', 'no') -WorkingDirectory $redis.DirectoryName -WindowStyle Hidden -RedirectStandardOutput "$logs/redis.log" -RedirectStandardError "$logs/redis-error.log"
     }
-    if (-not (Test-LocalPort 8080)) {
-        Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$repository/scripts/dev/java.ps1`"", '-Action', 'run') -WorkingDirectory $repository -WindowStyle Hidden -RedirectStandardOutput "$logs/ruoyi.log" -RedirectStandardError "$logs/ruoyi-error.log"
+    if (-not (Test-LocalPort $backendPort)) {
+        Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$repository/scripts/dev/java.ps1`"", '-Action', 'run') -WorkingDirectory $repository -WindowStyle Hidden -RedirectStandardOutput "$logs/backend.log" -RedirectStandardError "$logs/backend-error.log"
     }
 }
 # Vite reloads this ignored override when switching runtime modes.
@@ -35,5 +37,5 @@ if (-not (Test-LocalPort 5173)) {
     Start-Process -FilePath $node -ArgumentList @('node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5173', '--strictPort') -WorkingDirectory "$repository/frontend" -WindowStyle Hidden -RedirectStandardOutput "$logs/frontend.log" -RedirectStandardError "$logs/frontend-error.log"
 }
 Write-Host 'Frontend: http://127.0.0.1:5173/login'
-if (-not $Demo) { Write-Host "Administrator credentials: $logs/ruoyi-login.txt" }
+if (-not $Demo) { Write-Host "Backend readiness: http://127.0.0.1:$backendPort/actuator/health/readiness" }
 Write-Host "Startup logs: $logs"

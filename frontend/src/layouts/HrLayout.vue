@@ -13,16 +13,16 @@ async function signOut() { await auth.logout(); router.replace({ name: 'Login' }
 
 <template>
   <div class="hr-layout">
-    <header><div class="header-content"><BrandMark /><span class="workspace-label">HR workspace</span>
+    <header><div class="header-content"><BrandMark /><span class="workspace-label">{{ $t("HR workspace") }}</span>
       <div class="session-controls"><span class="user-name">{{ auth.demoUser?.displayName }}</span>
-        <ElButton @click="router.push({ name: 'DemoDashboard' })">Dashboard</ElButton><ElButton @click="signOut">Sign out</ElButton></div></div></header>
-    <div class="workspace"><aside class="sidebar"><nav aria-label="HR navigation">
-      <RouterLink :to="{ name: 'HrJobs' }" :aria-current="!['HrJobNew', 'HrCases', 'HrCaseDetail', 'MyReviewTasks', 'ReviewTaskDetail'].includes(route.name) ? 'page' : undefined">Job Management</RouterLink>
-      <RouterLink :to="{ name: 'HrJobNew' }" :aria-current="route.name === 'HrJobNew' ? 'page' : undefined">Create Job</RouterLink>
-      <RouterLink :to="{ name: 'HrCases' }" :aria-current="['HrCases', 'HrCaseDetail'].includes(route.name) ? 'page' : undefined">Case Results</RouterLink>
-      <RouterLink :to="{ name: 'MyReviewTasks' }" :aria-current="['MyReviewTasks', 'ReviewTaskDetail'].includes(route.name) ? 'page' : undefined">My Review Tasks</RouterLink>
-    </nav><p v-if="demoMode">Manage your demo job drafts and published versions.</p></aside><main><slot /></main></div>
-    <footer>SimRecrut · HR workspace {{ demoMode ? '· Frontend demonstration' : '' }}</footer>
+        <ElButton @click="router.push({ name: 'DemoDashboard' })">{{ $t("Dashboard") }}</ElButton><ElButton @click="signOut">{{ $t("Sign out") }}</ElButton></div></div></header>
+    <div class="workspace"><aside class="sidebar"><nav :aria-label="$t(&quot;HR navigation&quot;)">
+      <RouterLink :to="{ name: 'HrJobs' }" :aria-current="!['HrJobNew', 'HrCases', 'HrCaseDetail', 'MyReviewTasks', 'ReviewTaskDetail'].includes(route.name) ? 'page' : undefined">{{ $t("Job Management") }}</RouterLink>
+      <RouterLink :to="{ name: 'HrJobNew' }" :aria-current="route.name === 'HrJobNew' ? 'page' : undefined">{{ $t("Create Job") }}</RouterLink>
+      <RouterLink :to="{ name: 'HrCases' }" :aria-current="['HrCases', 'HrCaseDetail'].includes(route.name) ? 'page' : undefined">{{ $t("Case Results") }}</RouterLink>
+      <RouterLink :to="{ name: 'MyReviewTasks' }" :aria-current="['MyReviewTasks', 'ReviewTaskDetail'].includes(route.name) ? 'page' : undefined">{{ $t("My Review Tasks") }}</RouterLink>
+    </nav><p v-if="demoMode">{{ $t("Manage your demo job drafts and published versions.") }}</p></aside><main><slot /></main></div>
+    <footer>{{ $t("SimRecrut · HR workspace") }} {{ $t(demoMode ? '· Frontend demonstration' : '') }}</footer>
   </div>
 </template>
 

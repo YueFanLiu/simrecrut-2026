@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 import { createRouter, createWebHistory } from 'vue-router'
 import { pinia } from '../store/index.js'
 import { demoMode } from '../config/runtime.js'
@@ -178,7 +179,7 @@ router.beforeEach(async (to) => {
 
 router.afterEach((to, _from, failure) => {
   if (failure) return
-  document.title = `${to.meta.title || 'SimRecrut'} | SimRecrut`
+  document.title = `${t(to.meta.title || 'SimRecrut')} | SimRecrut`
 })
 
 export default router

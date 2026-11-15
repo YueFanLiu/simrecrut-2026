@@ -1,4 +1,6 @@
 <script setup>
+import { dateLocale, t } from '../../../i18n/index.js'
+
 import { demoMode } from '../../../config/runtime.js'
 import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
@@ -41,7 +43,7 @@ const comparisonRows = computed(() => results.value ? [
   ...humanCards.value.map((human) => ({ method: human.title, score: 'Not applicable', scale: 'Decision only', decision: human.decision || 'No decision yet', status: human.status })),
 ] : [])
 const researchLabels = { schoolPrestige: 'School prestige', referral: 'Referral', gender: 'Gender', ethnicity: 'Ethnicity' }
-const formatDate = (time) => new Intl.DateTimeFormat('en-GB', {
+const formatDate = (time) => new Intl.DateTimeFormat(dateLocale.value, {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris',
 }).format(new Date(time))
 
@@ -103,7 +105,7 @@ async function refreshConnectedCase() {
     const row = await cases.loadConnectedCase(id)
     if (connectedActive && request === connectedRequest && route.params.caseId === id) cases.cases[id] = row
   } catch (error) {
-    if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(error.message) }
+    if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(t(error.message)) }
   }
 }
 watch(() => route.params.caseId, refreshConnectedCase)
@@ -113,79 +115,80 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++ })
 
 <template>
   <CandidateLayout>
-    <section v-if="busy === 'delete'" class="panel state-panel" role="status"><h1>Deleting Case...</h1><p>Revoking access and requesting removal of case data.</p></section>
+    <section v-if="busy === 'delete'" class="panel state-panel" role="status"><h1>{{ $t("Deleting Case...") }}</h1><p>{{ $t("Revoking access and requesting removal of case data.") }}</p></section>
     <section v-else-if="!entry" class="panel state-panel">
-      <h1>Case Not Available</h1><p>This case was removed, has expired or is not available to your account.</p>
-      <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">Back to Jobs</ElButton>
+      <h1>{{ $t("Case Not Available") }}</h1><p>{{ $t("This case was removed, has expired or is not available to your account.") }}</p>
+      <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">{{ $t("Back to Jobs") }}</ElButton>
     </section>
-    <section v-else-if="!ready" class="panel state-panel"><h1>Results Not Ready</h1>
-      <p>{{ demoMode ? 'Complete the automated assessment to view results.' : 'Confirm your professional facts to view results.' }}</p>
-      <ElButton type="primary" @click="router.replace({ name: 'SimulationProgress', params: { caseId: entry.caseId } })">Back to Progress</ElButton>
+    <section v-else-if="!ready" class="panel state-panel"><h1>{{ $t("Results Not Ready") }}</h1>
+      <p>{{ $t(demoMode ? 'Complete the automated assessment to view results.' : 'Confirm your professional facts to view results.') }}</p>
+      <ElButton type="primary" @click="router.replace({ name: 'SimulationProgress', params: { caseId: entry.caseId } })">{{ $t("Back to Progress") }}</ElButton>
     </section>
     <section v-else aria-labelledby="results-title">
-      <nav class="breadcrumb" aria-label="Breadcrumb"><RouterLink :to="{ name: 'PublishedJobs' }">Jobs</RouterLink><span>/</span>
-        <RouterLink :to="{ name: 'SimulationProgress', params: { caseId: entry.caseId } }">{{ entry.caseId }}</RouterLink><span>/</span><span aria-current="page">Results</span></nav>
-      <h1 id="results-title">Simulation Results</h1><p class="subtitle">Three automated assessments and two separate human review conditions.</p>
-      <ElAlert v-if="demoMode" type="info" :closable="false" title="Frontend demo: scores and decisions are fixed examples unrelated to your CV or selected job. No model or real reviewer is involved. Reload restores the checkpoint and regenerates fixed examples; optional research values and human updates are not retained. Sign out clears the case." />
+      <nav class="breadcrumb" :aria-label="$t(&quot;Breadcrumb&quot;)"><RouterLink :to="{ name: 'PublishedJobs' }">{{ $t("Jobs") }}</RouterLink><span>/</span>
+        <RouterLink :to="{ name: 'SimulationProgress', params: { caseId: entry.caseId } }">{{ entry.caseId }}</RouterLink><span>/</span><span aria-current="page">{{ $t("Results") }}</span></nav>
+      <h1 id="results-title">{{ $t("Simulation Results") }}</h1><p class="subtitle">{{ $t("Three automated assessments and two separate human review conditions.") }}</p>
+      <ElAlert v-if="demoMode" type="info" :closable="false" :title="$t(&quot;Frontend demo: scores and decisions are fixed examples unrelated to your CV or selected job. No model or real reviewer is involved. Reload restores the checkpoint and regenerates fixed examples; optional research values and human updates are not retained. Sign out clears the case.&quot;)" />
       <CaseProgressStepper :current-step="3" review-confirmed :simulation-complete="entry.processingStatus === 'AUTOMATED_COMPLETE'" />
-      <div v-if="loading" class="panel" role="status"><p>Loading results...</p><ElSkeleton :rows="8" animated /></div>
-      <div v-else-if="!results" class="panel state-panel" role="alert"><h2>Results Could Not Be Loaded</h2><p>{{ error }}</p>
-        <ElButton type="primary" @click="loadResults()">Try Again</ElButton></div>
+      <div v-if="loading" class="panel" role="status"><p>{{ $t("Loading results...") }}</p><ElSkeleton :rows="8" animated /></div>
+      <div v-else-if="!results" class="panel state-panel" role="alert"><h2>{{ $t("Results Could Not Be Loaded") }}</h2><p>{{ $t(error) }}</p>
+        <ElButton type="primary" @click="loadResults()">{{ $t("Try Again") }}</ElButton></div>
       <template v-else>
-        <ElAlert v-if="error" class="feedback" type="error" :title="error" :closable="false" />
-        <p v-if="feedback" class="feedback" role="status">{{ feedback }}</p>
+        <ElAlert v-if="error" class="feedback" type="error" :title="$t(error)" :closable="false" />
+        <p v-if="feedback" class="feedback" role="status">{{ $t(feedback) }}</p>
         <div class="results-grid">
           <aside class="case-column">
-            <section class="panel"><h2>Case Information</h2><dl>
-              <div><dt>Job</dt><dd>{{ results.job.title }}</dd></div><div v-if="results.job.company"><dt>Company</dt><dd>{{ results.job.company }}</dd></div>
-              <div v-if="results.job.location"><dt>Location</dt><dd>{{ results.job.location }}</dd></div><div v-if="results.job.employmentType"><dt>Employment</dt><dd>{{ results.job.employmentType }}</dd></div>
-              <div><dt>Job version</dt><dd>{{ results.job.version }}</dd></div><div><dt>Case ID</dt><dd>{{ results.caseId }}</dd></div>
-              <div v-if="results.completedAt"><dt>Completed</dt><dd>{{ formatDate(results.completedAt) }} (Paris)</dd></div><div><dt>Deletion deadline</dt><dd>{{ formatDate(results.expiresAt) }} (Paris)</dd></div>
-            </dl><p class="small">All five methods refer to the same confirmed facts and retained job version. Results are read-only.</p></section>
-            <ElButton @click="router.push({ name: 'SimulationProgress', params: { caseId: entry.caseId } })">Back to Progress</ElButton>
-            <ElButton @click="router.push({ name: 'PublishedJobs' })">Choose Another Job</ElButton>
-            <ElButton @click="router.push({ name: 'MySimulations' })">My simulations</ElButton>
-            <ElButton type="danger" plain :disabled="Boolean(busy) || results.canDeleteNow === false" @click="confirmDelete = true">Delete My Simulation Data</ElButton>
+            <section class="panel"><h2>{{ $t("Case Information") }}</h2><dl>
+              <div><dt>{{ $t("Job") }}</dt><dd>{{ results.job.title }}</dd></div><div v-if="results.job.company"><dt>{{ $t("Company") }}</dt><dd>{{ results.job.company }}</dd></div>
+              <div v-if="results.job.location"><dt>{{ $t("Location") }}</dt><dd>{{ results.job.location }}</dd></div><div v-if="results.job.employmentType"><dt>{{ $t("Employment") }}</dt><dd>{{ results.job.employmentType }}</dd></div>
+              <div><dt>{{ $t("Job version") }}</dt><dd>{{ results.job.version }}</dd></div><div><dt>{{ $t("Case ID") }}</dt><dd>{{ results.caseId }}</dd></div>
+              <div v-if="results.completedAt"><dt>{{ $t("Completed") }}</dt><dd>{{ formatDate(results.completedAt) }} {{ $t("(Paris)") }}</dd></div><div><dt>{{ $t("Deletion deadline") }}</dt><dd>{{ formatDate(results.expiresAt) }} {{ $t("(Paris)") }}</dd></div>
+            </dl><p class="small">{{ $t("All five methods refer to the same confirmed facts and retained job version. Results are read-only.") }}</p></section>
+            <ElButton @click="router.push({ name: 'SimulationProgress', params: { caseId: entry.caseId } })">{{ $t("Back to Progress") }}</ElButton>
+            <ElButton @click="router.push({ name: 'PublishedJobs' })">{{ $t("Choose Another Job") }}</ElButton>
+            <ElButton @click="router.push({ name: 'MySimulations' })">{{ $t("My simulations") }}</ElButton>
+            <ElButton type="danger" plain :disabled="Boolean(busy) || results.canDeleteNow === false" @click="confirmDelete = true">{{ $t("Delete My Simulation Data") }}</ElButton>
           </aside>
           <div class="result-column">
-            <ElTabs v-model="activeTab" class="result-tabs" aria-label="Result views">
-              <ElTabPane label="Summary" name="summary">
-                <h2 class="section-title">Automated Results</h2><div class="automated-grid">
-                  <ResultCard title="Objective Fit Score" :status="results.objective ? 'Complete' : 'Unavailable'" :score="results.objective?.displayScore" scale="0–100" :decision="results.objective?.decision" note="Fit under the published matching rule." />
-                  <ElAlert v-if="objectiveOnly" title="This assessment used the objective rule only. AI scoring was skipped." type="info" :closable="false" />
+            <ElTabs v-model="activeTab" class="result-tabs" :aria-label="$t(&quot;Result views&quot;)">
+              <ElTabPane :label="$t(&quot;Summary&quot;)" name="summary">
+                <h2 class="section-title">{{ $t("Automated Results") }}</h2><div class="automated-grid">
+                  <ResultCard :title="$t(&quot;Objective Fit Score&quot;)" :status="results.objective ? 'Complete' : 'Unavailable'" :score="results.objective?.displayScore" scale="0–100" :decision="results.objective?.decision" note="Fit under the published matching rule." />
+                  <ElAlert v-if="objectiveOnly" :title="$t(&quot;This assessment used the objective rule only. AI scoring was skipped.&quot;)" type="info" :closable="false" />
                   <template v-else>
-                    <ResultCard title="Neutral ML Acceptance Score" :status="results.neutral ? 'Complete' : 'Unavailable'" :score="results.neutral?.acceptanceScore" scale="0–1" :decision="results.neutral?.decision" note="Model acceptance score on a 0–1 scale." />
-                    <ResultCard title="Biased ML Acceptance Score" :status="results.biased ? 'Complete' : 'Unavailable'" :score="results.biased?.acceptanceScore" scale="0–1" :decision="results.biased?.decision" note="Acceptance score under the experimental condition." />
+                    <ResultCard :title="$t(&quot;Neutral ML Acceptance Score&quot;)" :status="results.neutral ? 'Complete' : 'Unavailable'" :score="results.neutral?.acceptanceScore" scale="0–1" :decision="results.neutral?.decision" note="Model acceptance score on a 0–1 scale." />
+                    <ResultCard :title="$t(&quot;Biased ML Acceptance Score&quot;)" :status="results.biased ? 'Complete' : 'Unavailable'" :score="results.biased?.acceptanceScore" scale="0–1" :decision="results.biased?.decision" note="Acceptance score under the experimental condition." />
                   </template>
                 </div>
-                <div class="section-heading"><h2>Human Results</h2><ElButton :loading="busy === 'refresh'" :disabled="Boolean(busy)" @click="loadResults(true)">Refresh Human Results</ElButton></div>
-                <div class="human-grid"><ResultCard v-for="human in humanCards" :key="human.key" :title="human.title" :status="human.status" :decision="human.decision"
+                <div class="section-heading"><h2>{{ $t("Human Results") }}</h2><ElButton :loading="busy === 'refresh'" :disabled="Boolean(busy)" @click="loadResults(true)">{{ $t("Refresh Human Results") }}</ElButton></div>
+                <div class="human-grid"><ResultCard v-for="human in humanCards" :key="human.key" :title="$t(human.title)" :status="human.status" :decision="human.decision"
                   :note="human.status === 'Submitted' ? 'A submitted mock primary review; no numeric score applies.' : 'No decision or reason is available until this review is submitted.'">
                   <p v-if="human.reason" class="human-reason">{{ human.reason }}</p>
                 </ResultCard></div>
-                <h2 class="section-title chart-heading">Scores on Separate Scales</h2><div class="scales-grid">
-                  <ScoreScalePanel title="Objective Fit" :maximum="100" :items="[{ label: 'Objective', value: results.objective?.displayScore }]" note="Objective fit uses its own 0–100 display scale." />
-                  <ScoreScalePanel v-if="!objectiveOnly" title="ML Acceptance Scores" :maximum="1" :items="[{ label: 'Neutral ML', value: results.neutral?.acceptanceScore }, { label: 'Biased ML', value: results.biased?.acceptanceScore }]" note="ML scores use 0–1. Do not compare or subtract them from the Objective display score." />
+                <h2 class="section-title chart-heading">{{ $t("Scores on Separate Scales") }}</h2><div class="scales-grid">
+                  <ScoreScalePanel :title="$t(&quot;Objective Fit&quot;)" :maximum="100" :items="[{ label: 'Objective', value: results.objective?.displayScore }]" note="Objective fit uses its own 0–100 display scale." />
+                  <ScoreScalePanel v-if="!objectiveOnly" :title="$t(&quot;ML Acceptance Scores&quot;)" :maximum="1" :items="[{ label: 'Neutral ML', value: results.neutral?.acceptanceScore }, { label: 'Biased ML', value: results.biased?.acceptanceScore }]" note="ML scores use 0–1. Do not compare or subtract them from the Objective display score." />
                 </div>
-                <section class="panel interpretation"><h2>How to Read These Results</h2><p>Accept and Reject are outcomes under each method's own rule or instruction. They are not a hiring recommendation.</p>
-                  <p>Pending and Not assigned mean no human decision exists yet. Different outcomes do not establish the cause of a difference or prove discrimination.</p></section>
+                <section class="panel interpretation"><h2>{{ $t("How to Read These Results") }}</h2><p>{{ $t("Accept and Reject are outcomes under each method's own rule or instruction. They are not a hiring recommendation.") }}</p>
+                  <p>{{ $t("Pending and Not assigned mean no human decision exists yet. Different outcomes do not establish the cause of a difference or prove discrimination.") }}</p></section>
               </ElTabPane>
-              <ElTabPane label="Detailed Comparison" name="comparison" lazy>
-                <section class="panel"><h2>Five-Method Comparison</h2><p>Compare decisions with their status and score scale. Human results contain decisions only.</p>
-                  <div class="table-scroll" tabindex="0" role="region" aria-label="Five-method results table"><table><caption>Read-only public result summary</caption><thead><tr><th scope="col">Method</th><th scope="col">Status</th><th scope="col">Decision</th><th scope="col">Score</th><th scope="col">Scale</th></tr></thead>
-                    <tbody><tr v-for="row in comparisonRows" :key="row.method"><th scope="row">{{ row.method }}</th><td>{{ row.status }}</td><td>{{ row.decision }}</td><td>{{ row.score }}</td><td>{{ row.scale }}</td></tr></tbody></table></div>
-                  <p class="small">Objective and ML scores have different meanings. No combined score or cross-scale difference is calculated.</p>
+              <ElTabPane :label="$t(&quot;Detailed Comparison&quot;)" name="comparison" lazy>
+                <section class="panel"><h2>{{ $t("Five-Method Comparison") }}</h2><p>{{ $t("Compare decisions with their status and score scale. Human results contain decisions only.") }}</p>
+                  <div class="table-scroll" tabindex="0" role="region" :aria-label="$t(&quot;Five-method results table&quot;)"><table><caption>{{ $t("Read-only public result summary") }}</caption><thead><tr><th scope="col">{{ $t("Method") }}</th><th scope="col">{{ $t("Status") }}</th><th scope="col">{{ $t("Decision") }}</th><th scope="col">{{ $t("Score") }}</th><th scope="col">{{ $t("Scale") }}</th></tr></thead>
+                    <tbody><tr v-for="row in comparisonRows" :key="row.method"><th scope="row">{{ row.method }}</th><td>{{ $t(row.status) }}</td><td>{{ $t(row.decision) }}</td><td>{{ row.score }}</td><td>{{ row.scale }}</td></tr></tbody></table></div>
+                  <p class="small">{{ $t("Objective and ML scores have different meanings. No combined score or cross-scale difference is calculated.") }}</p>
                 </section>
               </ElTabPane>
-              <ElTabPane label="Explanations" name="explanations" lazy>
-                <section class="panel explanation"><h2>Objective Fit Score</h2><h3>Strengths</h3><ul><li v-for="strength in results.objective?.strengths" :key="strength">{{ strength }}</li></ul>
-                  <h3>Gaps</h3><ul><li v-for="gap in results.objective?.gaps" :key="gap">{{ gap }}</li></ul><p v-if="demoMode" class="small">These fixed example explanations were not calculated from your confirmed facts.</p></section>
-                <section class="panel explanation"><h2>Neutral ML Acceptance Score</h2><p>The Neutral method uses professional information without research attributes. </p></section>
-                <section class="panel explanation"><h2>Biased ML Acceptance Score</h2><p>The Biased method represents an experimental condition. Its score reflects the configured research scenario.</p>
-                  <template v-if="results.biased?.attributeSummary"><h3>Permitted Research Attribute Summary</h3><dl><div v-for="(value, key) in results.biased?.attributeSummary" :key="key"><dt>{{ researchLabels[key] }}</dt><dd>{{ value }}</dd></div></dl>
-                    <p class="small">UNKNOWN means no value was provided. </p></template>
+              <ElTabPane :label="$t(&quot;Explanations&quot;)" name="explanations" lazy>
+                <section class="panel explanation"><h2>{{ $t("Objective Fit Score") }}</h2><h3>{{ $t("Strengths") }}</h3><ul><li v-for="strength in results.objective?.strengths" :key="strength">{{ $t(strength) }}</li></ul>
+                  <p v-if="!results.objective?.strengths?.length">{{ $t('No assessed strengths are available for this result.') }}</p>
+                  <h3>{{ $t("Gaps") }}</h3><ul><li v-for="gap in results.objective?.gaps" :key="gap">{{ $t(gap) }}</li></ul><p v-if="!results.objective?.gaps?.length">{{ $t('No assessed gaps are available for this result.') }}</p><p v-if="demoMode" class="small">{{ $t("These fixed example explanations were not calculated from your confirmed facts.") }}</p></section>
+                <section class="panel explanation"><h2>{{ $t("Neutral ML Acceptance Score") }}</h2><p>{{ $t("The Neutral method uses professional information without research attributes.") }} </p></section>
+                <section class="panel explanation"><h2>{{ $t("Biased ML Acceptance Score") }}</h2><p>{{ $t("The Biased method represents an experimental condition. Its score reflects the configured research scenario.") }}</p>
+                  <template v-if="results.biased?.attributeSummary"><h3>{{ $t("Permitted Research Attribute Summary") }}</h3><dl><div v-for="(value, key) in results.biased?.attributeSummary" :key="key"><dt>{{ $t(researchLabels[key]) }}</dt><dd>{{ value }}</dd></div></dl>
+                    <p class="small">{{ $t("UNKNOWN means no value was provided.") }} </p></template>
                 </section>
-                <section v-for="human in humanCards" :key="human.key" class="panel explanation"><div class="section-heading"><h2>{{ human.title }}</h2><ElTag type="info">{{ human.status }}</ElTag></div><p>{{ human.reason || 'No submitted decision or reason is available for this condition.' }}</p></section>
+                <section v-for="human in humanCards" :key="human.key" class="panel explanation"><div class="section-heading"><h2>{{ human.title }}</h2><ElTag type="info">{{ $t(human.status) }}</ElTag></div><p>{{ $t(human.reason || 'No submitted decision or reason is available for this condition.') }}</p></section>
               </ElTabPane>
             </ElTabs>
           </div>

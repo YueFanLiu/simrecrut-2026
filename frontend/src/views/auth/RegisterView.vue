@@ -1,4 +1,5 @@
 <script setup>
+import { t, useLocalizedValidation } from '../../i18n/index.js'
 import { computed, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElCheckbox, ElDialog, ElForm, ElFormItem, ElInput, ElRadioGroup, ElRadioButton } from 'element-plus'
@@ -77,7 +78,7 @@ const rules = {
   }],
   emailCode: [{ validator: (_rule, value, callback) => {
     callback(demoMode || (challengeValid.value && /^[0-9]{6}$/.test(value)) ? undefined
-      : new Error('Request a code for this email and enter its six digits before it expires.'))
+      : new Error(t('Request a code for this email and enter its six digits before it expires.')))
   }, trigger: 'blur' }],
   agreedToTerms: [{ validator: validateAgreement, trigger: 'change' }],
 }
@@ -119,50 +120,52 @@ async function submitRegistration() {
 function goToLogin() {
   router.push({ name: 'Login' })
 }
+
+useLocalizedValidation(formRef)
 </script>
 
 <template>
   <AuthLayout title-id="register-title">
     <div v-if="!registrationEnabled" class="result-state">
       <div class="result-icon unavailable" aria-hidden="true">×</div>
-      <h1 id="register-title">Registration unavailable</h1>
-      <p>Registration is currently disabled or unavailable.</p>
-      <p>Please use an existing account.</p>
-      <ElAlert v-if="registrationError" :title="registrationError" type="error" :closable="false" />
-      <ElButton type="primary" size="large" @click="goToLogin">Back to login</ElButton>
+      <h1 id="register-title">{{ $t("Registration unavailable") }}</h1>
+      <p>{{ $t("Registration is currently disabled or unavailable.") }}</p>
+      <p>{{ $t("Please use an existing account.") }}</p>
+      <ElAlert v-if="registrationError" :title="$t(registrationError)" type="error" :closable="false" />
+      <ElButton type="primary" size="large" @click="goToLogin">{{ $t("Back to login") }}</ElButton>
     </div>
 
     <div v-else-if="createdUsername" class="result-state" role="status">
       <div class="result-icon success" aria-hidden="true">✓</div>
-      <h1 id="register-title">Account created successfully</h1>
-      <p>Your {{ createdRole }} account <strong>{{ createdUsername }}</strong> is ready.</p>
-      <p>You can now sign in with your username or email.</p>
-      <p v-if="demoMode" class="result-note">This account exists only until you refresh or close this browser tab.</p>
-      <p v-else class="result-note">Your account is saved. Sign in to continue to your workspace.</p>
-      <ElButton type="primary" size="large" @click="goToLogin">Go to sign in</ElButton>
+      <h1 id="register-title">{{ $t("Account created successfully") }}</h1>
+      <p>{{ $t('Your {role} account {name} is ready.', { role: $t(createdRole), name: createdUsername }) }}</p>
+      <p>{{ $t("You can now sign in with your username or email.") }}</p>
+      <p v-if="demoMode" class="result-note">{{ $t("This account exists only until you refresh or close this browser tab.") }}</p>
+      <p v-else class="result-note">{{ $t("Your account is saved. Sign in to continue to your workspace.") }}</p>
+      <ElButton type="primary" size="large" @click="goToLogin">{{ $t("Go to sign in") }}</ElButton>
     </div>
 
     <template v-else>
-      <h1 id="register-title">Create an account</h1>
-      <p class="register-subtitle">Join SimRecrut and start your simulation journey</p>
+      <h1 id="register-title">{{ $t("Create an account") }}</h1>
+      <p class="register-subtitle">{{ $t("Join SimRecrut and start your simulation journey") }}</p>
       <div class="feedback" aria-live="polite" aria-atomic="true">
-        <ElAlert v-if="registrationError" :title="registrationError" type="error"
+        <ElAlert v-if="registrationError" :title="$t(registrationError)" type="error"
           show-icon :closable="false" />
       </div>
 
       <ElForm ref="formRef" :model="form" :rules="rules" label-position="top"
         :disabled="loading" :aria-busy="loading || sendingCode" @submit.prevent="submitRegistration">
-        <ElFormItem label="Username" prop="username">
-          <ElInput v-model="form.username" placeholder="Enter a username" size="large"
+        <ElFormItem :label="$t(&quot;Username&quot;)" prop="username">
+          <ElInput v-model="form.username" :placeholder="$t(&quot;Enter a username&quot;)" size="large"
             autocomplete="username" autocapitalize="none" :spellcheck="false"
             aria-describedby="username-hint" @input="registrationError = ''">
             <template #prefix><FieldIcon name="user" /></template>
           </ElInput>
         </ElFormItem>
-        <p id="username-hint" class="field-hint">3-20 characters: letters, numbers or underscores.</p>
+        <p id="username-hint" class="field-hint">{{ $t("3-20 characters: letters, numbers or underscores.") }}</p>
 
-        <ElFormItem label="Email address" prop="email">
-          <ElInput v-model="form.email" placeholder="Enter your email address" size="large"
+        <ElFormItem :label="$t(&quot;Email address&quot;)" prop="email">
+          <ElInput v-model="form.email" :placeholder="$t(&quot;Enter your email address&quot;)" size="large"
             autocomplete="email" inputmode="email" autocapitalize="none" :spellcheck="false"
             @input="registrationError = ''">
             <template #prefix><FieldIcon name="email" /></template>
@@ -170,84 +173,78 @@ function goToLogin() {
         </ElFormItem>
 
         <template v-if="!demoMode">
-          <ElFormItem label="Email verification code" prop="emailCode">
+          <ElFormItem :label="$t(&quot;Email verification code&quot;)" prop="emailCode">
             <div class="code-row">
-              <ElInput v-model="form.emailCode" placeholder="6-digit code" size="large"
+              <ElInput v-model="form.emailCode" :placeholder="$t(&quot;6-digit code&quot;)" size="large"
                 inputmode="numeric" autocomplete="one-time-code" maxlength="6" />
               <ElButton :loading="sendingCode" :disabled="loading || sendingCode || cooldown > 0"
-                @click="requestCode">{{ cooldown ? `Resend in ${cooldown}s` : 'Send code' }}</ElButton>
+                @click="requestCode">{{ cooldown ? $t('Resend in {seconds}s', { seconds: cooldown }) : $t('Send code') }}</ElButton>
             </div>
           </ElFormItem>
-          <p v-if="sendingCode" class="field-hint" role="status">Sending your code. This may take a few seconds.</p>
-          <p v-else-if="codeNotice" class="field-hint" role="status">{{ codeNotice }}
-            {{ challenge && !challengeValid ? 'Code expired. Request a new code.' : '' }}</p>
-          <ElFormItem label="Account type">
-            <ElRadioGroup v-model="form.accountType" aria-label="Account type">
-              <ElRadioButton value="CANDIDATE">Candidate</ElRadioButton>
-              <ElRadioButton value="HR">HR</ElRadioButton>
+          <p v-if="sendingCode" class="field-hint" role="status">{{ $t("Sending your code. This may take a few seconds.") }}</p>
+          <p v-else-if="codeNotice" class="field-hint" role="status">{{ $t(codeNotice) }}
+            {{ $t(challenge && !challengeValid ? 'Code expired. Request a new code.' : '') }}</p>
+          <ElFormItem :label="$t(&quot;Account type&quot;)">
+            <ElRadioGroup v-model="form.accountType" :aria-label="$t(&quot;Account type&quot;)">
+              <ElRadioButton value="CANDIDATE">{{ $t("Candidate") }}</ElRadioButton>
+              <ElRadioButton value="HR">{{ $t("HR") }}</ElRadioButton>
             </ElRadioGroup>
           </ElFormItem>
         </template>
 
-        <ElFormItem label="Password" prop="password">
-          <PasswordInput v-model="form.password" placeholder="Create a password" :disabled="loading"
+        <ElFormItem :label="$t(&quot;Password&quot;)" prop="password">
+          <PasswordInput v-model="form.password" :placeholder="$t(&quot;Create a password&quot;)" :disabled="loading"
             aria-describedby="password-hint" @input="passwordChanged" />
         </ElFormItem>
-        <p id="password-hint" class="field-hint">{{ demoMode ? '8-20 characters, including letters and numbers.' : 'Use at least 12 characters.' }}</p>
+        <p id="password-hint" class="field-hint">{{ $t(demoMode ? '8-20 characters, including letters and numbers.' : 'Use at least 12 characters.') }}</p>
 
-        <ElFormItem label="Confirm password" prop="confirmation">
-          <PasswordInput v-model="form.confirmation" placeholder="Confirm your password"
+        <ElFormItem :label="$t(&quot;Confirm password&quot;)" prop="confirmation">
+          <PasswordInput v-model="form.confirmation" :placeholder="$t(&quot;Confirm your password&quot;)"
             :disabled="loading" @input="registrationError = ''" />
         </ElFormItem>
 
         <ElFormItem prop="agreedToTerms" class="agreement-item">
           <div class="agreement-row">
-            <ElCheckbox v-model="form.agreedToTerms" aria-label="Read registration and privacy notices">
-              I have read the
-            </ElCheckbox>
-            <button type="button" class="notice-link" :disabled="loading" @click="notice = 'terms'">
-              Terms of Use
-            </button>
-            <span>and</span>
-            <button type="button" class="notice-link" :disabled="loading" @click="notice = 'privacy'">
-              Privacy Policy
-            </button>
+            <ElCheckbox v-model="form.agreedToTerms" :aria-label="$t(&quot;Read registration and privacy notices&quot;)"> {{ $t("I have read the") }} </ElCheckbox>
+            <button type="button" class="notice-link" :disabled="loading" @click="notice = 'terms'"> {{ $t("Terms of Use") }} </button>
+            <span>{{ $t("and") }}</span>
+            <button type="button" class="notice-link" :disabled="loading" @click="notice = 'privacy'"> {{ $t("Privacy Policy") }} </button>
           </div>
         </ElFormItem>
 
         <ElButton class="full-width" type="primary" size="large" native-type="submit"
           :loading="loading" :disabled="loading || sendingCode">
-          {{ loading ? 'Creating account...' : 'Create account' }}
+          {{ $t(loading ? 'Creating account...' : 'Create account') }}
         </ElButton>
       </ElForm>
 
-      <div class="sign-in-divider"><span>Already have an account?</span></div>
-      <ElButton class="full-width" size="large" :disabled="loading" @click="goToLogin">Sign in</ElButton>
+      <div class="sign-in-divider"><span>{{ $t("Already have an account?") }}</span></div>
+      <ElButton class="full-width" size="large" :disabled="loading" @click="goToLogin">{{ $t("Sign in") }}</ElButton>
       <aside v-if="demoMode" class="demo-note">
-        <strong>Frontend demo only</strong>
-        <p>Creates a temporary Candidate account. No email is sent and no data is sent to a server.</p>
-        <p>The account is cleared when you refresh or close this tab. Use invented details and a demo password.</p>
-        <p>Validation rules are provisional for this prototype.</p>
+        <strong>{{ $t("Frontend demo only") }}</strong>
+        <p>{{ $t("Creates a temporary Candidate account. No email is sent and no data is sent to a server.") }}</p>
+        <p>{{ $t("The account is cleared when you refresh or close this tab. Use invented details and a demo password.") }}</p>
+        <p>{{ $t("Validation rules are provisional for this prototype.") }}</p>
       </aside>
     </template>
 
-    <ElDialog :model-value="Boolean(notice)" :title="notice === 'terms' ? 'Registration notice' : 'Privacy notice'"
+    <ElDialog :model-value="Boolean(notice)" :title="$t(notice === 'terms' ? 'Registration notice' : 'Privacy notice')"
       width="min(480px, calc(100vw - 32px))" @close="notice = ''">
       <template v-if="!demoMode">
-        <p v-if="notice === 'terms'">This development service creates a persistent Candidate or HR account for the SimRecrut project. This notice is not a finalized legal agreement.</p>
-        <template v-else><p>Your username, email and hashed password are stored in the configured project database. Your password is used for authentication and is not stored as readable text.</p><p>A verification code is sent to confirm your email address. Remember Me stores only your sign-in identifier in this browser.</p></template>
+        <p v-if="notice === 'terms'">{{ $t("This development service creates a persistent Candidate or HR account for the SimRecrut project. This notice is not a finalized legal agreement.") }}</p>
+        <template v-else><p>{{ $t("Your username, email and hashed password are stored in the configured project database. Your password is used for authentication and is not stored as readable text.") }}</p><p>{{ $t("A verification code is sent to confirm your email address. Remember Me stores only your sign-in identifier in this browser.") }}</p></template>
       </template>
       <template v-else-if="notice === 'terms'">
-        <p>This is a frontend demonstration for reviewing the SimRecrut interface.</p>
-        <p>Registration creates a temporary Candidate demo account. It does not create a real account or grant real permissions.</p>
-        <p>These are prototype notices. Final terms must be supplied before a real service is enabled.</p>
+        <p>{{ $t("This is a frontend demonstration for reviewing the SimRecrut interface.") }}</p>
+        <p>{{ $t("Registration creates a temporary Candidate demo account. It does not create a real account or grant real permissions.") }}</p>
+        <p>{{ $t("These are prototype notices. Final terms must be supplied before a real service is enabled.") }}</p>
       </template>
       <template v-else>
-        <p>Registration details and demo credentials are held in this tab's memory and cleared on refresh.</p>
-        <p>No registration data is sent to a server. Login's Remember Me option stores only the identifier in local storage.</p>
-        <p>Use invented details and a demo password. This prototype notice is not a finalized privacy policy.</p>
+        <p>{{ $t("Registration details and demo credentials are held in this tab's memory and cleared on refresh.") }}</p>
+        <p>{{ $t("No registration data is sent to a server. Login's Remember Me option stores only the identifier in local storage.") }}</p>
+        <p>{{ $t("Use invented details and a demo password. This prototype notice is not a finalized privacy policy.") }}</p>
       </template>
-      <template #footer><ElButton type="primary" @click="notice = ''">Close</ElButton></template>
+      <template #footer><ElButton type="primary" @click="notice = ''">{{ $t("Close") }}</ElButton></template>
     </ElDialog>
   </AuthLayout>
 </template>

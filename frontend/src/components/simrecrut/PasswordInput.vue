@@ -13,12 +13,12 @@ const visible = ref(false)
 </script>
 
 <template>
-  <ElInput v-model="model" :type="visible ? 'text' : 'password'" :placeholder="placeholder"
+  <ElInput v-model="model" :type="visible ? 'text' : 'password'" :placeholder="$t(placeholder)"
     :autocomplete="autocomplete" :disabled="disabled" size="large">
     <template #prefix><FieldIcon name="lock" /></template>
     <template #suffix>
       <button type="button" class="password-toggle" :disabled="disabled"
-        :aria-label="visible ? 'Hide password' : 'Show password'" :aria-pressed="visible"
+        :aria-label="$t(visible ? 'Hide password' : 'Show password')" :aria-pressed="visible"
         @click="visible = !visible">
         <FieldIcon :name="visible ? 'eye' : 'eye-off'" />
       </button>

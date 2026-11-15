@@ -7,8 +7,8 @@ export default { setup: useWorkspace };
 <template>
   <section class="panel">
     <div class="panel-title">
-      <h2>Role permission configuration</h2>
-      <span>Demo permissions only</span>
+      <h2>{{ $t("Role permission configuration") }}</h2>
+      <span>{{ $t("Demo permissions only") }}</span>
     </div>
     <div class="panel-body permissions">
       <div>
@@ -22,7 +22,7 @@ export default { setup: useWorkspace };
         </button>
       </div>
       <div>
-        <h3>{{ role }} permissions</h3>
+        <h3>{{ role }} {{ $t("permissions") }}</h3>
         <label
           class="check"
           v-for="p in [
@@ -44,18 +44,13 @@ export default { setup: useWorkspace };
             :value="p"
           />{{ p }}</label
         >
-        <div class="callout">
-          Reviewer is an assigned responsibility, not a separate privileged
-          role. Menu permissions do not grant access to individual cases.
-        </div>
+        <div class="callout"> {{ $t("Reviewer is an assigned responsibility, not a separate privileged role. Menu permissions do not grant access to individual cases.") }} </div>
         <button
           class="primary"
           @click="
             notify('Demo permission selection saved for this session only.')
           "
-        >
-          Save demo permissions
-        </button>
+        > {{ $t("Save demo permissions") }} </button>
       </div>
     </div>
   </section>

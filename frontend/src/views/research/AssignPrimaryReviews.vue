@@ -79,26 +79,26 @@ onBeforeUnmount(() => { sequence++ })
 
 <template>
   <ResearchLayout>
-    <h1>Assign Primary Reviews</h1>
-    <p>Enter the ID of a confirmed case you have research access to. Choose an eligible reviewer for one or both conditions.</p>
+    <h1>{{ $t("Assign Primary Reviews") }}</h1>
+    <p>{{ $t("Enter the ID of a confirmed case you have research access to. Choose an eligible reviewer for one or both conditions.") }}</p>
     <ElForm label-position="top" :disabled="saving" novalidate @submit.prevent="search">
-      <ElFormItem label="Case ID" required><ElInput v-model="caseId" maxlength="26" aria-required="true" /></ElFormItem>
-      <ElFormItem label="Reviewer username (optional)"><ElInput v-model="query" maxlength="100" /></ElFormItem>
-      <ElButton native-type="submit" :loading="loading">Find Eligible Reviewers</ElButton>
+      <ElFormItem :label="$t(&quot;Case ID&quot;)" required><ElInput v-model="caseId" maxlength="26" aria-required="true" /></ElFormItem>
+      <ElFormItem :label="$t(&quot;Reviewer username (optional)&quot;)"><ElInput v-model="query" maxlength="100" /></ElFormItem>
+      <ElButton native-type="submit" :loading="loading">{{ $t("Find Eligible Reviewers") }}</ElButton>
     </ElForm>
-    <ElAlert v-if="error" :title="error" type="error" :closable="false" />
-    <p v-if="target && !reviewers.length">No eligible reviewers match your search.</p>
+    <ElAlert v-if="error" :title="$t(error)" type="error" :closable="false" />
+    <p v-if="target && !reviewers.length">{{ $t("No eligible reviewers match your search.") }}</p>
     <ElForm v-if="target && reviewers.length" class="assignment" label-position="top" :disabled="saving" @submit.prevent="submit">
-      <ElFormItem v-for="(label, condition) in conditions" :key="condition" :label="label">
-        <ElSelect v-model="selected[condition]" clearable placeholder="Choose a reviewer">
+      <ElFormItem v-for="(label, condition) in conditions" :key="condition" :label="$t(label)">
+        <ElSelect v-model="selected[condition]" clearable :placeholder="$t(&quot;Choose a reviewer&quot;)">
           <ElOption v-for="reviewer in reviewers" :key="reviewer.userId" :label="reviewer.displayName" :value="reviewer.userId" />
         </ElSelect>
       </ElFormItem>
-      <ElButton native-type="submit" type="primary" :disabled="!assignments.length" :loading="saving">Assign Reviews</ElButton>
+      <ElButton native-type="submit" type="primary" :disabled="!assignments.length" :loading="saving">{{ $t("Assign Reviews") }}</ElButton>
     </ElForm>
     <section v-if="assigned" role="status">
-      <h2>Assigned Reviews</h2>
-      <ul><li v-for="task in assigned" :key="task.reviewId">{{ conditions[task.condition] }} · {{ task.reviewId }} · {{ task.status }}</li></ul>
+      <h2>{{ $t("Assigned Reviews") }}</h2>
+      <ul><li v-for="task in assigned" :key="task.reviewId">{{ $t(conditions[task.condition]) }} · {{ task.reviewId }} · {{ $t(task.status) }}</li></ul>
     </section>
   </ResearchLayout>
 </template>

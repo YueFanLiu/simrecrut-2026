@@ -134,41 +134,41 @@ onBeforeUnmount(() => { loadSequence++; pending = undefined })
 
 <template>
   <CandidateLayout>
-    <h1>Review Your CV Facts</h1>
-    <p>Case {{ route.params.caseId }}</p>
-    <p v-if="loading" role="status">Loading case…</p>
-    <ElAlert v-if="error" :title="error" type="error" :closable="false" />
-    <p v-if="feedback" role="status">{{ feedback }}</p>
-    <ElButton v-if="error" :disabled="busy || loading" @click="load">Reload Case</ElButton>
+    <h1>{{ $t("Review Your CV Facts") }}</h1>
+    <p>{{ $t("Case") }} {{ route.params.caseId }}</p>
+    <p v-if="loading" role="status">{{ $t("Loading case…") }}</p>
+    <ElAlert v-if="error" :title="$t(error)" type="error" :closable="false" />
+    <p v-if="feedback" role="status">{{ $t(feedback) }}</p>
+    <ElButton v-if="error" :disabled="busy || loading" @click="load">{{ $t("Reload Case") }}</ElButton>
     <template v-if="draft">
-      <p>Correct the extracted facts and mark any empty groups you have reviewed.</p>
+      <p>{{ $t("Correct the extracted facts and mark any empty groups you have reviewed.") }}</p>
       <ElAlert v-if="draft.unresolvedRequiredFields.length" type="warning" :closable="false"
-        :title="'Unresolved requirements from the last saved draft: ' + draft.unresolvedRequiredFields.join(', ')" />
+        :title="$t('Unresolved requirements from the last saved draft: ' + draft.unresolvedRequiredFields.join(', '))" />
       <ElTabs v-model="tab">
-        <ElTabPane v-for="group in groups" :key="group" :label="group" :name="group">
+        <ElTabPane v-for="group in groups" :key="group" :label="$t(group)" :name="group">
           <ResumeFactsTable v-model="draft.professional[group.toLowerCase()]" :group="group.toLowerCase()" :locked="busy" />
           <ElCheckbox v-if="!draft.professional[group.toLowerCase()].length" v-model="draft.confirmedAbsent"
-            :value="group.toUpperCase()" :disabled="busy">I confirm there are no facts to report in this group.</ElCheckbox>
+            :value="group.toUpperCase()" :disabled="busy">{{ $t("I confirm there are no facts to report in this group.") }}</ElCheckbox>
         </ElTabPane>
       </ElTabs>
-      <ElButton :disabled="busy" @click="perform('draft')">Save Draft</ElButton>
+      <ElButton :disabled="busy" @click="perform('draft')">{{ $t("Save Draft") }}</ElButton>
 
-      <h2>Optional Research Attributes</h2>
-      <p>Use codes from the study protocol. Leave a field blank or use UNKNOWN if you choose to omit it.</p>
+      <h2>{{ $t("Optional Research Attributes") }}</h2>
+      <p>{{ $t("Use codes from the study protocol. Leave a field blank or use UNKNOWN if you choose to omit it.") }}</p>
       <ElForm label-position="top" :disabled="busy">
-        <ElFormItem v-for="(label, type) in families" :key="type" :label="label">
+        <ElFormItem v-for="(label, type) in families" :key="type" :label="$t(label)">
           <ElInput v-model="attributes[type]" maxlength="128" />
         </ElFormItem>
-        <ElButton @click="perform('research')">Save Optional Attributes</ElButton>
+        <ElButton @click="perform('research')">{{ $t("Save Optional Attributes") }}</ElButton>
       </ElForm>
 
-      <h2>Confirm Facts</h2>
-      <ElCheckbox v-model="reviewed" :disabled="busy">I have reviewed the professional facts.</ElCheckbox>
-      <ElButton type="primary" :disabled="busy || !reviewed" @click="perform('confirm')">Confirm and Continue</ElButton>
+      <h2>{{ $t("Confirm Facts") }}</h2>
+      <ElCheckbox v-model="reviewed" :disabled="busy">{{ $t("I have reviewed the professional facts.") }}</ElCheckbox>
+      <ElButton type="primary" :disabled="busy || !reviewed" @click="perform('confirm')">{{ $t("Confirm and Continue") }}</ElButton>
     </template>
     <template v-else-if="destination && !loading && destination.name !== 'CvReview'">
-      <p>{{ entry.confirmedAt ? 'Professional facts are confirmed and locked.' : 'The draft is not ready to review.' }}</p>
-      <ElButton type="primary" @click="router.replace(destination)">Continue Case</ElButton>
+      <p>{{ $t(entry.confirmedAt ? 'Professional facts are confirmed and locked.' : 'The draft is not ready to review.') }}</p>
+      <ElButton type="primary" @click="router.replace(destination)">{{ $t("Continue Case") }}</ElButton>
     </template>
   </CandidateLayout>
 </template>

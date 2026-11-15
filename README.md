@@ -6,19 +6,28 @@ Neutral AI, Biased AI, Standard Human, and Instructed-Bias Human results through
 authorized views. Matching is an intermediate calculation used by the rules and
 models.
 
-This repository currently contains the initial directory layout, contribution
-rules, configuration examples, and a Java build bootstrap. Product workflows,
-frontend pages, inference endpoints, training programs, and
-the deployment stack are developed incrementally in their designated locations.
+The Vue frontend and Java backend implement identity, structured resume review,
+HR job publication, Candidate cases, objective assessment and human review.
+Research experiments and several administration screens remain demonstration-only.
+The independent inference service, trained model packages and offline ML pipeline
+are still required for the complete research workflow. See the
+[current implementation status](docs/development/project-status.md).
 
-All project-owned content must be in English, including documentation, comments,
-identifiers, interface text, logs, errors, examples, and commit messages. Java
+Source identifiers, comments, documentation and default messages use English.
+Chinese and French interface text belongs in the declared translation catalogues;
+API messages and verification mail follow the requested interface language. Java
 development, compilation, CI, and runtime use **JDK 17**.
 
 The [job workflow API](docs/api/job-workflow.md) implements document-defined HR
 drafts, structured requirements, weights, extraction, publication, version
 history and Candidate published-job reads. It requires Flyway V6 and a configured
-frozen matching rule. Existing browser forms still require contract adaptation.
+frozen matching rule. Connected Vue clients use these API contracts.
+
+Local startup uses `scripts/dev/launch-local.ps1`, with `JAVA_PORT` from the root
+`.env` and dependency-aware readiness checks. Run all backend checks, including
+local Redis and OCR, using `scripts/dev/test-local.ps1`. The
+[container deployment guide](docs/deployment/container-stack.md) describes the
+frontend proxy, backend, Redis and read-only configuration/model mounts.
 
 The backend also provides [Swagger UI and OpenAPI YAML](docs/api/api-documentation.md)
 for the implemented controllers. The generated snapshot can be shared with the

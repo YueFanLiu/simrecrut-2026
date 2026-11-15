@@ -20,21 +20,21 @@ async function signOut() { await auth.logout(); router.replace({ name: 'Login' }
 
 <template>
   <div class="research-layout">
-    <header><div class="header-content"><BrandMark /><span class="workspace-label">Research workspace</span>
+    <header><div class="header-content"><BrandMark /><span class="workspace-label">{{ $t("Research workspace") }}</span>
       <div class="session-controls"><span class="user-name">{{ auth.demoUser?.displayName }}</span>
-        <ElButton @click="router.push({ name: 'DemoDashboard' })">Dashboard</ElButton><ElButton @click="signOut">Sign out</ElButton></div></div></header>
-    <div class="workspace"><aside class="sidebar"><nav aria-label="Research navigation">
+        <ElButton @click="router.push({ name: 'DemoDashboard' })">{{ $t("Dashboard") }}</ElButton><ElButton @click="signOut">{{ $t("Sign out") }}</ElButton></div></div></header>
+    <div class="workspace"><aside class="sidebar"><nav :aria-label="$t(&quot;Research navigation&quot;)">
       <template v-if="demoMode">
-        <RouterLink :to="{ name: 'ResearchExperiments' }" :aria-current="['ResearchExperiments', 'ResearchExperimentDetail'].includes(route.name) ? 'page' : undefined">Experiments</RouterLink>
-        <RouterLink :to="{ name: 'ResearchExperimentCreate' }" :aria-current="route.name === 'ResearchExperimentCreate' ? 'page' : undefined">Create Experiment</RouterLink>
-        <RouterLink :to="{ name: 'ResearchSubjects' }" :aria-current="route.name === 'ResearchSubjects' ? 'page' : undefined">Research Subjects</RouterLink>
-        <RouterLink :to="{ name: 'ResearchModels' }" :aria-current="route.name === 'ResearchModels' ? 'page' : undefined">Models</RouterLink>
-        <RouterLink :to="metricsTarget" :aria-current="route.name === 'ResearchMetrics' ? 'page' : undefined">Metrics</RouterLink>
+        <RouterLink :to="{ name: 'ResearchExperiments' }" :aria-current="['ResearchExperiments', 'ResearchExperimentDetail'].includes(route.name) ? 'page' : undefined">{{ $t("Experiments") }}</RouterLink>
+        <RouterLink :to="{ name: 'ResearchExperimentCreate' }" :aria-current="route.name === 'ResearchExperimentCreate' ? 'page' : undefined">{{ $t("Create Experiment") }}</RouterLink>
+        <RouterLink :to="{ name: 'ResearchSubjects' }" :aria-current="route.name === 'ResearchSubjects' ? 'page' : undefined">{{ $t("Research Subjects") }}</RouterLink>
+        <RouterLink :to="{ name: 'ResearchModels' }" :aria-current="route.name === 'ResearchModels' ? 'page' : undefined">{{ $t("Models") }}</RouterLink>
+        <RouterLink :to="metricsTarget" :aria-current="route.name === 'ResearchMetrics' ? 'page' : undefined">{{ $t("Metrics") }}</RouterLink>
       </template>
-      <RouterLink :to="{ name: 'MyReviewTasks' }" :aria-current="['MyReviewTasks', 'ReviewTaskDetail'].includes(route.name) ? 'page' : undefined">My Review Tasks</RouterLink>
-      <RouterLink v-if="!demoMode" :to="{ name: 'AssignPrimaryReviews' }" :aria-current="route.name === 'AssignPrimaryReviews' ? 'page' : undefined">Assign Primary Reviews</RouterLink>
-    </nav><p v-if="demoMode">Browse authorised demo experiments and their frozen versions.</p></aside><main><slot /></main></div>
-    <footer>SimRecrut - Research workspace{{ demoMode ? ' - Frontend demonstration' : '' }}</footer>
+      <RouterLink :to="{ name: 'MyReviewTasks' }" :aria-current="['MyReviewTasks', 'ReviewTaskDetail'].includes(route.name) ? 'page' : undefined">{{ $t("My Review Tasks") }}</RouterLink>
+      <RouterLink v-if="!demoMode" :to="{ name: 'AssignPrimaryReviews' }" :aria-current="route.name === 'AssignPrimaryReviews' ? 'page' : undefined">{{ $t("Assign Primary Reviews") }}</RouterLink>
+    </nav><p v-if="demoMode">{{ $t("Browse authorised demo experiments and their frozen versions.") }}</p></aside><main><slot /></main></div>
+    <footer>{{ $t("SimRecrut - Research workspace") }}{{ $t(demoMode ? ' - Frontend demonstration' : '') }}</footer>
   </div>
 </template>
 

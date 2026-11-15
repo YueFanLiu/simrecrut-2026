@@ -180,41 +180,41 @@ onBeforeUnmount(() => { loadSequence += 1; pageActive = false; clearInterval(exp
 <template>
   <CandidateLayout>
     <section v-if="!entry" class="state-panel">
-      <h1>Demo Case Not Available</h1>
-      <p>This case does not exist, has expired or is not available in your demo session.</p>
-      <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">Back to Jobs</ElButton>
+      <h1>{{ $t("Demo Case Not Available") }}</h1>
+      <p>{{ $t("This case does not exist, has expired or is not available in your demo session.") }}</p>
+      <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">{{ $t("Back to Jobs") }}</ElButton>
     </section>
     <section v-else-if="!editable && !confirmed" class="state-panel">
-      <h1>Fact Review Not Available Yet</h1>
-      <p>Complete the upload and extraction demo before reviewing professional facts.</p>
-      <ElButton type="primary" @click="router.replace({ name: 'CvUpload', params: { caseId: entry.caseId } })">Back to Upload</ElButton>
+      <h1>{{ $t("Fact Review Not Available Yet") }}</h1>
+      <p>{{ $t("Complete the upload and extraction demo before reviewing professional facts.") }}</p>
+      <ElButton type="primary" @click="router.replace({ name: 'CvUpload', params: { caseId: entry.caseId } })">{{ $t("Back to Upload") }}</ElButton>
     </section>
     <section v-else aria-labelledby="review-title">
-      <nav class="breadcrumb" aria-label="Breadcrumb">
-        <RouterLink :to="{ name: 'PublishedJobs' }">Jobs</RouterLink><span aria-hidden="true">/</span>
-        <span>{{ entry.jobTitle }}</span><span aria-hidden="true">/</span><span aria-current="page">Review Facts</span>
+      <nav class="breadcrumb" :aria-label="$t(&quot;Breadcrumb&quot;)">
+        <RouterLink :to="{ name: 'PublishedJobs' }">{{ $t("Jobs") }}</RouterLink><span aria-hidden="true">/</span>
+        <span>{{ entry.jobTitle }}</span><span aria-hidden="true">/</span><span aria-current="page">{{ $t("Review Facts") }}</span>
       </nav>
-      <h1 id="review-title">Review Your CV Facts</h1>
-      <p class="subtitle">Check professional facts against short evidence excerpts and correct missing or uncertain values.</p>
-      <p class="case-context">{{ entry.jobTitle }} · Version {{ entry.version }} · {{ entry.caseId }}</p>
+      <h1 id="review-title">{{ $t("Review Your CV Facts") }}</h1>
+      <p class="subtitle">{{ $t("Check professional facts against short evidence excerpts and correct missing or uncertain values.") }}</p>
+      <p class="case-context">{{ entry.jobTitle }} {{ $t("· Version") }} {{ entry.version }} · {{ entry.caseId }}</p>
       <ElAlert type="info" :closable="false"
-        title="Frontend demo: these fixed sample facts and excerpts are unrelated to your PDF. Changes stay in memory and disappear on refresh or sign out. No assessment is run on this page." />
+        :title="$t(&quot;Frontend demo: these fixed sample facts and excerpts are unrelated to your PDF. Changes stay in memory and disappear on refresh or sign out. No assessment is run on this page.&quot;)" />
       <CaseProgressStepper :current-step="1" :review-confirmed="confirmed" />
       <div v-if="confirmed" class="state-panel confirmed-panel" role="status">
-        <h2>Facts Confirmed</h2>
-        <p>Your professional facts are saved and locked in this demo session. Temporary file metadata and the editable draft have been cleared.</p>
-        <p>Continue to the simulation progress page to run or check the automated demo stages.</p>
-        <ElButton type="primary" @click="router.push({ name: 'SimulationProgress', params: { caseId: entry.caseId } })">Continue to Simulation</ElButton>
-        <ElButton @click="router.push({ name: 'PublishedJobs' })">Back to Jobs</ElButton>
+        <h2>{{ $t("Facts Confirmed") }}</h2>
+        <p>{{ $t("Your professional facts are saved and locked in this demo session. Temporary file metadata and the editable draft have been cleared.") }}</p>
+        <p>{{ $t("Continue to the simulation progress page to run or check the automated demo stages.") }}</p>
+        <ElButton type="primary" @click="router.push({ name: 'SimulationProgress', params: { caseId: entry.caseId } })">{{ $t("Continue to Simulation") }}</ElButton>
+        <ElButton @click="router.push({ name: 'PublishedJobs' })">{{ $t("Back to Jobs") }}</ElButton>
       </div>
-      <div v-else-if="loading" class="state-panel" role="status"><p>Loading review draft...</p><ElSkeleton :rows="8" animated /></div>
-      <div v-else-if="loadError" class="state-panel" role="alert"><h2>Review Draft Could Not Be Loaded</h2>
-        <p>{{ loadError }}</p><ElButton type="primary" @click="loadDraft">Try Again</ElButton></div>
+      <div v-else-if="loading" class="state-panel" role="status"><p>{{ $t("Loading review draft...") }}</p><ElSkeleton :rows="8" animated /></div>
+      <div v-else-if="loadError" class="state-panel" role="alert"><h2>{{ $t("Review Draft Could Not Be Loaded") }}</h2>
+        <p>{{ $t(loadError) }}</p><ElButton type="primary" @click="loadDraft">{{ $t("Try Again") }}</ElButton></div>
       <template v-else-if="draft">
         <ElAlert v-if="noFacts" class="review-notice" type="warning" :closable="false"
-          title="No professional facts were extracted in this demo scenario. Add facts manually or explicitly confirm that a group has no facts to report." />
+          :title="$t(&quot;No professional facts were extracted in this demo scenario. Add facts manually or explicitly confirm that a group has no facts to report.&quot;)" />
         <ElAlert v-if="!noFacts && unresolvedFacts" class="review-notice" type="warning" :closable="false"
-          title="Some sample facts are missing or conflicting. Resolve required facts before confirming." />
+          :title="$t(&quot;Some sample facts are missing or conflicting. Resolve required facts before confirming.&quot;)" />
         <div class="review-grid">
           <div class="fact-column">
             <FactGroupEditor v-for="group in factGroups" :key="group.key" :definition="group"
@@ -225,34 +225,34 @@ onBeforeUnmount(() => { loadSequence += 1; pageActive = false; clearInterval(exp
           <aside class="evidence-column"><EvidencePanel :selection="evidence" @back="returnToFact" /></aside>
         </div>
         <section v-if="entry.researchAllowed" class="research-panel" aria-labelledby="research-title">
-          <h2 id="research-title">Optional Research Details</h2>
-          <p>Enabled by a demo permission flag. These details are saved separately from professional facts. Leave UNKNOWN when you do not wish to provide a value; no value is inferred.</p>
-          <p>These local text values demonstrate the form only. The future research schema will define permitted categories.</p>
+          <h2 id="research-title">{{ $t("Optional Research Details") }}</h2>
+          <p>{{ $t("Enabled by a demo permission flag. These details are saved separately from professional facts. Leave UNKNOWN when you do not wish to provide a value; no value is inferred.") }}</p>
+          <p>{{ $t("These local text values demonstrate the form only. The future research schema will define permitted categories.") }}</p>
           <div class="research-grid"><div v-for="field in researchFields" :key="field.key">
-            <label :for="`research-${field.key}`">{{ field.label }}</label>
+            <label :for="`research-${field.key}`">{{ $t(field.label) }}</label>
             <ElInput :id="`research-${field.key}`" v-model="research[field.key]" :disabled="Boolean(busy)" maxlength="80"
               @input="researchDirty = true; researchConfirmed = false; feedback = ''" />
           </div></div>
-          <ElCheckbox v-model="researchConfirmed" :disabled="Boolean(busy)">I confirm the optional details I chose to provide.</ElCheckbox>
-          <div class="research-actions"><ElButton :disabled="Boolean(busy)" :loading="busy === 'research'" @click="saveOptionalDetails">Save Optional Details</ElButton>
+          <ElCheckbox v-model="researchConfirmed" :disabled="Boolean(busy)">{{ $t("I confirm the optional details I chose to provide.") }}</ElCheckbox>
+          <div class="research-actions"><ElButton :disabled="Boolean(busy)" :loading="busy === 'research'" @click="saveOptionalDetails">{{ $t("Save Optional Details") }}</ElButton>
             <ElButton v-if="researchDirty" text :disabled="Boolean(busy)"
-              @click="research = { ...entry.researchAttributes }; researchDirty = false; researchConfirmed = false">Restore Saved Optional Details</ElButton></div>
+              @click="research = { ...entry.researchAttributes }; researchDirty = false; researchConfirmed = false">{{ $t("Restore Saved Optional Details") }}</ElButton></div>
         </section>
         <div class="confirmation-panel">
-          <p>{{ dirty ? 'You have unsaved professional changes.' : 'Professional draft is saved in this demo session.' }}</p>
-          <p>Save Changes can keep an incomplete draft. Confirm Facts saves the valid professional draft and locks editing. Continue to Simulation after confirmation to run the demo.</p>
-          <ElCheckbox v-model="reviewed" :disabled="Boolean(busy)">I have reviewed the professional facts and confirm that they are correct.</ElCheckbox>
-          <ElAlert v-if="actionError" class="action-feedback" type="error" :closable="false" :title="actionError" />
-          <ElAlert v-if="feedback" class="action-feedback" type="success" :closable="false" :title="feedback" />
-          <div class="page-actions"><ElButton :disabled="Boolean(busy)" @click="confirmDelete = true">Cancel and Delete</ElButton>
-            <ElButton :disabled="Boolean(busy)" :loading="busy === 'save'" @click="saveChanges">Save Changes</ElButton>
-            <ElButton type="primary" :disabled="Boolean(busy)" :loading="busy === 'confirm'" @click="confirmFacts">Confirm Facts</ElButton></div>
+          <p>{{ $t(dirty ? 'You have unsaved professional changes.' : 'Professional draft is saved in this demo session.') }}</p>
+          <p>{{ $t("Save Changes can keep an incomplete draft. Confirm Facts saves the valid professional draft and locks editing. Continue to Simulation after confirmation to run the demo.") }}</p>
+          <ElCheckbox v-model="reviewed" :disabled="Boolean(busy)">{{ $t("I have reviewed the professional facts and confirm that they are correct.") }}</ElCheckbox>
+          <ElAlert v-if="actionError" class="action-feedback" type="error" :closable="false" :title="$t(actionError)" />
+          <ElAlert v-if="feedback" class="action-feedback" type="success" :closable="false" :title="$t(feedback)" />
+          <div class="page-actions"><ElButton :disabled="Boolean(busy)" @click="confirmDelete = true">{{ $t("Cancel and Delete") }}</ElButton>
+            <ElButton :disabled="Boolean(busy)" :loading="busy === 'save'" @click="saveChanges">{{ $t("Save Changes") }}</ElButton>
+            <ElButton type="primary" :disabled="Boolean(busy)" :loading="busy === 'confirm'" @click="confirmFacts">{{ $t("Confirm Facts") }}</ElButton></div>
         </div>
       </template>
     </section>
-    <ElDialog v-model="confirmDelete" title="Cancel and delete this demo case?" width="min(460px, calc(100% - 32px))" :close-on-click-modal="false">
-      <p>The professional draft, optional details and file metadata will be removed from this session. You will return to My simulations.</p>
-      <template #footer><ElButton @click="confirmDelete = false">Keep Case</ElButton><ElButton type="danger" @click="deleteCase">Delete Demo Case</ElButton></template>
+    <ElDialog v-model="confirmDelete" :title="$t(&quot;Cancel and delete this demo case?&quot;)" width="min(460px, calc(100% - 32px))" :close-on-click-modal="false">
+      <p>{{ $t("The professional draft, optional details and file metadata will be removed from this session. You will return to My simulations.") }}</p>
+      <template #footer><ElButton @click="confirmDelete = false">{{ $t("Keep Case") }}</ElButton><ElButton type="danger" @click="deleteCase">{{ $t("Delete Demo Case") }}</ElButton></template>
     </ElDialog>
   </CandidateLayout>
 </template>

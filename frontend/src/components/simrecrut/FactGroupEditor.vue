@@ -18,43 +18,41 @@ function editField(item, field, value) {
 <template>
   <section class="fact-group" :aria-labelledby="`group-${definition.key}`">
     <div class="group-heading">
-      <h2 :id="`group-${definition.key}`">{{ definition.label }}</h2>
-      <span>{{ required ? 'Required by demo criteria' : 'Optional group' }}</span>
+      <h2 :id="`group-${definition.key}`">{{ $t(definition.label) }}</h2>
+      <span>{{ $t(required ? 'Required by demo criteria' : 'Optional group') }}</span>
     </div>
-    <p v-if="errors[definition.key]" class="field-error" role="alert">{{ errors[definition.key] }}</p>
-    <p v-if="!group.items.length" class="empty-message">No {{ definition.label.toLowerCase() }} added.</p>
+    <p v-if="errors[definition.key]" class="field-error" role="alert">{{ $t(errors[definition.key]) }}</p>
+    <p v-if="!group.items.length" class="empty-message">{{ $t('No {group} added.', { group: $t(definition.label) }) }}</p>
     <article v-for="(item, index) in group.items" :key="item.id" class="fact-item">
-      <div class="item-heading"><h3>{{ definition.singular }} {{ index + 1 }}</h3>
-        <ElButton text type="danger" :disabled="disabled" :aria-label="`Remove ${definition.singular} ${index + 1}`"
-          @click="emit('remove', item.id)">Remove</ElButton></div>
+      <div class="item-heading"><h3>{{ $t(definition.singular) }} {{ index + 1 }}</h3>
+        <ElButton text type="danger" :disabled="disabled" :aria-label="$t('Remove {item} {index}', { item: $t(definition.singular), index: index + 1 })"
+          @click="emit('remove', item.id)">{{ $t("Remove") }}</ElButton></div>
       <div v-for="field in definition.fields" :key="field.key" class="fact-field">
-        <label :for="`fact-${item.id}-${field.key}`">{{ field.label }}</label>
+        <label :for="`fact-${item.id}-${field.key}`">{{ $t(field.label) }}</label>
         <ElSelect v-if="field.options" :id="`fact-${item.id}-${field.key}`" :model-value="item[field.key].value"
-          :aria-label="`${definition.singular} ${index + 1}: ${field.label}`" :disabled="disabled" placeholder="Choose a value"
+          :aria-label="$t(definition.singular) + ' ' + (index + 1) + ': ' + $t(field.label)" :disabled="disabled" :placeholder="$t(&quot;Choose a value&quot;)"
           :aria-invalid="Boolean(errors[errorKey(item, field)])" :aria-describedby="errors[errorKey(item, field)] ? `error-${item.id}-${field.key}` : undefined"
           @update:model-value="editField(item, field, $event)">
-          <ElOption v-for="option in field.options" :key="option" :value="option" :label="option" />
+          <ElOption v-for="option in field.options" :key="option" :value="option" :label="$t(option)" />
         </ElSelect>
         <ElInput v-else :id="`fact-${item.id}-${field.key}`" :model-value="item[field.key].value"
-          :aria-label="`${definition.singular} ${index + 1}: ${field.label}`" :disabled="disabled"
+          :aria-label="$t(definition.singular) + ' ' + (index + 1) + ': ' + $t(field.label)" :disabled="disabled"
           :type="field.type === 'number' ? 'number' : field.key === 'summary' ? 'textarea' : 'text'"
           :min="field.type === 'number' ? 0 : undefined" :max="field.type === 'number' ? field.max : undefined"
           :maxlength="field.type === 'number' ? undefined : field.max" :rows="2"
           :aria-invalid="Boolean(errors[errorKey(item, field)])" :aria-describedby="errors[errorKey(item, field)] ? `error-${item.id}-${field.key}` : undefined"
           @update:model-value="editField(item, field, $event)" />
-        <p v-if="errors[errorKey(item, field)]" :id="`error-${item.id}-${field.key}`" class="field-error" role="alert">{{ errors[errorKey(item, field)] }}</p>
-        <div class="field-actions"><span>{{ item[field.key].status.replaceAll('_', ' ') }}</span>
-          <ElButton text :aria-label="`View evidence for ${definition.singular} ${index + 1}: ${field.label}`"
-            @click="emit('evidence', { label: `${definition.singular} ${index + 1}: ${field.label}`, field: item[field.key], itemId: item.id, inputId: `fact-${item.id}-${field.key}` })">View Evidence</ElButton>
+        <p v-if="errors[errorKey(item, field)]" :id="`error-${item.id}-${field.key}`" class="field-error" role="alert">{{ $t(errors[errorKey(item, field)]) }}</p>
+        <div class="field-actions"><span>{{ $t(item[field.key].status.replaceAll('_', ' ')) }}</span>
+          <ElButton text :aria-label="$t('View evidence for {item} {index}: {field}', { item: $t(definition.singular), index: index + 1, field: $t(field.label) })"
+            @click="emit('evidence', { label: `${definition.singular} ${index + 1}: ${field.label}`, field: item[field.key], itemId: item.id, inputId: `fact-${item.id}-${field.key}` })">{{ $t("View Evidence") }}</ElButton>
           <ElButton v-if="['UNKNOWN', 'CONFLICT'].includes(item[field.key].status) && String(item[field.key].value).trim()"
-            text :disabled="disabled" @click="editField(item, field, item[field.key].value)">Use This Value</ElButton>
+            text :disabled="disabled" @click="editField(item, field, item[field.key].value)">{{ $t("Use This Value") }}</ElButton>
         </div>
       </div>
     </article>
-    <ElCheckbox v-if="!group.items.length" v-model="group.confirmedAbsent" :disabled="disabled" @change="emit('change')">
-      I confirm I have no {{ definition.label.toLowerCase() }} to report.
-    </ElCheckbox>
-    <ElButton class="add-button" :disabled="disabled" @click="emit('add')">Add {{ definition.singular }}</ElButton>
+    <ElCheckbox v-if="!group.items.length" v-model="group.confirmedAbsent" :disabled="disabled" @change="emit('change')"> {{ $t('I confirm I have no {group} to report.', { group: $t(definition.label) }) }} </ElCheckbox>
+    <ElButton class="add-button" :disabled="disabled" @click="emit('add')">{{ $t("Add") }} {{ $t(definition.singular) }}</ElButton>
   </section>
 </template>
 

@@ -13,19 +13,19 @@ async function signOut() { await auth.logout(); router.replace({ name: 'Login' }
 
 <template>
   <div class="admin-layout">
-    <header><div class="header-content"><BrandMark /><span class="workspace-label">Administration</span>
+    <header><div class="header-content"><BrandMark /><span class="workspace-label">{{ $t("Administration") }}</span>
       <div class="session-controls"><span class="user-name">{{ auth.demoUser?.displayName }}</span>
-        <ElButton @click="router.push({ name: 'DemoDashboard' })">Dashboard</ElButton><ElButton @click="signOut">Sign out</ElButton></div></div></header>
-    <div class="workspace"><aside class="sidebar"><nav aria-label="Administration navigation">
-      <RouterLink :to="{ name: 'AdminUsers' }" :aria-current="route.name === 'AdminUsers' ? 'page' : undefined">User Management</RouterLink>
-      <RouterLink :to="{ name: 'AdminRoles' }" :aria-current="route.name === 'AdminRoles' ? 'page' : undefined">Roles &amp; Permissions</RouterLink>
-      <RouterLink :to="{ name: 'AdminModels' }" :aria-current="route.name === 'AdminModels' ? 'page' : undefined">Model Versions</RouterLink>
-      <RouterLink :to="{ name: 'AdminProtocols' }" :aria-current="route.name === 'AdminProtocols' ? 'page' : undefined">Frozen Protocols</RouterLink>
-      <RouterLink :to="{ name: 'AdminHealth' }" :aria-current="route.name === 'AdminHealth' ? 'page' : undefined">Service Health</RouterLink>
-      <RouterLink :to="{ name: 'AdminFailures' }" :aria-current="route.name === 'AdminFailures' ? 'page' : undefined">Failed Jobs &amp; Errors</RouterLink>
-      <RouterLink :to="{ name: 'AdminAudit' }" :aria-current="route.name === 'AdminAudit' ? 'page' : undefined">Audit Logs</RouterLink>
-</nav><p v-if="demoMode">Administration uses synthetic frontend data.</p></aside><main><slot /></main></div>
-    <footer>SimRecrut · Administration {{ demoMode ? '· Frontend demonstration' : '' }}</footer>
+        <ElButton @click="router.push({ name: 'DemoDashboard' })">{{ $t("Dashboard") }}</ElButton><ElButton @click="signOut">{{ $t("Sign out") }}</ElButton></div></div></header>
+    <div class="workspace"><aside class="sidebar"><nav :aria-label="$t(&quot;Administration navigation&quot;)">
+      <RouterLink :to="{ name: 'AdminUsers' }" :aria-current="route.name === 'AdminUsers' ? 'page' : undefined">{{ $t("User Management") }}</RouterLink>
+      <RouterLink :to="{ name: 'AdminRoles' }" :aria-current="route.name === 'AdminRoles' ? 'page' : undefined">{{ $t("Roles & Permissions") }}</RouterLink>
+      <RouterLink :to="{ name: 'AdminModels' }" :aria-current="route.name === 'AdminModels' ? 'page' : undefined">{{ $t("Model Versions") }}</RouterLink>
+      <RouterLink :to="{ name: 'AdminProtocols' }" :aria-current="route.name === 'AdminProtocols' ? 'page' : undefined">{{ $t("Frozen Protocols") }}</RouterLink>
+      <RouterLink :to="{ name: 'AdminHealth' }" :aria-current="route.name === 'AdminHealth' ? 'page' : undefined">{{ $t("Service Health") }}</RouterLink>
+      <RouterLink :to="{ name: 'AdminFailures' }" :aria-current="route.name === 'AdminFailures' ? 'page' : undefined">{{ $t("Failed Jobs & Errors") }}</RouterLink>
+      <RouterLink :to="{ name: 'AdminAudit' }" :aria-current="route.name === 'AdminAudit' ? 'page' : undefined">{{ $t("Audit Logs") }}</RouterLink>
+</nav><p v-if="demoMode">{{ $t("Administration uses synthetic frontend data.") }}</p></aside><main><slot /></main></div>
+    <footer>{{ $t("SimRecrut · Administration") }} {{ $t(demoMode ? '· Frontend demonstration' : '') }}</footer>
   </div>
 </template>
 

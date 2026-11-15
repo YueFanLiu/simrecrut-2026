@@ -9,9 +9,9 @@ const route = useRoute()
 <template>
   <AdminLayout>
     <section aria-labelledby="admin-unavailable-title">
-      <h1 id="admin-unavailable-title">{{ route.meta.title }}</h1>
+      <h1 id="admin-unavailable-title">{{ $t(route.meta.title) }}</h1>
       <ElAlert
-        title="This page is currently available in demo mode. Its backend API is not implemented."
+        :title="$t(&quot;This page is currently available in demo mode. Its backend API is not implemented.&quot;)"
         type="info"
         :closable="false"
       />

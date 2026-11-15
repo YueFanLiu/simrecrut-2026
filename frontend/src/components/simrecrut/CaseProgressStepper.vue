@@ -4,11 +4,11 @@ const steps = ['Upload CV', 'Review Facts', 'Run Simulation', 'View Results']
 </script>
 
 <template>
-  <ol class="case-steps" aria-label="Simulation steps">
+  <ol class="case-steps" :aria-label="$t(&quot;Simulation steps&quot;)">
     <li v-for="(step, index) in steps" :key="step" :class="{ current: index === currentStep, completed: index < currentStep || (index === 0 && readyForReview) || (index === 1 && reviewConfirmed) || (index === 2 && simulationComplete) }"
       :aria-current="index === currentStep ? 'step' : undefined">
-      <span class="step-number" aria-hidden="true">{{ index < currentStep || (index === 0 && readyForReview) || (index === 1 && reviewConfirmed) || (index === 2 && simulationComplete) ? '✓' : index + 1 }}</span>
-      <span>{{ step }}</span>
+      <span class="step-number" aria-hidden="true">{{ $t(index < currentStep || (index === 0 && readyForReview) || (index === 1 && reviewConfirmed) || (index === 2 && simulationComplete) ? '✓' : index + 1) }}</span>
+      <span>{{ $t(step) }}</span>
     </li>
   </ol>
 </template>

@@ -1,5 +1,7 @@
 package fr.isep.simrecrut.auth;
 
+import fr.isep.simrecrut.i18n.ApiMessages;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -19,10 +21,10 @@ public class PasswordResetMail {
     public boolean available() { return !username.isBlank() && !password.isBlank() && !from.isBlank(); }
     public void send(String email, String code) {
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(from); message.setTo(email); message.setSubject("SimRecrut password reset verification");
-        message.setText("Your SimRecrut verification code is: " + code
-                + "\nThis code expires in 10 minutes and can be used once."
-                + "\nIf you did not request a password reset, ignore this message.");
+        message.setFrom(from); message.setTo(email);
+        var locale = ApiMessages.currentLocale();
+        message.setSubject(ApiMessages.text("mail.passwordReset.subject", locale));
+        message.setText(ApiMessages.format("mail.passwordReset.body", locale, Map.of("code", code)));
         sender.send(message);
     }
 }

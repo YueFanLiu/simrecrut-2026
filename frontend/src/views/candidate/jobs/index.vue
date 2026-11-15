@@ -49,80 +49,78 @@ onMounted(loadJobs)
   <CandidateLayout>
     <section aria-labelledby="jobs-title" :aria-busy="loading">
       <div class="page-heading">
-        <h1 id="jobs-title">Published Jobs</h1>
-        <p>Browse available job postings for your next recruitment simulation.</p>
+        <h1 id="jobs-title">{{ $t("Published Jobs") }}</h1>
+        <p>{{ $t("Browse available job postings for your next recruitment simulation.") }}</p>
       </div>
       <ElAlert v-if="demoMode" class="demo-notice" type="info" :closable="false"
-        title="Frontend demo: search, filters and sorting use local mock data. Open My simulations to continue or delete your retained demo cases." />
+        :title="$t(&quot;Frontend demo: search, filters and sorting use local mock data. Open My simulations to continue or delete your retained demo cases.&quot;)" />
 
-      <form class="job-filters" aria-label="Filter published jobs" @submit.prevent>
+      <form class="job-filters" :aria-label="$t(&quot;Filter published jobs&quot;)" @submit.prevent>
         <div class="search-field">
-          <label for="job-search">Search jobs</label>
+          <label for="job-search">{{ $t("Search jobs") }}</label>
           <ElInput id="job-search" v-model="filters.keyword" clearable :disabled="loading || Boolean(loadError)"
-            placeholder="Search by title, company or keyword" autocomplete="off" />
+            :placeholder="$t(&quot;Search by title, company or keyword&quot;)" autocomplete="off" />
         </div>
         <div v-if="demoMode">
-          <label id="category-label">Category</label>
-          <ElSelect v-model="filters.category" aria-label="Category" :empty-values="[null, undefined]" :disabled="loading || Boolean(loadError)">
-            <ElOption label="All Categories" value="" />
-            <ElOption v-for="category in categories" :key="category" :label="category" :value="category" />
+          <label id="category-label">{{ $t("Category") }}</label>
+          <ElSelect v-model="filters.category" :aria-label="$t(&quot;Category&quot;)" :empty-values="[null, undefined]" :disabled="loading || Boolean(loadError)">
+            <ElOption :label="$t(&quot;All Categories&quot;)" value="" />
+            <ElOption v-for="category in categories" :key="category" :label="$t(category)" :value="category" />
           </ElSelect>
         </div>
         <div v-if="demoMode">
-          <label id="location-label">Location</label>
-          <ElSelect v-model="filters.location" aria-label="Location" :empty-values="[null, undefined]" :disabled="loading || Boolean(loadError)">
-            <ElOption label="All Locations" value="" />
-            <ElOption v-for="location in locations" :key="location" :label="location" :value="location" />
+          <label id="location-label">{{ $t("Location") }}</label>
+          <ElSelect v-model="filters.location" :aria-label="$t(&quot;Location&quot;)" :empty-values="[null, undefined]" :disabled="loading || Boolean(loadError)">
+            <ElOption :label="$t(&quot;All Locations&quot;)" value="" />
+            <ElOption v-for="location in locations" :key="location" :label="$t(location)" :value="location" />
           </ElSelect>
         </div>
         <div v-if="demoMode">
-          <label id="type-label">Type</label>
-          <ElSelect v-model="filters.employmentType" aria-label="Type" :empty-values="[null, undefined]" :disabled="loading || Boolean(loadError)">
-            <ElOption label="All Types" value="" />
-            <ElOption v-for="type in employmentTypes" :key="type" :label="type" :value="type" />
+          <label id="type-label">{{ $t("Type") }}</label>
+          <ElSelect v-model="filters.employmentType" :aria-label="$t(&quot;Type&quot;)" :empty-values="[null, undefined]" :disabled="loading || Boolean(loadError)">
+            <ElOption :label="$t(&quot;All Types&quot;)" value="" />
+            <ElOption v-for="type in employmentTypes" :key="type" :label="$t(type)" :value="type" />
           </ElSelect>
         </div>
         <div>
-          <label id="sort-label">Sort by</label>
-          <ElSelect v-model="filters.sort" aria-label="Sort by" :disabled="loading || Boolean(loadError)">
-            <ElOption label="Latest first" value="latest" />
-            <ElOption label="Oldest first" value="oldest" />
-            <ElOption label="Title A-Z" value="title" />
+          <label id="sort-label">{{ $t("Sort by") }}</label>
+          <ElSelect v-model="filters.sort" :aria-label="$t(&quot;Sort by&quot;)" :disabled="loading || Boolean(loadError)">
+            <ElOption :label="$t(&quot;Latest first&quot;)" value="latest" />
+            <ElOption :label="$t(&quot;Oldest first&quot;)" value="oldest" />
+            <ElOption :label="$t(&quot;Title A-Z&quot;)" value="title" />
           </ElSelect>
         </div>
       </form>
 
       <div v-if="loading" class="loading-state" role="status">
-        <p>Loading published jobs...</p>
+        <p>{{ $t("Loading published jobs...") }}</p>
         <ElSkeleton :rows="5" animated />
       </div>
       <div v-else-if="loadError" class="state-panel" role="alert">
-        <h2>Jobs could not be loaded</h2>
-        <p>{{ loadError }}</p>
-        <ElButton type="primary" @click="loadJobs">Try again</ElButton>
+        <h2>{{ $t("Jobs could not be loaded") }}</h2>
+        <p>{{ $t(loadError) }}</p>
+        <ElButton type="primary" @click="loadJobs">{{ $t("Try again") }}</ElButton>
       </div>
       <div v-else-if="!jobs.length" class="state-panel">
-        <ElEmpty description="No published jobs yet" />
-        <p>There are currently no job postings available. Please check back later.</p>
+        <ElEmpty :description="$t(&quot;No published jobs yet&quot;)" />
+        <p>{{ $t("There are currently no job postings available. Please check back later.") }}</p>
       </div>
       <div v-else-if="!filteredJobs.length" class="state-panel">
-        <ElEmpty description="No matching jobs found" />
-        <p>Try different keywords or adjust the filters.</p>
-        <ElButton type="primary" @click="clearFilters">Clear Filters</ElButton>
+        <ElEmpty :description="$t(&quot;No matching jobs found&quot;)" />
+        <p>{{ $t("Try different keywords or adjust the filters.") }}</p>
+        <ElButton type="primary" @click="clearFilters">{{ $t("Clear Filters") }}</ElButton>
       </div>
       <template v-else>
         <div class="results-bar">
-          <p role="status" aria-live="polite">
-            Showing {{ (page - 1) * pageSize + 1 }}-{{ Math.min(page * pageSize, filteredJobs.length) }} of {{ filteredJobs.length }} jobs
-          </p>
-          <ElButton v-if="hasFilters" text @click="clearFilters">Clear Filters</ElButton>
+          <p role="status" aria-live="polite"> {{ $t("Showing") }} {{ (page - 1) * pageSize + 1 }}-{{ Math.min(page * pageSize, filteredJobs.length) }} {{ $t("of") }} {{ filteredJobs.length }} {{ $t("jobs") }} </p>
+          <ElButton v-if="hasFilters" text @click="clearFilters">{{ $t("Clear Filters") }}</ElButton>
         </div>
         <div class="job-grid">
           <JobCard v-for="job in visibleJobs" :key="job.jobId" :job="job" />
         </div>
         <ElPagination v-if="filteredJobs.length > pageSize" v-model:current-page="page"
           class="job-pagination" :page-size="pageSize" :total="filteredJobs.length"
-          layout="prev, pager, next" aria-label="Published jobs pages" />
+          layout="prev, pager, next" :aria-label="$t(&quot;Published jobs pages&quot;)" />
       </template>
     </section>
   </CandidateLayout>

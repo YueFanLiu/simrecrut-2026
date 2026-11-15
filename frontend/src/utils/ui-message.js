@@ -1,9 +1,11 @@
-// Keep service diagnostics out of interface copy when they contain Chinese text.
+import { language, t } from '../i18n/index.js'
+
+// Translate system messages while retaining unknown diagnostics only in the selected language.
 // User-authored data (names, CV facts and evidence) must remain unchanged.
 export function uiMessage(value, fallback = 'The request could not be completed. Please try again.') {
-  return typeof value === 'string' && value.trim() && !/\p{Script=Han}/u.test(value)
-    ? value.trim()
-    : fallback
+  if (typeof value !== 'string' || !value.trim()) return t(fallback)
+  const translated = t(value.trim())
+  return language.value === 'zh' || !/\p{Script=Han}/u.test(translated) ? translated : t(fallback)
 }
 
 export function requestErrorMessage(error) {
@@ -17,5 +19,9 @@ export function requestErrorMessage(error) {
         : error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT'
           ? 'The request timed out. Please try again.'
           : 'The service is unavailable. Please try again.'
-  return uiMessage(error.response?.data?.message || error.response?.data?.msg || error.message, fallback)
+  const serverMessage = error.response?.data?.message || error.response?.data?.msg
+  const transportFailure = error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT'
+    || Boolean(error.response)
+    || /^(Network Error|Failed to fetch|Load failed|fetch failed)$/i.test(error.message || '')
+  return uiMessage(serverMessage || (transportFailure ? undefined : error.message), fallback)
 }

@@ -18,23 +18,23 @@ async function logout() {
   <main class="demo-dashboard">
     <BrandMark />
     <section>
-      <el-tag type="info">{{ demoMode ? 'Frontend demo only' : 'Signed in' }}</el-tag>
-      <h1>Welcome, {{ auth.demoUser?.displayName }}</h1>
-      <p v-if="!demoMode">You are signed in to SimRecrut. Choose a workspace to continue.</p>
-      <template v-if="demoMode"><p>The simulated login was successful.</p>
-      <p>This temporary dashboard only verifies navigation. The full dashboard is not implemented.</p>
-      <p>Built-in demo sessions and confirmed case checkpoints survive reloads in this tab. Sign out clears private case state. No real authentication is performed.</p></template>
-      <el-button type="primary" @click="logout">Sign out</el-button>
-      <el-button v-if="auth.hasDemoRole('Admin')" @click="router.push({ name: 'AdminUsers' })">Manage users</el-button>
-      <el-button v-if="!demoMode && auth.hasDemoRole('Candidate')" type="primary" @click="router.push({ name: 'ConnectedResumes' })">My CVs</el-button>
-      <el-button v-if="auth.hasDemoRole('Candidate')" @click="router.push({ name: 'PublishedJobs' })">Browse published jobs</el-button>
-      <el-button v-if="auth.hasDemoRole('HR')" @click="router.push({ name: 'HrJobs' })">Manage HR jobs</el-button>
-      <el-button v-if="!demoMode && auth.hasDemoRole('HR')" @click="router.push({ name: 'HrCases' })">Case Results</el-button>
-      <el-button v-if="!demoMode && auth.hasDemoRole('Researcher')" @click="router.push({ name: 'AssignPrimaryReviews' })">Assign Primary Reviews</el-button>
-      <el-button v-if="demoMode && auth.hasDemoRole('Researcher')" @click="router.push({ name: 'ResearchExperiments' })">Browse research experiments</el-button>
-      <el-button v-if="auth.hasDemoRole('HR') || auth.hasDemoRole('Researcher')" @click="router.push({ name: 'MyReviewTasks' })">My Review Tasks</el-button>
-      <el-button @click="router.push({ name: 'Forbidden' })">Preview access denied</el-button>
-      <el-button @click="router.push({ name: 'NotFound' })">Preview page not found</el-button>
+      <el-tag type="info">{{ $t(demoMode ? 'Frontend demo only' : 'Signed in') }}</el-tag>
+      <h1>{{ $t('Welcome, {name}', { name: auth.demoUser?.displayName || '' }) }}</h1>
+      <p v-if="!demoMode">{{ $t("You are signed in to SimRecrut. Choose a workspace to continue.") }}</p>
+      <template v-if="demoMode"><p>{{ $t("The simulated login was successful.") }}</p>
+      <p>{{ $t("This temporary dashboard only verifies navigation. The full dashboard is not implemented.") }}</p>
+      <p>{{ $t("Built-in demo sessions and confirmed case checkpoints survive reloads in this tab. Sign out clears private case state. No real authentication is performed.") }}</p></template>
+      <el-button type="primary" @click="logout">{{ $t("Sign out") }}</el-button>
+      <el-button v-if="auth.hasDemoRole('Admin')" @click="router.push({ name: 'AdminUsers' })">{{ $t("Manage users") }}</el-button>
+      <el-button v-if="!demoMode && auth.hasDemoRole('Candidate')" type="primary" @click="router.push({ name: 'ConnectedResumes' })">{{ $t("My CVs") }}</el-button>
+      <el-button v-if="auth.hasDemoRole('Candidate')" @click="router.push({ name: 'PublishedJobs' })">{{ $t("Browse published jobs") }}</el-button>
+      <el-button v-if="auth.hasDemoRole('HR')" @click="router.push({ name: 'HrJobs' })">{{ $t("Manage HR jobs") }}</el-button>
+      <el-button v-if="!demoMode && auth.hasDemoRole('HR')" @click="router.push({ name: 'HrCases' })">{{ $t("Case Results") }}</el-button>
+      <el-button v-if="!demoMode && auth.hasDemoRole('Researcher')" @click="router.push({ name: 'AssignPrimaryReviews' })">{{ $t("Assign Primary Reviews") }}</el-button>
+      <el-button v-if="demoMode && auth.hasDemoRole('Researcher')" @click="router.push({ name: 'ResearchExperiments' })">{{ $t("Browse research experiments") }}</el-button>
+      <el-button v-if="auth.hasDemoRole('HR') || auth.hasDemoRole('Researcher')" @click="router.push({ name: 'MyReviewTasks' })">{{ $t("My Review Tasks") }}</el-button>
+      <el-button @click="router.push({ name: 'Forbidden' })">{{ $t("Preview access denied") }}</el-button>
+      <el-button @click="router.push({ name: 'NotFound' })">{{ $t("Preview page not found") }}</el-button>
     </section>
   </main>
 </template>

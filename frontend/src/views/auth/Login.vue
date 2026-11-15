@@ -57,22 +57,22 @@ async function submit() {
 <template>
   <div class="login-page">
     <el-card class="login-card"
-      ><h1>SimRecrut</h1>
-      <p>Sign in to your workspace</p>
+      ><h1>{{ $t("SimRecrut") }}</h1>
+      <p>{{ $t("Sign in to your workspace") }}</p>
       <el-form @submit.prevent="submit" label-position="top"
-        ><el-form-item label="Username"
+        ><el-form-item :label="$t(&quot;Username&quot;)"
           ><el-input
             v-model="form.username"
             autocomplete="username"
             required /></el-form-item
-        ><el-form-item label="Password"
+        ><el-form-item :label="$t(&quot;Password&quot;)"
           ><el-input
             v-model="form.password"
             type="password"
             autocomplete="current-password"
             show-password
             required /></el-form-item
-        ><el-form-item v-if="captchaEnabled" label="Verification code"
+        ><el-form-item v-if="captchaEnabled" :label="$t(&quot;Verification code&quot;)"
           ><el-input v-model="form.code" required /><img
             v-if="captcha"
             :src="captcha"
@@ -80,17 +80,14 @@ async function submit() {
             @click="refreshCaptcha" /></el-form-item
         ><el-alert
           v-if="message"
-          :title="message"
+          :title="$t(message)"
           type="error"
           :closable="false"
         /><el-button native-type="submit" type="primary" :loading="busy"
-          >Sign in</el-button
+          >{{ $t("Sign in") }}</el-button
         ></el-form
       >
-      <p class="muted">
-        Requires the configured identity service. This screen does not simulate
-        authentication.
-      </p></el-card
+      <p class="muted"> {{ $t("Requires the configured identity service. This screen does not simulate authentication.") }} </p></el-card
     >
   </div>
 </template>

@@ -1,4 +1,6 @@
 <script setup>
+import { dateLocale, t } from '../../../i18n/index.js'
+
 import { demoMode } from '../../../config/runtime.js'
 import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
@@ -24,7 +26,7 @@ const processing = computed(() => isCaseProcessing(entry.value))
 const ready = computed(() => entry.value?.processingStatus === 'REVIEW_REQUIRED')
 const failed = computed(() => ['FAILED_RETRYABLE', 'FAILED_FINAL'].includes(entry.value?.processingStatus))
 const canChooseFile = computed(() => entry.value && !entry.value.confirmedAt && !processing.value && !ready.value && (demoMode || entry.value.processingStatus === 'AWAITING_UPLOAD'))
-const expiresAt = computed(() => entry.value?.expiresAt ? new Intl.DateTimeFormat('en-GB', {
+const expiresAt = computed(() => entry.value?.expiresAt ? new Intl.DateTimeFormat(dateLocale.value, {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris',
 }).format(new Date(entry.value.expiresAt)) : '—')
 
@@ -32,10 +34,10 @@ async function upload() {
   if (!selected.value || !canChooseFile.value || uploading.value) return
   uploading.value = true
   const metadata = selected.value
-  try { await cases.uploadCv(route.params.caseId, metadata, extractionScenario); selected.value = null } catch (error) { ElMessage.error(error.message) } finally { uploading.value = false }
+  try { await cases.uploadCv(route.params.caseId, metadata, extractionScenario); selected.value = null } catch (error) { ElMessage.error(t(error.message)) } finally { uploading.value = false }
 }
 async function retryCase(caseId, scenario) {
-  try { await cases.retryCase(caseId, scenario) } catch (error) { ElMessage.error(error.message) }
+  try { await cases.retryCase(caseId, scenario) } catch (error) { ElMessage.error(t(error.message)) }
 }
 
 async function cancelAndDelete() {
@@ -43,7 +45,7 @@ async function cancelAndDelete() {
     await cases.deleteCase(route.params.caseId)
     confirmDelete.value = false
     router.replace({ name: 'MySimulations' })
-  } catch (error) { ElMessage.error(error.message) }
+  } catch (error) { ElMessage.error(t(error.message)) }
 }
 
 watch(() => route.params.caseId, () => { selected.value = null; confirmDelete.value = false })
@@ -59,7 +61,7 @@ async function refreshConnectedCase() {
     const row = await cases.loadConnectedCase(id)
     if (connectedActive && request === connectedRequest && route.params.caseId === id) cases.cases[id] = row
   } catch (error) {
-    if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(error.message) }
+    if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(t(error.message)) }
   } finally { if (request === connectedRequest) polling = false }
 }
 watch(() => route.params.caseId, refreshConnectedCase)
@@ -71,92 +73,92 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
 <template>
   <CandidateLayout>
     <section v-if="!entry" class="unavailable-panel">
-      <ElEmpty description="Case not available" />
-      <h1>Case Not Available</h1>
-      <p>This case does not exist, has expired or is not available to your account.</p>
-      <p>Start a simulation from a published job to create a new case.</p>
-      <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">Back to Jobs</ElButton>
+      <ElEmpty :description="$t(&quot;Case not available&quot;)" />
+      <h1>{{ $t("Case Not Available") }}</h1>
+      <p>{{ $t("This case does not exist, has expired or is not available to your account.") }}</p>
+      <p>{{ $t("Start a simulation from a published job to create a new case.") }}</p>
+      <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">{{ $t("Back to Jobs") }}</ElButton>
     </section>
     <section v-else-if="entry.confirmedAt" class="unavailable-panel">
-      <h1>Facts Already Confirmed</h1>
-      <p>This case is locked. Start a new case from Jobs if you need to change the facts.</p>
-      <ElButton type="primary" @click="router.replace({ name: 'CvReview', params: { caseId: entry.caseId } })">View Confirmation</ElButton>
+      <h1>{{ $t("Facts Already Confirmed") }}</h1>
+      <p>{{ $t("This case is locked. Start a new case from Jobs if you need to change the facts.") }}</p>
+      <ElButton type="primary" @click="router.replace({ name: 'CvReview', params: { caseId: entry.caseId } })">{{ $t("View Confirmation") }}</ElButton>
     </section>
     <section v-else aria-labelledby="upload-title">
-      <nav class="breadcrumb" aria-label="Breadcrumb">
-        <RouterLink :to="{ name: 'PublishedJobs' }">Jobs</RouterLink><span aria-hidden="true">/</span>
+      <nav class="breadcrumb" :aria-label="$t(&quot;Breadcrumb&quot;)">
+        <RouterLink :to="{ name: 'PublishedJobs' }">{{ $t("Jobs") }}</RouterLink><span aria-hidden="true">/</span>
         <RouterLink v-if="entry.jobId" :to="{ name: 'JobDetail', params: { jobId: entry.jobId } }">{{ entry.jobTitle }}</RouterLink>
-        <span aria-hidden="true">/</span><span aria-current="page">Upload CV</span>
+        <span aria-hidden="true">/</span><span aria-current="page">{{ $t("Upload CV") }}</span>
       </nav>
-      <h1 id="upload-title">Upload Your CV</h1>
-      <p class="subtitle">Choose a PDF and preview the recruitment simulation's extraction workflow.</p>
-      <div class="case-context"><span v-if="entry.jobTitle">{{ entry.jobTitle }}<template v-if="entry.version"> · Version {{ entry.version }}</template></span>
-        <span>Case: {{ entry.caseId }}</span><span>Expires: {{ expiresAt }} (Paris time)</span></div>
+      <h1 id="upload-title">{{ $t("Upload Your CV") }}</h1>
+      <p class="subtitle">{{ $t("Choose a PDF and preview the recruitment simulation's extraction workflow.") }}</p>
+      <div class="case-context"><span v-if="entry.jobTitle">{{ entry.jobTitle }}<template v-if="entry.version"> {{ $t("· Version") }} {{ entry.version }}</template></span>
+        <span>{{ $t("Case:") }} {{ entry.caseId }}</span><span>{{ $t("Expires:") }} {{ expiresAt }} {{ $t("(Paris time)") }}</span></div>
       <ElAlert v-if="demoMode" class="demo-notice" type="info" :closable="false"
-        title="Frontend demo only: PDF checks run locally. No file is uploaded and no OCR or AI extraction occurs. Sample facts are unrelated to your PDF. Reload before confirmation requires a new upload; confirmed checkpoints survive reload in this tab." />
+        :title="$t(&quot;Frontend demo only: PDF checks run locally. No file is uploaded and no OCR or AI extraction occurs. Sample facts are unrelated to your PDF. Reload before confirmation requires a new upload; confirmed checkpoints survive reload in this tab.&quot;)" />
       <CaseProgressStepper :ready-for-review="ready" />
       <div class="upload-grid">
         <div class="upload-column">
           <CvUploadCard v-if="canChooseFile" :selected="selected" @select="selected = $event" />
           <div v-if="entry.file" class="file-panel">
-            <h2>{{ ready ? 'PDF Accepted for the Demo' : 'Selected PDF' }}</h2>
+            <h2>{{ $t(ready ? 'PDF Accepted for the Demo' : 'Selected PDF') }}</h2>
             <strong>{{ entry.file.name }}</strong>
-            <p>{{ formatCvSize(entry.file.size) }} · {{ entry.file.pageCount }} {{ entry.file.pageCount === 1 ? 'page' : 'pages' }}</p>
-            <p>Only file metadata is retained in memory. File contents are not stored.</p>
+            <p>{{ formatCvSize(entry.file.size) }} · {{ entry.file.pageCount }} {{ $t(entry.file.pageCount === 1 ? 'page' : 'pages') }}</p>
+            <p>{{ $t("Only file metadata is retained in memory. File contents are not stored.") }}</p>
           </div>
           <aside class="tips-panel" aria-labelledby="tips-title">
-            <h2 id="tips-title">Tips</h2>
-            <ul><li>Use a clear, up-to-date CV.</li><li>Choose a readable PDF with no password or encryption.</li>
-              <li v-if="demoMode">Use a sample CV when exploring this frontend demonstration.</li></ul>
+            <h2 id="tips-title">{{ $t("Tips") }}</h2>
+            <ul><li>{{ $t("Use a clear, up-to-date CV.") }}</li><li>{{ $t("Choose a readable PDF with no password or encryption.") }}</li>
+              <li v-if="demoMode">{{ $t("Use a sample CV when exploring this frontend demonstration.") }}</li></ul>
           </aside>
           <ElButton v-if="canChooseFile" class="upload-button" type="primary" :disabled="!selected"
-            :loading="uploading" @click="upload">Upload and Extract</ElButton>
+            :loading="uploading" @click="upload">{{ $t("Upload and Extract") }}</ElButton>
         </div>
         <section class="extraction-panel" aria-labelledby="extraction-title" :aria-busy="processing">
-          <h2 id="extraction-title">Extraction Status</h2>
+          <h2 id="extraction-title">{{ $t("Extraction Status") }}</h2>
           <div v-if="processing" class="processing-state" role="status" aria-live="polite">
             <span class="spinner" aria-hidden="true"></span>
-            <h3>{{ entry.processingStatus === 'UPLOADED' ? 'Preparing the demo upload...' : 'Extracting information...' }}</h3>
-            <p>{{ entry.processingStatus === 'UPLOADED' ? 'Your PDF checks passed. Preparing the simulated extraction.' : 'Professional facts are being extracted. Please wait.' }}</p>
-            <p>Stage: {{ entry.stage }}</p>
-            <p>Duplicate upload is unavailable while extraction is running.</p>
+            <h3>{{ $t(entry.processingStatus === 'UPLOADED' ? 'Preparing the demo upload...' : 'Extracting information...') }}</h3>
+            <p>{{ $t(entry.processingStatus === 'UPLOADED' ? 'Your PDF checks passed. Preparing the simulated extraction.' : 'Professional facts are being extracted. Please wait.') }}</p>
+            <p>{{ $t("Stage:") }} {{ entry.stage }}</p>
+            <p>{{ $t("Duplicate upload is unavailable while extraction is running.") }}</p>
           </div>
           <div v-else-if="failed" class="failure-state" role="alert">
-            <h3>{{ entry.stage === 'Upload' ? 'Demo upload failed' : 'Extraction failed' }}</h3>
+            <h3>{{ $t(entry.stage === 'Upload' ? 'Demo upload failed' : 'Extraction failed') }}</h3>
             <p>{{ entry.failure }}</p>
             <ElButton v-if="entry.processingStatus === 'FAILED_RETRYABLE' && (demoMode ? entry.retryCount < 1 : entry.retryable)"
               type="primary" @click="retryCase(entry.caseId, extractionScenario)">
-              {{ entry.stage === 'Upload' ? 'Retry Upload' : 'Retry Extraction' }}
+              {{ $t(entry.stage === 'Upload' ? 'Retry Upload' : 'Retry Extraction') }}
             </ElButton>
-            <p v-else>Retry is unavailable for this failure. Choose a different PDF.</p>
+            <p v-else>{{ $t("Retry is unavailable for this failure. Choose a different PDF.") }}</p>
           </div>
           <div v-else-if="ready" class="ready-state" role="status">
-            <h3>Ready for Fact Review</h3>
-            <p v-if="demoMode">Demo extraction completed. These sample values were not read from your PDF.</p>
-            <dl v-if="entry.preview"><div><dt>Education</dt><dd>{{ entry.preview.education }}</dd></div>
-              <div><dt>Work Experience</dt><dd>{{ entry.preview.experience }}</dd></div>
-              <div><dt>Skills</dt><dd>{{ entry.preview.skills.join(', ') }}</dd></div></dl>
-            <p id="review-notice">Review the professional facts and their supporting evidence in the next step.</p>
+            <h3>{{ $t("Ready for Fact Review") }}</h3>
+            <p v-if="demoMode">{{ $t("Demo extraction completed. These sample values were not read from your PDF.") }}</p>
+            <dl v-if="entry.preview"><div><dt>{{ $t("Education") }}</dt><dd>{{ entry.preview.education }}</dd></div>
+              <div><dt>{{ $t("Work Experience") }}</dt><dd>{{ entry.preview.experience }}</dd></div>
+              <div><dt>{{ $t("Skills") }}</dt><dd>{{ $t(entry.preview.skills.join(', ')) }}</dd></div></dl>
+            <p id="review-notice">{{ $t("Review the professional facts and their supporting evidence in the next step.") }}</p>
           </div>
           <div v-else class="empty-state">
-            <ElEmpty description="No file uploaded yet" />
-            <p>Select a valid PDF and choose Upload and Extract to begin extraction.</p>
+            <ElEmpty :description="$t(&quot;No file uploaded yet&quot;)" />
+            <p>{{ $t("Select a valid PDF and choose Upload and Extract to begin extraction.") }}</p>
           </div>
         </section>
       </div>
       <div class="page-actions">
-        <ElButton @click="confirmDelete = true">Cancel and Delete</ElButton>
+        <ElButton @click="confirmDelete = true">{{ $t("Cancel and Delete") }}</ElButton>
         <ElButton type="primary" :disabled="!ready" :aria-describedby="ready ? 'review-notice' : undefined"
-          @click="router.push({ name: 'CvReview', params: { caseId: entry.caseId } })">Review Extracted Facts</ElButton>
+          @click="router.push({ name: 'CvReview', params: { caseId: entry.caseId } })">{{ $t("Review Extracted Facts") }}</ElButton>
       </div>
     </section>
-    <ElDialog v-model="confirmDelete" title="Cancel and delete this case?" width="min(460px, calc(100% - 32px))"
+    <ElDialog v-model="confirmDelete" :title="$t(&quot;Cancel and delete this case?&quot;)" width="min(460px, calc(100% - 32px))"
       :close-on-click-modal="false">
-      <p v-if="demoMode">The case, file metadata and mock preview will be removed from this session.</p>
-      <p v-else>Access ends immediately. The server will remove the case and its data.</p>
-      <p>You will return to My simulations.</p>
-      <template #footer><ElButton @click="confirmDelete = false">Keep Case</ElButton>
-        <ElButton type="danger" @click="cancelAndDelete">Delete Case</ElButton></template>
+      <p v-if="demoMode">{{ $t("The case, file metadata and mock preview will be removed from this session.") }}</p>
+      <p v-else>{{ $t("Access ends immediately. The server will remove the case and its data.") }}</p>
+      <p>{{ $t("You will return to My simulations.") }}</p>
+      <template #footer><ElButton @click="confirmDelete = false">{{ $t("Keep Case") }}</ElButton>
+        <ElButton type="danger" @click="cancelAndDelete">{{ $t("Delete Case") }}</ElButton></template>
     </ElDialog>
   </CandidateLayout>
 </template>

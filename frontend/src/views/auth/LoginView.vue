@@ -1,4 +1,5 @@
 <script setup>
+import { useLocalizedValidation, t } from '../../i18n/index.js'
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElCheckbox, ElForm, ElFormItem, ElInput, ElMessage } from 'element-plus'
@@ -39,7 +40,7 @@ async function submitLogin() {
   try {
     await auth.login({ identifier: form.identifier, password: form.password })
     const saved = saveRememberedIdentifier(form.identifier, form.rememberMe)
-    if (!saved) ElMessage.warning('Your browser could not save the Remember Me preference.')
+    if (!saved) ElMessage.warning(t('Your browser could not save the Remember Me preference.'))
     form.password = ''
     let destination = 'DemoDashboard'
     if (!demoMode) {
@@ -53,58 +54,60 @@ async function submitLogin() {
     loading.value = false
   }
 }
+
+useLocalizedValidation(formRef)
 </script>
 
 <template>
   <AuthLayout>
-    <h1 id="login-title">Welcome back</h1>
-    <p class="login-subtitle">Sign in to your SimRecrut account</p>
+    <h1 id="login-title">{{ $t("Welcome back") }}</h1>
+    <p class="login-subtitle">{{ $t("Sign in to your SimRecrut account") }}</p>
 
     <div class="feedback" aria-live="polite" aria-atomic="true">
-      <el-alert v-if="loginError" :title="loginError" type="error" show-icon :closable="false" />
+      <el-alert v-if="loginError" :title="$t(loginError)" type="error" show-icon :closable="false" />
     </div>
 
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top"
       :disabled="loading" :aria-busy="loading" @submit.prevent="submitLogin">
-      <el-form-item label="Username or email" prop="identifier">
-        <el-input v-model="form.identifier" placeholder="Enter your username or email" size="large"
+      <el-form-item :label="$t(&quot;Username or email&quot;)" prop="identifier">
+        <el-input v-model="form.identifier" :placeholder="$t(&quot;Enter your username or email&quot;)" size="large"
           autocomplete="username" autocapitalize="none" :spellcheck="false"
           @input="loginError = ''">
           <template #prefix><FieldIcon name="user" /></template>
         </el-input>
       </el-form-item>
 
-      <el-form-item label="Password" prop="password">
+      <el-form-item :label="$t(&quot;Password&quot;)" prop="password">
         <PasswordInput v-model="form.password" autocomplete="current-password"
           :disabled="loading" @input="loginError = ''" />
       </el-form-item>
 
       <div class="remember-row">
-        <el-checkbox v-model="form.rememberMe">Remember Me</el-checkbox>
-        <span>Username only</span>
+        <el-checkbox v-model="form.rememberMe">{{ $t("Remember Me") }}</el-checkbox>
+        <span>{{ $t("Username only") }}</span>
       </div>
 
       <el-button class="sign-in-button" type="primary" size="large" native-type="submit"
         :loading="loading" :disabled="loading">
-        {{ loading ? 'Signing in...' : 'Sign in' }}
+        {{ $t(loading ? 'Signing in...' : 'Sign in') }}
       </el-button>
     </el-form>
 
-    <RouterLink v-if="!demoMode" class="forgot-password" :to="{ name: 'ForgotPassword' }">Forgot password?</RouterLink>
+    <RouterLink v-if="!demoMode" class="forgot-password" :to="{ name: 'ForgotPassword' }">{{ $t("Forgot password?") }}</RouterLink>
 
-    <div class="registration-divider"><span>or</span></div>
+    <div class="registration-divider"><span>{{ $t("or") }}</span></div>
     <el-button class="register-button" size="large" :disabled="loading || !canRegister"
-      @click="router.push({ name: 'Register' })">Create a new account</el-button>
-    <p v-if="!canRegister" class="registration-note">Registration is not currently available.</p>
+      @click="router.push({ name: 'Register' })">{{ $t("Create a new account") }}</el-button>
+    <p v-if="!canRegister" class="registration-note">{{ $t("Registration is not currently available.") }}</p>
 
-    <aside v-if="demoMode" class="demo-note" aria-label="Demo account">
-      <strong>Frontend demo only</strong>
-      <p>This is a simulated login, not real authentication.</p>
+    <aside v-if="demoMode" class="demo-note" :aria-label="$t(&quot;Demo account&quot;)">
+      <strong>{{ $t("Frontend demo only") }}</strong>
+      <p>{{ $t("This is a simulated login, not real authentication.") }}</p>
       <dl>
-        <div><dt>Username</dt><dd>{{ demoAccount.username }}</dd></div>
-        <div><dt>Password</dt><dd>{{ demoAccount.password }}</dd></div>
+        <div><dt>{{ $t("Username") }}</dt><dd>{{ demoAccount.username }}</dd></div>
+        <div><dt>{{ $t("Password") }}</dt><dd>{{ demoAccount.password }}</dd></div>
       </dl>
-      <p class="demo-email">You can also use {{ demoAccount.email }}.</p>
+      <p class="demo-email">{{ $t("You can also use") }} {{ demoAccount.email }}.</p>
     </aside>
   </AuthLayout>
 </template>

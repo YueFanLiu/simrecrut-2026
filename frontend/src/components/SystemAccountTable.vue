@@ -31,7 +31,7 @@ onMounted(load);
   <el-card
     ><el-input
       v-model="search"
-      placeholder="Search"
+      :placeholder="$t(&quot;Search&quot;)"
       @keyup.enter="
         page = 1;
         load();
@@ -40,21 +40,19 @@ onMounted(load);
         page = 1;
         load();
       "
-      >Search</el-button
+      >{{ $t("Search") }}</el-button
     ><el-table :data="rows" v-loading="busy"
       ><el-table-column
         :prop="resource === 'user' ? 'userId' : 'roleId'"
-        label="ID"
+        :label="$t(&quot;ID&quot;)"
       /><el-table-column
         :prop="resource === 'user' ? 'userName' : 'roleName'"
-        label="Name"
+        :label="$t(&quot;Name&quot;)"
       /><el-table-column
         :prop="resource === 'user' ? 'nickName' : 'roleKey'"
-        label="Display name / role key"
-      /><el-table-column prop="status" label="Status"
-        ><template #default="scope">{{
-          scope.row.status === "0" ? "Active" : "Disabled"
-        }}</template></el-table-column
+        :label="$t(&quot;Display name / role key&quot;)"
+      /><el-table-column prop="status" :label="$t(&quot;Status&quot;)"
+        ><template #default="scope">{{ $t(scope.row.status === "0" ? "Active" : "Disabled") }}</template></el-table-column
       ></el-table
     ><el-pagination
       v-model:current-page="page"

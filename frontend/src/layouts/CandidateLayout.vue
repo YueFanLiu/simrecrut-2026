@@ -20,26 +20,26 @@ async function signOut() {
     <header>
       <div class="header-content">
         <BrandMark />
-        <nav aria-label="Candidate navigation">
+        <nav :aria-label="$t(&quot;Candidate navigation&quot;)">
           <RouterLink class="jobs-link" :to="{ name: 'PublishedJobs' }"
             :class="{ 'current-link': ['PublishedJobs', 'JobDetail'].includes(route.name) }"
-            :aria-current="['PublishedJobs', 'JobDetail'].includes(route.name) ? 'page' : undefined">Jobs</RouterLink>
+            :aria-current="['PublishedJobs', 'JobDetail'].includes(route.name) ? 'page' : undefined">{{ $t("Jobs") }}</RouterLink>
           <RouterLink class="jobs-link" :to="{ name: 'MySimulations' }"
             :class="{ 'current-link': ['MySimulations', 'CvUpload', 'CvReview', 'SimulationProgress', 'SimulationResults'].includes(route.name) }"
-            :aria-current="['MySimulations', 'CvUpload', 'CvReview', 'SimulationProgress', 'SimulationResults'].includes(route.name) ? 'page' : undefined">My simulations</RouterLink>
+            :aria-current="['MySimulations', 'CvUpload', 'CvReview', 'SimulationProgress', 'SimulationResults'].includes(route.name) ? 'page' : undefined">{{ $t("My simulations") }}</RouterLink>
           <RouterLink v-if="!demoMode" class="jobs-link" :to="{ name: 'ConnectedResumes' }"
             :class="{ 'current-link': route.meta.connected }"
-            :aria-current="route.meta.connected ? 'page' : undefined">My CVs</RouterLink>
+            :aria-current="route.meta.connected ? 'page' : undefined">{{ $t("My CVs") }}</RouterLink>
         </nav>
         <div class="session-controls">
           <span class="user-name">{{ auth.demoUser?.displayName }}</span>
-          <ElButton @click="router.push({ name: 'DemoDashboard' })">Dashboard</ElButton>
-          <ElButton @click="signOut">Sign out</ElButton>
+          <ElButton @click="router.push({ name: 'DemoDashboard' })">{{ $t("Dashboard") }}</ElButton>
+          <ElButton @click="signOut">{{ $t("Sign out") }}</ElButton>
         </div>
       </div>
     </header>
     <main><slot /></main>
-    <footer>SimRecrut <span>·</span> Candidate workspace <span>·</span> {{ demoMode ? 'Frontend demonstration' : 'Connected workspace' }}</footer>
+    <footer>{{ $t("SimRecrut") }} <span>·</span> {{ $t("Candidate workspace") }} <span>·</span> {{ $t(demoMode ? 'Frontend demonstration' : 'Connected workspace') }}</footer>
   </div>
 </template>
 

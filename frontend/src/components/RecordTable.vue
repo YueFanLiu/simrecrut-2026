@@ -8,8 +8,7 @@ export default { setup: useWorkspace };
   <section class="panel">
     <div class="panel-title">
       <h2>
-        {{
-          {
+        {{ $t({
             R01: "Authorized experiments",
             R04: "Eligible research subjects",
             R05: "Model registry",
@@ -18,10 +17,9 @@ export default { setup: useWorkspace };
             A03: "Release registry",
             A06: "Failed processing tasks",
             A07: "Audit events",
-          }[page[0]]
-        }}
+          }[page[0]]) }}
       </h2>
-      <span>{{ rows.length }} records</span>
+      <span>{{ rows.length }} {{ $t("records") }}</span>
     </div>
     <div v-if="page[0] === 'R04'" class="tabs">
       <button
@@ -29,41 +27,39 @@ export default { setup: useWorkspace };
         :class="{ active: source === t }"
         @click="source = t"
       >
-        {{ t }}
+        {{ $t(t) }}
       </button>
     </div>
     <div class="toolbar">
       <input
         v-model="search"
-        placeholder="Search by name or identifier…"
-        aria-label="Search records"
+        :placeholder="$t(&quot;Search by name or identifier…&quot;)"
+        :aria-label="$t(&quot;Search records&quot;)"
       /><select
         v-if="page[0] !== 'A07'"
         v-model="status"
-        aria-label="Filter by status"
+        :aria-label="$t(&quot;Filter by status&quot;)"
       >
-        <option>All statuses</option>
-        <option v-for="s in statuses">{{ s }}</option></select
+        <option value="All statuses">{{ $t("All statuses") }}</option>
+        <option v-for="s in statuses" :key="s" :value="s">{{ $t(s) }}</option></select
       ><button
         class="secondary"
         @click="
           search = '';
           status = 'All statuses';
         "
-      >
-        Reset
-      </button>
+      > {{ $t("Reset") }} </button>
     </div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Identifier</th>
-            <th>{{ page[0] === "A07" ? "Time / Actor" : "Name / Context" }}</th>
-            <th>{{ page[0] === "A07" ? "Action" : "Version / Type" }}</th>
-            <th>Status</th>
-            <th>Details</th>
-            <th>Action</th>
+            <th>{{ $t("Identifier") }}</th>
+            <th>{{ $t(page[0] === "A07" ? "Time / Actor" : "Name / Context") }}</th>
+            <th>{{ $t(page[0] === "A07" ? "Action" : "Version / Type") }}</th>
+            <th>{{ $t("Status") }}</th>
+            <th>{{ $t("Details") }}</th>
+            <th>{{ $t("Action") }}</th>
           </tr>
         </thead>
         <tbody>
@@ -85,41 +81,35 @@ export default { setup: useWorkspace };
               }}
             </td>
             <td>
-              <span class="badge" :class="badge(r.status)">{{ r.status }}</span>
+              <span class="badge" :class="badge(r.status)">{{ $t(r.status) }}</span>
             </td>
             <td>
-              {{
-                page[0] === "R01"
+              {{ $t(page[0] === "R01"
                   ? r.subjects + " subjects"
                   : page[0] === "A06"
                     ? "Cleanup: " + r.cleanup
                     : page[0] === "A07"
                       ? r.resource
-                      : r.protocol || r.skills || "Assigned access"
-              }}
+                      : r.protocol || r.skills || "Assigned access") }}
             </td>
             <td>
               <button
                 v-if="page[0] === 'R01'"
                 class="text-button"
                 @click="go('/research/experiments/' + r.id)"
-              >
-                View →
-              </button>
+              > {{ $t("View →") }} </button>
               <button
                 v-else-if="page[0] === 'V01'"
                 class="text-button"
                 @click="go('/reviewer/tasks/' + r.id)"
-              >
-                Open →
-              </button>
+              > {{ $t("Open →") }} </button>
               <label v-else-if="page[0] === 'R04'" class="check"
                 ><input
                   type="checkbox"
                   :disabled="r.status !== 'Eligible'"
                   :checked="selected.includes(r.id)"
                   @change="select(r.id)"
-                />Select</label
+                />{{ $t("Select") }}</label
               >
               <button
                 v-else-if="page[0] === 'A03'"
@@ -127,11 +117,9 @@ export default { setup: useWorkspace };
                 :disabled="r.status === 'Retired'"
                 @click="release(r)"
               >
-                {{
-                  { Tested: "Approve", Approved: "Activate", Active: "Retire" }[
+                {{ $t({ Tested: "Approve", Approved: "Activate", Active: "Retire" }[
                     r.status
-                  ] || "Retired"
-                }}
+                  ] || "Retired") }}
               </button>
               <button
                 v-else-if="page[0] === 'A06'"
@@ -139,7 +127,7 @@ export default { setup: useWorkspace };
                 :disabled="!r.retryable || r.status === 'Queued'"
                 @click="drawer = { kind: 'retry', item: r }"
               >
-                {{ r.status === "Queued" ? "Queued" : "Retry" }}
+                {{ $t(r.status === "Queued" ? "Queued" : "Retry") }}
               </button>
               <button
                 v-else
@@ -151,34 +139,24 @@ export default { setup: useWorkspace };
                   };
                   role = r.role || 'Researcher';
                 "
-              >
-                View →
-              </button>
+              > {{ $t("View →") }} </button>
             </td>
           </tr>
           <tr v-if="!rows.length">
-            <td colspan="6" class="empty">
-              No matching records. Change your search or filters.
-            </td>
+            <td colspan="6" class="empty"> {{ $t("No matching records. Change your search or filters.") }} </td>
           </tr>
         </tbody>
       </table>
     </div>
     <div class="table-footer">
-      <span>Showing {{ rows.length }} demo records</span
+      <span>{{ $t("Showing") }} {{ rows.length }} {{ $t("demo records") }}</span
       ><span v-if="page[0] === 'R04'"
-        >{{ selected.length }} selected · Eligibility checked</span
+        >{{ selected.length }} {{ $t("selected · Eligibility checked") }}</span
       ><span v-else
-        >Page 1 <button class="page-number" disabled>1</button></span
+        >{{ $t("Page 1") }} <button class="page-number" disabled>1</button></span
       >
     </div>
-    <div class="panel-body callout" v-if="page[0] === 'R05'">
-      32 → 16 → 8 → 1 network. Separate trained parameters. This registry is
-      read-only.
-    </div>
-    <div class="panel-body callout" v-if="page[0] === 'A07'">
-      Production audit queries use server-side filters. These demo records
-      contain metadata only.
-    </div>
+    <div class="panel-body callout" v-if="page[0] === 'R05'"> {{ $t("32 → 16 → 8 → 1 network. Separate trained parameters. This registry is read-only.") }} </div>
+    <div class="panel-body callout" v-if="page[0] === 'A07'"> {{ $t("Production audit queries use server-side filters. These demo records contain metadata only.") }} </div>
   </section>
 </template>

@@ -1,6 +1,8 @@
 package fr.isep.simrecrut.integration.mail;
 
 import fr.isep.simrecrut.config.properties.RegistrationProperties;
+import fr.isep.simrecrut.i18n.ApiMessages;
+import java.util.Map;
 import fr.isep.simrecrut.service.identity.RegistrationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
@@ -35,12 +37,10 @@ public class RegistrationMailSender {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
         message.setTo(email);
-        message.setSubject("SimRecrut registration verification");
-        message.setText(
-                "Your registration verification code is: " + code
-                        + "\n\nThis code expires in " + properties.codeTtl().toSeconds()
-                        + " seconds and can be used once."
-                        + "\nIf you did not request this code, ignore this message.");
+        var locale = ApiMessages.currentLocale();
+        message.setSubject(ApiMessages.text("mail.registration.subject", locale));
+        message.setText(ApiMessages.format("mail.registration.body", locale,
+                Map.of("code", code, "seconds", Long.toString(properties.codeTtl().toSeconds()))));
 
         try {
             sender.send(message);

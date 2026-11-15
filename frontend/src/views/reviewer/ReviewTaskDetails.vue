@@ -8,13 +8,11 @@ export default { setup: useWorkspace };
   <div class="review-grid">
     <section class="panel">
       <div class="panel-title">
-        <h2>Professional profile</h2>
+        <h2>{{ $t("Professional profile") }}</h2>
         <span>{{ task.case }} · {{ task.name }}</span>
       </div>
       <div class="panel-body">
-        <div class="callout">
-          Blind review · Other human and automated decisions are hidden.
-        </div>
+        <div class="callout"> {{ $t("Blind review · Other human and automated decisions are hidden.") }} </div>
         <section
           class="evidence"
           v-for="[k, v] in [
@@ -27,27 +25,22 @@ export default { setup: useWorkspace };
         >
           <h3>{{ k }}</h3>
           <p>{{ v }}</p>
-          <blockquote>
-            Synthetic professional evidence for interface demonstration.
-          </blockquote>
+          <blockquote> {{ $t("Synthetic professional evidence for interface demonstration.") }} </blockquote>
         </section>
       </div>
     </section>
     <section class="panel decision-panel">
       <div class="panel-title">
-        <h2>Your decision</h2>
-        <span class="badge">{{ task.mode }}</span>
+        <h2>{{ $t("Your decision") }}</h2>
+        <span class="badge">{{ $t(task.mode) }}</span>
       </div>
       <div class="panel-body">
-        <div class="callout" v-if="task.mode === 'Instructed-Bias'">
-          Only apply the task's authorized instruction. Production instructions
-          are not connected in this preview.
-        </div>
+        <div class="callout" v-if="task.mode === 'Instructed-Bias'"> {{ $t("Only apply the task's authorized instruction. Production instructions are not connected in this preview.") }} </div>
         <template v-if="task.status === 'Submitted'"
-          ><span class="badge completed">Submitted · Locked</span>
-          <h3>{{ task.decision }}</h3>
+          ><span class="badge completed">{{ $t("Submitted · Locked") }}</span>
+          <h3>{{ $t(task.decision) }}</h3>
           <p>{{ task.reason }}</p>
-          <p class="muted">Confirmed submissions cannot be edited.</p></template
+          <p class="muted">{{ $t("Confirmed submissions cannot be edited.") }}</p></template
         >
         <form v-else novalidate @submit.prevent="submit">
           <div class="decision-options">
@@ -58,21 +51,20 @@ export default { setup: useWorkspace };
             >
           </div>
           <label
-            >Reason <em>*</em
+            >{{ $t("Reason") }} <em>*</em
             ><textarea
               v-model="reason"
               maxlength="2000"
               rows="7"
               required
-              placeholder="Explain your decision using professional evidence."
+              :placeholder="$t(&quot;Explain your decision using professional evidence.&quot;)"
             ></textarea></label
-          ><small>{{ reason.trim().length }} / 2000 characters</small
+          ><small>{{ reason.trim().length }} {{ $t("/ 2000 characters") }}</small
           ><label class="check"
-            ><input type="checkbox" v-model="confirm" required />I confirm my
-            independent decision. Submission locks this review.</label
+            ><input type="checkbox" v-model="confirm" required />{{ $t("I confirm my independent decision. Submission locks this review.") }}</label
           >
-          <p class="error" v-if="error">{{ error }}</p>
-          <button class="primary wide">Submit review</button>
+          <p class="error" v-if="error">{{ $t(error) }}</p>
+          <button class="primary wide">{{ $t("Submit review") }}</button>
         </form>
       </div>
     </section>

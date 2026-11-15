@@ -28,19 +28,19 @@ function add() {
 </script>
 <template>
  <div>
-  <el-empty v-if="!modelValue.length" description="No facts found. Add missing information if needed." :image-size="65" />
+  <el-empty v-if="!modelValue.length" :description="$t(&quot;No facts found. Add missing information if needed.&quot;)" :image-size="65" />
   <article v-for="(row,index) in modelValue" :key="index" class="fact-row">
    <div class="fact-fields">
-    <label v-for="[key,label] in columns" :key="key"><span>{{ label }}</span>
+    <label v-for="[key,label] in columns" :key="key"><span>{{ $t(label) }}</span>
      <el-switch v-if="key === 'isCurrent'" :model-value="row[key]" :disabled="locked" @update:model-value="update(index,key,$event)" />
      <el-input-number v-else-if="key === 'reviewedRelevantYears'" :model-value="row[key] ?? undefined" :min="0" :max="80" :disabled="locked" @update:model-value="update(index,key,$event ?? null)" />
-     <el-input v-else :model-value="Array.isArray(row[key]) ? row[key].join(', ') : row[key] || ''" :readonly="locked" :disabled="key === 'endMonth' && row.isCurrent" :placeholder="key.endsWith('Month') ? 'YYYY-MM or leave empty' : key.endsWith('Codes') ? 'Separate with commas' : label" @update:model-value="update(index,key,$event)" />
+     <el-input v-else :model-value="Array.isArray(row[key]) ? row[key].join(', ') : row[key] || ''" :readonly="locked" :disabled="key === 'endMonth' && row.isCurrent" :placeholder="$t(key.endsWith('Month') ? 'YYYY-MM or leave empty' : key.endsWith('Codes') ? 'Separate with commas' : label)" @update:model-value="update(index,key,$event)" />
     </label>
    </div>
-   <p class="evidence"><el-tag size="small">{{ row.evidence?.source === 'USER_SUPPLIED' ? 'Your correction' : 'From CV' }}</el-tag> <span v-if="row.evidence?.page">Page {{ row.evidence.page }} · </span>{{ row.evidence?.text || 'No supporting excerpt available' }}</p>
-   <el-button v-if="!locked" type="danger" plain size="small" @click="emit('update:modelValue',modelValue.filter((_,i) => i !== index))">Remove fact</el-button>
+   <p class="evidence"><el-tag size="small">{{ $t(row.evidence?.source === 'USER_SUPPLIED' ? 'Your correction' : 'From CV') }}</el-tag> <span v-if="row.evidence?.page">{{ $t("Page") }} {{ row.evidence.page }} · </span>{{ row.evidence?.text || $t('No supporting excerpt available') }}</p>
+   <el-button v-if="!locked" type="danger" plain size="small" @click="emit('update:modelValue',modelValue.filter((_,i) => i !== index))">{{ $t("Remove fact") }}</el-button>
   </article>
-  <el-button v-if="!locked && modelValue.length < 100" plain @click="add">Add fact</el-button>
+  <el-button v-if="!locked && modelValue.length < 100" plain @click="add">{{ $t("Add fact") }}</el-button>
  </div>
 </template>
 <style scoped>

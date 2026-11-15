@@ -78,30 +78,30 @@ async function startSimulation() {
 
 <template>
   <CandidateLayout>
-    <section :aria-busy="loading" aria-label="Job details">
-      <nav class="breadcrumb" aria-label="Breadcrumb">
-        <RouterLink :to="{ name: 'PublishedJobs' }">Jobs</RouterLink>
+    <section :aria-busy="loading" :aria-label="$t(&quot;Job details&quot;)">
+      <nav class="breadcrumb" :aria-label="$t(&quot;Breadcrumb&quot;)">
+        <RouterLink :to="{ name: 'PublishedJobs' }">{{ $t("Jobs") }}</RouterLink>
         <span aria-hidden="true">/</span>
-        <span aria-current="page">{{ job?.title || 'Job Details' }}</span>
+        <span aria-current="page">{{ $t(job?.title || 'Job Details') }}</span>
       </nav>
 
       <div v-if="loading" class="state-panel loading-state" role="status">
-        <p>Loading job details...</p>
+        <p>{{ $t("Loading job details...") }}</p>
         <ElSkeleton :rows="8" animated />
       </div>
       <div v-else-if="loadError" class="state-panel" role="alert">
-        <h1>Job details could not be loaded</h1>
-        <p>{{ loadError }}</p>
+        <h1>{{ $t("Job details could not be loaded") }}</h1>
+        <p>{{ $t(loadError) }}</p>
         <div class="state-actions">
-          <ElButton type="primary" @click="loadDetails">Try again</ElButton>
-          <RouterLink class="back-link" :to="{ name: 'PublishedJobs' }">Back to Jobs</RouterLink>
+          <ElButton type="primary" @click="loadDetails">{{ $t("Try again") }}</ElButton>
+          <RouterLink class="back-link" :to="{ name: 'PublishedJobs' }">{{ $t("Back to Jobs") }}</RouterLink>
         </div>
       </div>
       <div v-else-if="!job" class="state-panel">
-        <ElEmpty description="Job Not Available" />
-        <h1>Job Not Available</h1>
-        <p>This job posting is no longer available, has been unpublished or does not exist.</p>
-        <RouterLink class="back-link" :to="{ name: 'PublishedJobs' }">Back to Jobs</RouterLink>
+        <ElEmpty :description="$t(&quot;Job Not Available&quot;)" />
+        <h1>{{ $t("Job Not Available") }}</h1>
+        <p>{{ $t("This job posting is no longer available, has been unpublished or does not exist.") }}</p>
+        <RouterLink class="back-link" :to="{ name: 'PublishedJobs' }">{{ $t("Back to Jobs") }}</RouterLink>
       </div>
       <template v-else>
         <div class="detail-heading">
@@ -110,42 +110,42 @@ async function startSimulation() {
             <div class="job-meta">
               <span v-if="job.company">{{ job.company }}</span><span v-if="job.location">{{ job.location }}</span>
               <ElTag v-if="job.employmentType">{{ job.employmentType }}</ElTag>
-              <span>Published on <time :datetime="job.publishedAt">{{ formatPublishedDate(job.publishedAt) }}</time></span>
+              <span>{{ $t("Published on") }} <time :datetime="job.publishedAt">{{ formatPublishedDate(job.publishedAt) }}</time></span>
             </div>
           </div>
           <ElButton type="primary" size="large" :loading="creatingCase" :disabled="creatingCase"
-            :aria-describedby="demoMode ? 'simulation-notice' : undefined" @click="startSimulation">{{ creatingCase ? 'Creating Case...' : 'Start Simulation' }}</ElButton>
+            :aria-describedby="demoMode ? 'simulation-notice' : undefined" @click="startSimulation">{{ $t(creatingCase ? 'Creating Case...' : 'Start Simulation') }}</ElButton>
         </div>
         <ElAlert v-if="demoMode" id="simulation-notice" class="demo-notice" type="info" :closable="false"
-          title="Frontend demo: Start Simulation creates a temporary case in memory and opens the PDF upload demo. No backend case or real assessment is created." />
-        <ElAlert v-if="creationError" class="demo-notice" type="error" :closable="false" :title="creationError" />
+          :title="$t(&quot;Frontend demo: Start Simulation creates a temporary case in memory and opens the PDF upload demo. No backend case or real assessment is created.&quot;)" />
+        <ElAlert v-if="creationError" class="demo-notice" type="error" :closable="false" :title="$t(creationError)" />
         <div class="detail-grid">
           <div class="panel-column">
             <section class="detail-panel" aria-labelledby="description-title">
-              <h2 id="description-title">Job Description</h2>
+              <h2 id="description-title">{{ $t("Job Description") }}</h2>
               <p>{{ job.description }}</p>
             </section>
             <section class="detail-panel" aria-labelledby="requirements-title">
-              <h2 id="requirements-title">Requirements</h2>
-              <template v-if="demoMode"><h3>Key Responsibilities</h3>
+              <h2 id="requirements-title">{{ $t("Requirements") }}</h2>
+              <template v-if="demoMode"><h3>{{ $t("Key Responsibilities") }}</h3>
               <ul><li v-for="item in job.requirements.responsibilities" :key="item">{{ item }}</li></ul>
-              <h3>Qualifications</h3>
+              <h3>{{ $t("Qualifications") }}</h3>
               <ul><li v-for="item in job.requirements.qualifications" :key="item">{{ item }}</li></ul></template>
-              <ul v-else><li v-for="item in job.requirements" :key="item.requirementCode">{{ publicRequirementLabel(item) }}</li></ul>
+              <ul v-else><li v-for="item in job.requirements" :key="item.requirementCode">{{ $t(publicRequirementLabel(item)) }}</li></ul>
             </section>
           </div>
           <div class="panel-column">
             <section class="detail-panel" aria-labelledby="information-title">
-              <h2 id="information-title">Key Information</h2>
-              <dl><div v-for="[label, value] in keyInformation" :key="label"><dt>{{ label }}</dt><dd>{{ value }}</dd></div></dl>
+              <h2 id="information-title">{{ $t("Key Information") }}</h2>
+              <dl><div v-for="[label, value] in keyInformation" :key="label"><dt>{{ $t(label) }}</dt><dd>{{ value }}</dd></div></dl>
             </section>
             <section v-if="demoMode" class="detail-panel" aria-labelledby="company-title">
-              <h2 id="company-title">Additional Information</h2>
-              <dl><div v-for="[label, value] in companyInformation" :key="label"><dt>{{ label }}</dt><dd>{{ value }}</dd></div></dl>
+              <h2 id="company-title">{{ $t("Additional Information") }}</h2>
+              <dl><div v-for="[label, value] in companyInformation" :key="label"><dt>{{ $t(label) }}</dt><dd>{{ value }}</dd></div></dl>
             </section>
           </div>
         </div>
-        <RouterLink class="back-link bottom-back" :to="{ name: 'PublishedJobs' }">Back to Jobs</RouterLink>
+        <RouterLink class="back-link bottom-back" :to="{ name: 'PublishedJobs' }">{{ $t("Back to Jobs") }}</RouterLink>
       </template>
     </section>
   </CandidateLayout>

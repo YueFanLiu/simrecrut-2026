@@ -68,6 +68,7 @@ public class CaseMatchingEngine {
             }
             ObjectNode result = json.createObjectNode(), professional = result.putObject("professional");
             ArrayNode matches = professional.putArray("m"), w = professional.putArray("w"), mw = professional.putArray("mw");
+            ArrayNode strengths = result.putArray("strengths"), gaps = result.putArray("gaps");
             BigDecimal score = BigDecimal.ZERO;
             boolean mandatory = true;
             for (int i = 0; i < GROUPS.size(); i++) {
@@ -77,6 +78,7 @@ public class CaseMatchingEngine {
                         && requirement.path("assessmentIncluded").asBoolean()) rows.add(requirement);
                 BigDecimal match = BigDecimal.ZERO;
                 boolean enabled = CaseConfiguration.contains(active, category);
+                boolean categoryMandatory = true;
                 if (enabled) {
                     if (rows.isEmpty()) throw CaseException.dependency();
                     JsonNode facts = draft.path("professional").path(category.toLowerCase(Locale.ROOT));
@@ -89,8 +91,20 @@ public class CaseMatchingEngine {
                         if (category.equals("EXPERIENCE")) {
                             BigDecimal years = years(facts, row.path("payload").path("relevantRoleFamilyCodes"),
                                     config.rule(), referenceMonth);
-                            mandatory &= years.compareTo(row.path("payload").path("minimumYears").decimalValue()) >= 0;
-                        } else mandatory &= value.compareTo(BigDecimal.ONE) == 0;
+                            categoryMandatory &= years.compareTo(row.path("payload").path("minimumYears").decimalValue()) >= 0;
+                        } else categoryMandatory &= value.compareTo(BigDecimal.ONE) == 0;
+                    }
+                    mandatory &= categoryMandatory;
+                    // Candidate-visible explanations must not disclose hidden requirements.
+                    if (rows.stream().allMatch(row -> row.path("publicVisible").asBoolean(false))) {
+                        String label = category.charAt(0) + category.substring(1).toLowerCase(Locale.ROOT);
+                        if (match.compareTo(BigDecimal.ONE) == 0 && categoryMandatory) {
+                            strengths.add(label + " assessed requirements are fully met.");
+                        } else {
+                            if (match.compareTo(BigDecimal.ONE) < 0) gaps.add(label + (match.signum() == 0
+                                    ? " assessed requirements are not met." : " assessed requirements are partially met."));
+                            if (!categoryMandatory) gaps.add(label + " mandatory conditions are not met.");
+                        }
                     }
                 } else if (weights.get(i).signum() != 0) throw CaseException.dependency();
                 BigDecimal contribution = match.multiply(weights.get(i)).setScale(7, RoundingMode.HALF_UP);
@@ -99,7 +113,6 @@ public class CaseMatchingEngine {
             professional.put("g", mandatory ? 1 : 0);
             result.put("score", score).put("displayScore", score.multiply(BigDecimal.valueOf(100)))
                     .put("decision", mandatory && score.compareTo(config.protocol().tRule()) >= 0 ? "Accept" : "Reject");
-            result.putArray("strengths"); result.putArray("gaps");
             return result;
         } catch (com.fasterxml.jackson.core.JsonProcessingException exception) { throw CaseException.dependency(); }
     }

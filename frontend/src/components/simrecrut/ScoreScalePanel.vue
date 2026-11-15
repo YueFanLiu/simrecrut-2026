@@ -8,13 +8,13 @@ defineProps({
 </script>
 
 <template>
-  <section class="scale-panel" :aria-label="title">
-    <h3>{{ title }}</h3><p class="scale-label">Scale: 0–{{ maximum }}</p>
+  <section class="scale-panel" :aria-label="$t(title)">
+    <h3>{{ $t(title) }}</h3><p class="scale-label">{{ $t("Scale: 0–") }}{{ maximum }}</p>
     <div v-for="item in items" :key="item.label" class="scale-row">
-      <div class="row-label"><span>{{ item.label }}</span><strong>{{ item.value }}</strong></div>
-      <meter min="0" :max="maximum" :value="item.value" :aria-label="`${item.label}: ${item.value} on a scale of 0 to ${maximum}`">{{ item.value }}</meter>
+      <div class="row-label"><span>{{ $t(item.label) }}</span><strong>{{ item.value }}</strong></div>
+      <meter min="0" :max="maximum" :value="item.value" :aria-label="$t('{label}: {value} on a scale of 0 to {maximum}', { label: $t(item.label), value: item.value, maximum })">{{ item.value }}</meter>
       <div class="endpoints" aria-hidden="true"><span>0</span><span>{{ maximum }}</span></div>
-    </div><p class="note">{{ note }}</p>
+    </div><p class="note">{{ $t(note) }}</p>
   </section>
 </template>
 

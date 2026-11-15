@@ -39,19 +39,19 @@ function goBack() {
       <img class="not-found-illustration" :src="illustration" alt="" />
       <div class="not-found-message">
         <p class="status-code">404</p>
-        <h1 id="not-found-title">Page Not Found</h1>
-        <p class="description">Sorry, the page you are looking for does not exist or has been moved.</p>
+        <h1 id="not-found-title">{{ $t("Page Not Found") }}</h1>
+        <p class="description">{{ $t("Sorry, the page you are looking for does not exist or has been moved.") }}</p>
         <div class="navigation-actions">
           <ElButton type="primary" size="large" @click="goToStart">
-            {{ auth.isDemoSignedIn ? 'Go to dashboard' : 'Sign in' }}
+            {{ $t(auth.isDemoSignedIn ? 'Go to dashboard' : 'Sign in') }}
           </ElButton>
-          <ElButton size="large" @click="goBack">Go Back</ElButton>
+          <ElButton size="large" @click="goBack">{{ $t("Go Back") }}</ElButton>
         </div>
         <div v-if="auth.isDemoSignedIn" class="workspace-note">
-          <span>Available workspace</span>
-          <strong>Demo dashboard</strong>
+          <span>{{ $t("Available workspace") }}</span>
+          <strong>{{ $t("Demo dashboard") }}</strong>
         </div>
-        <p v-else class="sign-in-note">Sign in to access your demo workspace.</p>
+        <p v-else class="sign-in-note">{{ $t("Sign in to access your demo workspace.") }}</p>
       </div>
     </section>
   </StatusLayout>

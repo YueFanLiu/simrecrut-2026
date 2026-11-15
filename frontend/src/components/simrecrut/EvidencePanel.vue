@@ -6,18 +6,18 @@ defineEmits(['back'])
 
 <template>
   <section class="evidence-panel" aria-labelledby="evidence-title" aria-live="polite">
-    <h2 id="evidence-title">Evidence</h2>
-    <p class="mock-note">Short mock excerpts only. These were not extracted from your PDF.</p>
+    <h2 id="evidence-title">{{ $t("Evidence") }}</h2>
+    <p class="mock-note">{{ $t("Short mock excerpts only. These were not extracted from your PDF.") }}</p>
     <template v-if="selection">
-      <h3>{{ selection.label }}</h3>
-      <p>Source: {{ selection.field.status.replaceAll('_', ' ') }}</p>
+      <h3>{{ $t(selection.label) }}</h3>
+      <p>{{ $t("Source:") }} {{ $t(selection.field.status.replaceAll('_', ' ')) }}</p>
       <blockquote v-if="selection.field.evidenceExcerpt">{{ selection.field.evidenceExcerpt }}</blockquote>
-      <p v-else>No source excerpt is available for this user-supplied or unknown value.</p>
+      <p v-else>{{ $t("No source excerpt is available for this user-supplied or unknown value.") }}</p>
       <p v-if="selection.field.evidenceLocation">{{ selection.field.evidenceLocation }}</p>
-      <p v-if="selection.field.status === 'USER_SUPPLIED'">This value was corrected by you. Any excerpt above describes the original mock observation.</p>
-      <ElButton @click="$emit('back')">Back to Fact</ElButton>
+      <p v-if="selection.field.status === 'USER_SUPPLIED'">{{ $t("This value was corrected by you. Any excerpt above describes the original mock observation.") }}</p>
+      <ElButton @click="$emit('back')">{{ $t("Back to Fact") }}</ElButton>
     </template>
-    <p v-else>Choose View Evidence beside a fact to see its short source excerpt and page reference.</p>
+    <p v-else>{{ $t("Choose View Evidence beside a fact to see its short source excerpt and page reference.") }}</p>
   </section>
 </template>
 

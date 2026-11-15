@@ -1,5 +1,7 @@
 <!-- C04: Review five professional fact groups without editing identity fields. -->
 <script setup>
+import { t, dateLocale } from '../../i18n/index.js'
+
 import ResumeFactsTable from "../../components/simrecrut/ResumeFactsTable.vue";
 import CandidateLayout from "../../layouts/CandidateLayout.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
@@ -36,13 +38,13 @@ async function removeResume() {
   if (busy.value || loading.value) return;
   const id = route.params.id;
   try {
-    await ElMessageBox.confirm("Delete this CV, its original and published JSON? This cannot be undone.", "Delete CV", { type: "warning", confirmButtonText: "Delete CV", cancelButtonText: "Cancel" });
+    await ElMessageBox.confirm(t("Delete this CV, its original and published JSON? This cannot be undone."), t("Delete CV"), { type: "warning", confirmButtonText: t("Delete CV"), cancelButtonText: t("Cancel") });
     if (stopped || route.params.id !== id) return;
     busy.value = true; actionError.value = "";
     deletionKey ||= crypto.randomUUID();
     const result = await deleteResume(id, deletionKey);
     if (stopped || route.params.id !== id) return;
-    ElMessage.success(result.data.deleted ? "CV deleted." : "Access blocked. Deletion will retry automatically.");
+    ElMessage.success(t(result.data.deleted ? "CV deleted." : "Access blocked. Deletion will retry automatically."));
     await router.push("/candidate/resumes");
   } catch (error) { if (error !== "cancel" && error !== "close") actionError.value = error.message || "Deletion could not finish. Reload its current status before retrying."; }
   finally { busy.value = false; }
@@ -110,9 +112,9 @@ async function publish() {
     await refresh();
     // Cloud commit and temporary-file deletion can succeed independently.
     if (result.data.originalRemoved)
-      ElMessage.success("Confirmed JSON published. Temporary original removed.");
+      ElMessage.success(t("Confirmed JSON published. Temporary original removed."));
     else
-      ElMessage.warning("JSON published. Temporary-file cleanup is pending; retry cleanup.");
+      ElMessage.warning(t("JSON published. Temporary-file cleanup is pending; retry cleanup."));
   } catch (error) {
     if (stopped || route.params.id !== id) return;
     if (factsLocked) await refresh();
@@ -131,7 +133,7 @@ async function saveDraft() {
     const professional = Object.fromEntries(groups.map(group => [group, editors.value[group] || []]));
     await performAction(id, "save", { draft: { professional, warnings: record.value.draft?.warnings || [] }, confirmed: false, expectedRevision: record.value.revision });
     if (stopped || route.params.id !== id) return;
-    await refresh(); ElMessage.success("Draft saved. Facts remain editable.");
+    await refresh(); ElMessage.success(t("Draft saved. Facts remain editable."));
   } catch (error) { if (!stopped && route.params.id === id) actionError.value = (error.message || "Draft was not saved.") + " Your edits are preserved. Reload saved facts if the revision changed."; }
   finally { busy.value = false; }
 }
@@ -143,7 +145,7 @@ async function retryCleanup() {
     await performAction(id, "cleanup");
     if (stopped || route.params.id !== id) return;
     await refresh();
-    if (record.value && !record.value.originalAvailable) ElMessage.success("Temporary original removed.");
+    if (record.value && !record.value.originalAvailable) ElMessage.success(t("Temporary original removed."));
   } catch (error) {
     actionError.value = (error.message || "Cleanup could not finish.") + " Your published facts remain saved.";
   } finally {
@@ -154,54 +156,51 @@ watch(editors, () => { confirmed.value = false }, { deep: true });
 </script>
 <template>
   <CandidateLayout>
-    <el-button text :disabled="busy" @click="router.push('/candidate/resumes')">Back to my CVs</el-button>
+    <el-button text :disabled="busy" @click="router.push('/candidate/resumes')">{{ $t("Back to my CVs") }}</el-button>
     <section class="review-panel" :aria-busy="loading || busy">
-      <h1>{{ record?.filename || 'Review professional facts' }}</h1>
-      <p>Review and correct your professional facts before confirming. Confirmed facts are locked.</p>
-      <p v-if="record?.expires_at" class="expiry">Expires: {{ new Date(record.expires_at).toLocaleString('en-GB') }}</p>
-      <p v-if="loading" role="status">Loading CV...</p>
-      <el-alert v-if="loadError" :title="loadError" type="error" show-icon :closable="false" />
-      <el-button v-if="loadError" :loading="loading" @click="refresh">Retry loading CV</el-button>
-      <p v-if="!record && !loading && !loadError">No connected CV is loaded.</p>
+      <h1>{{ $t(record?.filename || 'Review professional facts') }}</h1>
+      <p>{{ $t("Review and correct your professional facts before confirming. Confirmed facts are locked.") }}</p>
+      <p v-if="record?.expires_at" class="expiry">{{ $t("Expires:") }} {{ $t(new Date(record.expires_at).toLocaleString(dateLocale)) }}</p>
+      <p v-if="loading" role="status">{{ $t("Loading CV...") }}</p>
+      <el-alert v-if="loadError" :title="$t(loadError)" type="error" show-icon :closable="false" />
+      <el-button v-if="loadError" :loading="loading" @click="refresh">{{ $t("Retry loading CV") }}</el-button>
+      <p v-if="!record && !loading && !loadError">{{ $t("No connected CV is loaded.") }}</p>
       <template v-if="record">
-        <el-button :disabled="busy || loading" @click="refresh">Reload saved facts</el-button>
-        <el-alert v-if="record.status === 'EXTRACTING'" title="Extracting professional facts…"
+        <el-button :disabled="busy || loading" @click="refresh">{{ $t("Reload saved facts") }}</el-button>
+        <el-alert v-if="record.status === 'EXTRACTING'" :title="$t(&quot;Extracting professional facts…&quot;)"
           type="info" :closable="false" />
-        <el-alert v-if="record.error" :title="uiMessage(record.error, 'Extraction failed. Please retry or upload another CV.')"
+        <el-alert v-if="record.error" :title="$t(uiMessage(record.error, 'Extraction failed. Please retry or upload another CV.'))"
           type="error" show-icon :closable="false" />
         <p v-for="warning in record.draft?.warnings || []" :key="warning">
-          {{ uiMessage(warning, 'Some extracted facts need review. Check the facts before confirming.') }}
+          {{ $t(uiMessage(warning, 'Some extracted facts need review. Check the facts before confirming.')) }}
         </p>
         <el-tabs v-if="record.status !== 'EXTRACTING'" v-model="activeGroup">
-          <el-tab-pane v-for="group in groups" :key="group" :label="groupLabels[group]" :name="group">
-            <p>Check each fact against its supporting excerpt. Add missing information or correct any mistakes.</p>
+          <el-tab-pane v-for="group in groups" :key="group" :label="$t(groupLabels[group])" :name="group">
+            <p>{{ $t("Check each fact against its supporting excerpt. Add missing information or correct any mistakes.") }}</p>
             <ResumeFactsTable v-model="editors[group]" :group="group"
               :locked="!!record.confirmed || busy || loading" />
           </el-tab-pane>
         </el-tabs>
-        <el-alert v-if="actionError" :title="actionError" type="error" show-icon :closable="false" />
+        <el-alert v-if="actionError" :title="$t(actionError)" type="error" show-icon :closable="false" />
         <div class="review-actions">
           <el-button v-if="record.originalAvailable && record.cloud_revision === record.revision"
-            v-hasPermi="['simrecrut:resume:confirm']" :disabled="busy || loading" @click="retryCleanup">
-            Retry temporary-file cleanup</el-button>
+            v-hasPermi="['simrecrut:resume:confirm']" :disabled="busy || loading" @click="retryCleanup"> {{ $t("Retry temporary-file cleanup") }}</el-button>
           <el-button v-if="!record.confirmed && record.originalAvailable && ['UPLOADED', 'FAILED'].includes(record.status)"
-            v-hasPermi="['simrecrut:resume:edit']" :disabled="busy || loading" @click="retryExtraction">
-            Retry extraction</el-button>
+            v-hasPermi="['simrecrut:resume:edit']" :disabled="busy || loading" @click="retryExtraction"> {{ $t("Retry extraction") }}</el-button>
           <el-button v-if="!record.confirmed" v-hasPermi="['simrecrut:resume:edit']"
-            :disabled="busy || loading || record.status === 'EXTRACTING'" @click="saveDraft">Save draft</el-button>
+            :disabled="busy || loading || record.status === 'EXTRACTING'" @click="saveDraft">{{ $t("Save draft") }}</el-button>
           <el-button v-hasPermi="['simrecrut:resume:delete']" type="danger" plain
-            :disabled="busy || loading" @click="removeResume">Delete CV</el-button>
+            :disabled="busy || loading" @click="removeResume">{{ $t("Delete CV") }}</el-button>
         </div>
         <div class="confirmation">
-          <p v-if="!record.confirmed && !hasFacts && record.status !== 'EXTRACTING'">Add a professional fact before confirming this CV.</p>
+          <p v-if="!record.confirmed && !hasFacts && record.status !== 'EXTRACTING'">{{ $t("Add a professional fact before confirming this CV.") }}</p>
           <el-checkbox v-if="!record.confirmed" v-model="confirmed"
-            :disabled="busy || loading || !hasFacts || record.status === 'EXTRACTING'">
-            I have reviewed these professional facts.</el-checkbox>
+            :disabled="busy || loading || !hasFacts || record.status === 'EXTRACTING'"> {{ $t("I have reviewed these professional facts.") }}</el-checkbox>
           <el-button v-hasPermi="['simrecrut:resume:confirm']" type="primary" :loading="busy"
             :disabled="busy || loading || (!record.confirmed && (!confirmed || !hasFacts)) || record.status === 'EXTRACTING' || record.cloud_revision === record.revision"
-            @click="publish">{{ record.confirmed
+            @click="publish">{{ $t(record.confirmed
               ? (record.cloud_revision === record.revision ? 'Facts published' : 'Publish confirmed facts')
-              : 'Confirm and publish facts' }}</el-button>
+              : 'Confirm and publish facts') }}</el-button>
         </div>
       </template>
     </section>

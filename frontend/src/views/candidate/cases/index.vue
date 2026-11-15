@@ -1,4 +1,6 @@
 <script setup>
+import { dateLocale } from '../../../i18n/index.js'
+
 import { demoMode } from '../../../config/runtime.js'
 import { getCaseDestination } from '../../../utils/case-history.js'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -28,7 +30,7 @@ const confirmDelete = ref(false)
 const deleting = ref(false)
 let sequence = 0
 let pageActive = true
-const formatDate = (value) => value ? new Intl.DateTimeFormat('en-GB', {
+const formatDate = (value) => value ? new Intl.DateTimeFormat(dateLocale.value, {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris',
 }).format(new Date(value)) : 'Not uploaded'
 
@@ -96,36 +98,36 @@ onBeforeUnmount(() => { pageActive = false; sequence += 1; selected.value = null
 <template>
   <CandidateLayout>
     <section aria-labelledby="history-title" :aria-busy="loading || deleting">
-      <nav class="breadcrumb" aria-label="Breadcrumb"><RouterLink :to="{ name: 'PublishedJobs' }">Jobs</RouterLink><span>/</span><span aria-current="page">My Simulations</span></nav>
-      <div class="page-heading"><div><h1 id="history-title">My Simulations</h1><p class="subtitle">Continue and manage your recruitment simulation cases.</p></div>
-        <div class="heading-actions"><ElButton :loading="loading" :disabled="loading || deleting" @click="loadHistory">Refresh</ElButton>
-          <ElButton type="primary" :disabled="deleting" @click="router.push({ name: 'PublishedJobs' })">Start a New Simulation</ElButton></div></div>
-      <ElAlert v-if="demoMode" type="info" :closable="false" title="Frontend demo: only your retained cases in this tab are listed. No backend history is loaded. Confirmed checkpoints survive reload; uploads and unconfirmed drafts do not. Sign out clears private case state. Scores are fixed examples." />
-      <div v-if="loading" class="panel state-panel" role="status"><p>Loading your simulations...</p><ElSkeleton :rows="6" animated /></div>
-      <div v-else-if="loadError" class="panel state-panel" role="alert"><h2>Simulations Could Not Be Loaded</h2><p>{{ loadError }}</p><ElButton type="primary" @click="loadHistory">Try Again</ElButton></div>
+      <nav class="breadcrumb" :aria-label="$t(&quot;Breadcrumb&quot;)"><RouterLink :to="{ name: 'PublishedJobs' }">{{ $t("Jobs") }}</RouterLink><span>/</span><span aria-current="page">{{ $t("My Simulations") }}</span></nav>
+      <div class="page-heading"><div><h1 id="history-title">{{ $t("My Simulations") }}</h1><p class="subtitle">{{ $t("Continue and manage your recruitment simulation cases.") }}</p></div>
+        <div class="heading-actions"><ElButton :loading="loading" :disabled="loading || deleting" @click="loadHistory">{{ $t("Refresh") }}</ElButton>
+          <ElButton type="primary" :disabled="deleting" @click="router.push({ name: 'PublishedJobs' })">{{ $t("Start a New Simulation") }}</ElButton></div></div>
+      <ElAlert v-if="demoMode" type="info" :closable="false" :title="$t(&quot;Frontend demo: only your retained cases in this tab are listed. No backend history is loaded. Confirmed checkpoints survive reload; uploads and unconfirmed drafts do not. Sign out clears private case state. Scores are fixed examples.&quot;)" />
+      <div v-if="loading" class="panel state-panel" role="status"><p>{{ $t("Loading your simulations...") }}</p><ElSkeleton :rows="6" animated /></div>
+      <div v-else-if="loadError" class="panel state-panel" role="alert"><h2>{{ $t("Simulations Could Not Be Loaded") }}</h2><p>{{ $t(loadError) }}</p><ElButton type="primary" @click="loadHistory">{{ $t("Try Again") }}</ElButton></div>
       <template v-else>
-        <ElAlert v-if="actionError" class="feedback" type="error" :closable="false" :title="actionError" />
-        <p v-if="feedback" class="feedback" role="status">{{ feedback }}</p>
-        <p v-if="deleting" role="status">Requesting case deletion.</p>
-        <div v-if="!rows.length" class="panel state-panel"><ElEmpty description="No simulation records yet" />
-          <h2>No Simulation Records Yet</h2><p>Start a case from a published job. Deleted and expired cases are not listed.</p>
-          <ElButton type="primary" :disabled="deleting" @click="router.push({ name: 'PublishedJobs' })">Browse Jobs</ElButton></div>
+        <ElAlert v-if="actionError" class="feedback" type="error" :closable="false" :title="$t(actionError)" />
+        <p v-if="feedback" class="feedback" role="status">{{ $t(feedback) }}</p>
+        <p v-if="deleting" role="status">{{ $t("Requesting case deletion.") }}</p>
+        <div v-if="!rows.length" class="panel state-panel"><ElEmpty :description="$t(&quot;No simulation records yet&quot;)" />
+          <h2>{{ $t("No Simulation Records Yet") }}</h2><p>{{ $t("Start a case from a published job. Deleted and expired cases are not listed.") }}</p>
+          <ElButton type="primary" :disabled="deleting" @click="router.push({ name: 'PublishedJobs' })">{{ $t("Browse Jobs") }}</ElButton></div>
         <template v-else>
-          <div class="list-toolbar"><p>{{ rows.length }} {{ rows.length === 1 ? 'case' : 'cases' }} · {{ demoMode ? 'Newest uploads first' : 'Newest cases first' }} · Dates use Paris time</p>
-            <ElSelect v-model="pageSize" aria-label="Cases per page" class="page-size" :disabled="deleting"><ElOption v-for="size in [5, 10, 20]" :key="size" :value="size" :label="`${size} / page`" /></ElSelect></div>
-          <div class="panel table-panel"><div class="table-scroll" tabindex="0" role="region" aria-label="My simulations table"><table>
-            <caption>Owned retained cases. Unavailable results display —. Objective and ML scores use different scales.</caption>
-            <thead><tr><th scope="col">Case ID</th><th scope="col">Job Position</th><th scope="col">{{ demoMode ? 'Upload Date' : 'Created' }}</th><th scope="col">Status</th>
-              <th scope="col">Objective<br><span>0–100</span></th><th scope="col">Neutral ML<br><span>0–1</span></th><th scope="col">Biased ML<br><span>0–1</span></th>
-              <th scope="col">Standard Human</th><th scope="col">Instructed-Bias Human</th><th scope="col">Available Until</th><th scope="col">Actions</th></tr></thead>
-            <tbody><tr v-for="row in visibleRows" :key="row.caseId"><th scope="row">{{ row.caseId }}</th><td><strong>{{ row.jobTitle }}</strong><span v-if="row.version" class="version">Version {{ row.version }}</span></td>
-              <td>{{ formatDate(demoMode ? row.uploadedAt : row.createdAt) }}</td><td><ElTag :type="row.statusType">{{ row.status }}</ElTag></td><td>{{ row.objective ?? '—' }}</td><td>{{ row.neutral ?? '—' }}</td><td>{{ row.biased ?? '—' }}</td>
-              <td>{{ row.standardHuman ?? '—' }}</td><td>{{ row.instructedBiasHuman ?? '—' }}</td><td>{{ formatDate(row.expiresAt) }}</td>
-              <td><div class="row-actions"><ElButton type="primary" plain size="small" :disabled="deleting || !row.destination" :aria-label="`${row.actionLabel} ${row.caseId}`" @click="continueCase(row)">{{ row.actionLabel }}</ElButton>
-                <ElButton type="danger" plain size="small" :disabled="deleting" :aria-label="`Delete ${row.caseId}`" @click="requestDelete(row)">Delete</ElButton></div></td></tr></tbody>
+          <div class="list-toolbar"><p>{{ rows.length }} {{ $t(rows.length === 1 ? 'case' : 'cases') }} · {{ $t(demoMode ? 'Newest uploads first' : 'Newest cases first') }} {{ $t("· Dates use Paris time") }}</p>
+            <ElSelect v-model="pageSize" :aria-label="$t(&quot;Cases per page&quot;)" class="page-size" :disabled="deleting"><ElOption v-for="size in [5, 10, 20]" :key="size" :value="size" :label="$t('{size} / page', { size })" /></ElSelect></div>
+          <div class="panel table-panel"><div class="table-scroll" tabindex="0" role="region" :aria-label="$t(&quot;My simulations table&quot;)"><table>
+            <caption>{{ $t("Owned retained cases. Unavailable results display —. Objective and ML scores use different scales.") }}</caption>
+            <thead><tr><th scope="col">{{ $t("Case ID") }}</th><th scope="col">{{ $t("Job Position") }}</th><th scope="col">{{ $t(demoMode ? 'Upload Date' : 'Created') }}</th><th scope="col">{{ $t("Status") }}</th>
+              <th scope="col">{{ $t("Objective") }}<br><span>0–100</span></th><th scope="col">{{ $t("Neutral ML") }}<br><span>0–1</span></th><th scope="col">{{ $t("Biased ML") }}<br><span>0–1</span></th>
+              <th scope="col">{{ $t("Standard Human") }}</th><th scope="col">{{ $t("Instructed-Bias Human") }}</th><th scope="col">{{ $t("Available Until") }}</th><th scope="col">{{ $t("Actions") }}</th></tr></thead>
+            <tbody><tr v-for="row in visibleRows" :key="row.caseId"><th scope="row">{{ row.caseId }}</th><td><strong>{{ row.jobTitle }}</strong><span v-if="row.version" class="version">{{ $t("Version") }} {{ row.version }}</span></td>
+              <td>{{ formatDate(demoMode ? row.uploadedAt : row.createdAt) }}</td><td><ElTag :type="row.statusType">{{ $t(row.status) }}</ElTag></td><td>{{ $t(row.objective ?? '—') }}</td><td>{{ $t(row.neutral ?? '—') }}</td><td>{{ $t(row.biased ?? '—') }}</td>
+              <td>{{ $t(row.standardHuman ?? '—') }}</td><td>{{ $t(row.instructedBiasHuman ?? '—') }}</td><td>{{ formatDate(row.expiresAt) }}</td>
+              <td><div class="row-actions"><ElButton type="primary" plain size="small" :disabled="deleting || !row.destination" :aria-label="$t(row.actionLabel) + ' ' + row.caseId" @click="continueCase(row)">{{ $t(row.actionLabel) }}</ElButton>
+                <ElButton type="danger" plain size="small" :disabled="deleting" :aria-label="$t('Delete') + ' ' + row.caseId" @click="requestDelete(row)">{{ $t("Delete") }}</ElButton></div></td></tr></tbody>
           </table></div></div>
           <div class="mobile-list"><CaseHistoryCard v-for="row in visibleRows" :key="row.caseId" :entry="row" :busy="deleting" @continue="continueCase" @delete="requestDelete" /></div>
-          <div class="pagination"><p>Showing {{ (page - 1) * pageSize + 1 }}–{{ Math.min(page * pageSize, rows.length) }} of {{ rows.length }} cases</p>
+          <div class="pagination"><p>{{ $t("Showing") }} {{ (page - 1) * pageSize + 1 }}–{{ Math.min(page * pageSize, rows.length) }} {{ $t("of") }} {{ rows.length }} {{ $t("cases") }}</p>
             <ElPagination v-model:current-page="page" :page-size="pageSize" :total="rows.length" layout="prev, pager, next" :pager-count="5" :disabled="deleting" background /></div>
         </template>
       </template>

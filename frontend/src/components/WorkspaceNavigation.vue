@@ -44,12 +44,12 @@ export default {
     <button
       class="menu-toggle"
       @click="menu = !menu"
-      aria-label="Toggle navigation"
+      :aria-label="$t(&quot;Toggle navigation&quot;)"
     >
       ☰
     </button>
     <a class="brand" href="/research/experiments" @click.prevent="home"
-      ><span class="logo">S</span>SimRecrut</a
+      ><span class="logo">S</span>{{ $t("SimRecrut") }}</a
     >
     <nav class="topnav">
       <button
@@ -57,22 +57,22 @@ export default {
         :class="{ active: page[1] === g }"
         @click="go(pages.find((p) => p[1] === g)[3])"
       >
-        {{ g }}
+        {{ $t(g) }}
       </button>
     </nav>
     <div class="account">
-      <span class="demo-tag">{{ demoMode ? "Prototype" : "Connected" }}</span
-      ><span class="avatar">YW</span
+      <span class="demo-tag">{{ $t(demoMode ? "Prototype" : "Connected") }}</span
+      ><span class="avatar">{{ $t("YW") }}</span
       ><span
         >{{ user.name }}<small>{{ page[1] }}</small></span
       >
-      <button v-if="!demoMode" @click="signOut">Sign out</button>
+      <button v-if="!demoMode" @click="signOut">{{ $t("Sign out") }}</button>
     </div>
   </header>
   <aside class="sidebar" :class="{ open: menu }">
-    <div class="sidebar-title">WORKSPACES</div>
+    <div class="sidebar-title">{{ $t("WORKSPACES") }}</div>
     <section v-for="g in groups">
-      <h3>{{ g }}</h3>
+      <h3>{{ $t(g) }}</h3>
       <button
         v-for="p in pages.filter((p) => p[1] === g && visible(p[0]))"
         :class="{ active: page[0] === p[0] }"
@@ -83,8 +83,8 @@ export default {
       </button>
     </section>
     <div class="sidebar-foot">
-      <span class="live-dot"></span>UI development preview<small
-        >Java 17 backend · Vue 3 frontend</small
+      <span class="live-dot"></span>{{ $t("UI development preview") }}<small
+        >{{ $t("Java 17 backend · Vue 3 frontend") }}</small
       >
     </div>
   </aside>

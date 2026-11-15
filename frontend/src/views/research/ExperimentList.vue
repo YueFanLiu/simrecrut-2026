@@ -8,24 +8,22 @@ export default { components: { RecordTable }, setup: useWorkspace };
 <template>
   <div class="stats">
     <article>
-      <small>AUTHORIZED EXPERIMENTS</small><b>{{ data.experiments.length }}</b
-      ><span>Visible to the demo researcher</span>
+      <small>{{ $t("AUTHORIZED EXPERIMENTS") }}</small><b>{{ data.experiments.length }}</b
+      ><span>{{ $t("Visible to the demo researcher") }}</span>
     </article>
     <article>
-      <small>COMPLETED</small
-      ><b>{{
-        data.experiments.filter((e) => e.status === "Completed").length
-      }}</b
-      ><span>Stored examples; outputs may be unavailable</span>
+      <small>{{ $t("COMPLETED") }}</small
+      ><b>{{ $t(data.experiments.filter((e) => e.status === "Completed").length) }}</b
+      ><span>{{ $t("Stored examples; outputs may be unavailable") }}</span>
     </article>
     <article>
-      <small>DRAFTS</small
-      ><b>{{ data.experiments.filter((e) => e.status === "Draft").length }}</b
-      ><span>Awaiting subject selection</span>
+      <small>{{ $t("DRAFTS") }}</small
+      ><b>{{ $t(data.experiments.filter((e) => e.status === "Draft").length) }}</b
+      ><span>{{ $t("Awaiting subject selection") }}</span>
     </article>
     <article>
-      <small>PROTOCOL</small><b class="small-number">P-2026.01</b
-      ><span>Versioned and immutable</span>
+      <small>{{ $t("PROTOCOL") }}</small><b class="small-number">P-2026.01</b
+      ><span>{{ $t("Versioned and immutable") }}</span>
     </article>
   </div>
   <RecordTable />

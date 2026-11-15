@@ -1,6 +1,8 @@
 package fr.isep.simrecrut.security.authentication;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.isep.simrecrut.i18n.ApiMessages;
+import fr.isep.simrecrut.i18n.ApiLanguageFilter;
 import fr.isep.simrecrut.dto.identity.RegistrationDtos.ApiResponse;
 import fr.isep.simrecrut.service.identity.AuthenticationFlowException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,21 +35,21 @@ public class AuthenticationErrorHandler implements AuthenticationEntryPoint, Acc
         for (int depth = 0; cause != null && depth < 8; depth++, cause = cause.getCause()) {
             if (cause instanceof AuthenticationFlowException flow) {
                 int status = flow.reason() == AuthenticationFlowException.Reason.RATE_LIMITED ? 429 : 503;
-                write(response, status, flow.getMessage(), true, flow.retryAfterSeconds());
+                write(request, response, status, flow.getMessage(), true, flow.retryAfterSeconds());
                 return;
             }
         }
         response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
-        write(response, 401, "Authentication is required or the access token is invalid.", false, 0);
+        write(request, response, 401, "Authentication is required or the access token is invalid.", false, 0);
     }
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
             AccessDeniedException exception) throws IOException {
-        write(response, 403, "Access denied.", false, 0);
+        write(request, response, 403, "Access denied.", false, 0);
     }
 
-    private void write(HttpServletResponse response, int status, String message,
+    private void write(HttpServletRequest request, HttpServletResponse response, int status, String message,
             boolean retryable, long retryAfterSeconds) throws IOException {
         if (response.isCommitted()) {
             return;
@@ -60,6 +62,9 @@ public class AuthenticationErrorHandler implements AuthenticationEntryPoint, Acc
         if (retryAfterSeconds > 0) {
             response.setHeader(HttpHeaders.RETRY_AFTER, Long.toString(retryAfterSeconds));
         }
-        json.writeValue(response.getOutputStream(), ApiResponse.failure(status, message, retryable));
+        var locale = ApiMessages.resolveLocale(request.getHeader(HttpHeaders.ACCEPT_LANGUAGE));
+        ApiLanguageFilter.headers(response, locale);
+        json.writeValue(response.getOutputStream(), ApiResponse.failure(status,
+                ApiMessages.translate(message, locale), retryable));
     }
 }

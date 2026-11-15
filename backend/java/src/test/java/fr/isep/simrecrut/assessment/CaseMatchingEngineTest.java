@@ -92,6 +92,47 @@ class CaseMatchingEngineTest {
                 requirements("SKILLS", "{\"assessedSkillCodes\":[\"Java\"]}"), f.bundle, "2026-10")).status());
     }
 
+    @Test void publicExplanationUsesComputedMatchAndMandatoryGate() throws Exception {
+        ObjectNode draft = Facts.empty(); draft.putArray("confirmedAbsent");
+        draft.withObject("professional").withArray("skills").addObject().put("skillCode", "Java");
+        JsonNode requirements = requirements("SKILLS", "{\"assessedSkillCodes\":[\"Java\",\"Python\"]}");
+        ((ObjectNode) requirements.get(0)).put("publicVisible", true).put("mandatory", true);
+        var partial = f.engine.calculate(draft, f.job, requirements, f.bundle, "2026-10");
+        assertEquals(0.5, partial.path("score").asDouble());
+        assertEquals("Reject", partial.path("decision").asText());
+        assertTrue(partial.path("strengths").isEmpty());
+        assertEquals("Skills assessed requirements are partially met.", partial.path("gaps").get(0).asText());
+        assertEquals("Skills mandatory conditions are not met.", partial.path("gaps").get(1).asText());
+        draft.withObject("professional").withArray("skills").addObject().put("skillCode", "Python");
+        var complete = f.engine.calculate(draft, f.job, requirements, f.bundle, "2026-10");
+        assertEquals(1, complete.path("score").asInt());
+        assertEquals("Accept", complete.path("decision").asText());
+        assertEquals("Skills assessed requirements are fully met.", complete.path("strengths").get(0).asText());
+        assertTrue(complete.path("gaps").isEmpty());
+    }
+
+    @Test void explicitAbsenceProducesAnAccurateGapWithoutInventingUnknownFacts() throws Exception {
+        ObjectNode draft = Facts.empty(); draft.putArray("confirmedAbsent").add("SKILLS");
+        JsonNode requirements = requirements("SKILLS", "{\"assessedSkillCodes\":[\"Java\"]}");
+        ((ObjectNode) requirements.get(0)).put("publicVisible", true);
+        var result = f.engine.calculate(draft, f.job, requirements, f.bundle, "2026-10");
+        assertEquals(0, result.path("score").asInt());
+        assertEquals(1, result.path("gaps").size());
+        assertEquals("Skills assessed requirements are not met.", result.path("gaps").get(0).asText());
+        assertTrue(result.path("strengths").isEmpty());
+    }
+
+    @Test void hiddenRequirementsDoNotLeakThroughPublicExplanations() throws Exception {
+        ObjectNode draft = Facts.empty(); draft.putArray("confirmedAbsent");
+        draft.withObject("professional").withArray("skills").addObject().put("skillCode", "Java");
+        JsonNode requirements = requirements("SKILLS", "{\"assessedSkillCodes\":[\"Java\",\"Python\"]}");
+        ((ObjectNode) requirements.get(0)).put("publicVisible", false);
+        var result = f.engine.calculate(draft, f.job, requirements, f.bundle, "2026-10");
+        assertEquals(0.5, result.path("score").asDouble());
+        assertTrue(result.path("strengths").isEmpty());
+        assertTrue(result.path("gaps").isEmpty());
+    }
+
     private JsonNode requirements(String type, String payload) throws Exception {
         return f.json.readTree("[{\"criterionType\":\"" + type + "\",\"assessmentIncluded\":true,\"mandatory\":false,\"payload\":" + payload + "}]");
     }

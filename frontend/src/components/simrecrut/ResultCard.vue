@@ -12,12 +12,12 @@ defineProps({
 </script>
 
 <template>
-  <article class="result-card" :aria-label="title">
-    <div class="card-heading"><h3>{{ title }}</h3><ElTag type="info">{{ status }}</ElTag></div>
-    <p v-if="decision" class="decision" :class="decision.toLowerCase()">{{ decision }}</p>
-    <p v-else class="pending">{{ status === 'Not assigned' ? 'No review assigned' : status === 'Unavailable' ? 'Awaiting result' : 'Awaiting review' }}</p>
-    <div v-if="score !== null" class="score"><strong>{{ score }}</strong><span>Scale {{ scale }}</span></div>
-    <p class="note">{{ note }}</p>
+  <article class="result-card" :aria-label="$t(title)">
+    <div class="card-heading"><h3>{{ $t(title) }}</h3><ElTag type="info">{{ $t(status) }}</ElTag></div>
+    <p v-if="decision" class="decision" :class="decision.toLowerCase()">{{ $t(decision) }}</p>
+    <p v-else class="pending">{{ $t(status === 'Not assigned' ? 'No review assigned' : status === 'Unavailable' ? 'Awaiting result' : 'Awaiting review') }}</p>
+    <div v-if="score !== null" class="score"><strong>{{ score }}</strong><span>{{ $t("Scale") }} {{ scale }}</span></div>
+    <p class="note">{{ $t(note) }}</p>
     <slot />
   </article>
 </template>

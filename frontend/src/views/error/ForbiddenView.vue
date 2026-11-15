@@ -18,31 +18,27 @@ function returnToPreviousPage() {
       <img class="forbidden-illustration" :src="illustration" alt="" />
       <div class="forbidden-message">
         <p class="status-code">403</p>
-        <h1 id="forbidden-title">Access Denied</h1>
-        <p class="description">You do not have permission to access this page or perform this action.</p>
+        <h1 id="forbidden-title">{{ $t("Access Denied") }}</h1>
+        <p class="description">{{ $t("You do not have permission to access this page or perform this action.") }}</p>
 
         <aside class="reason-panel" aria-labelledby="reasons-title">
-          <h2 id="reasons-title">Possible reasons</h2>
+          <h2 id="reasons-title">{{ $t("Possible reasons") }}</h2>
           <ul>
-            <li>Your account does not have the required role.</li>
-            <li>You are not authorized for this resource.</li>
-            <li>The resource is not available in your current workspace.</li>
+            <li>{{ $t("Your account does not have the required role.") }}</li>
+            <li>{{ $t("You are not authorized for this resource.") }}</li>
+            <li>{{ $t("The resource is not available in your current workspace.") }}</li>
           </ul>
         </aside>
 
         <div class="workspace-note">
-          <span>Available workspace</span>
-          <strong>Demo dashboard</strong>
-          <p>This frontend demo has no real permission checks.</p>
+          <span>{{ $t("Available workspace") }}</span>
+          <strong>{{ $t("Demo dashboard") }}</strong>
+          <p>{{ $t("This frontend demo has no real permission checks.") }}</p>
         </div>
 
         <div class="navigation-actions">
-          <ElButton type="primary" size="large" @click="returnToPreviousPage">
-            Back to previous page
-          </ElButton>
-          <ElButton size="large" @click="router.replace({ name: 'DemoDashboard' })">
-            Go to dashboard
-          </ElButton>
+          <ElButton type="primary" size="large" @click="returnToPreviousPage"> {{ $t("Back to previous page") }} </ElButton>
+          <ElButton size="large" @click="router.replace({ name: 'DemoDashboard' })"> {{ $t("Go to dashboard") }} </ElButton>
         </div>
       </div>
     </section>

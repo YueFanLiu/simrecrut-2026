@@ -1,4 +1,5 @@
 <script setup>
+import { useLocalizedValidation, t } from '../../../i18n/index.js'
 import { demoMode } from '../../../config/runtime.js'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -14,7 +15,7 @@ const route = useRoute(), router = useRouter(), auth = useAuthStore(), research 
 const loaded = ref(false), loading = ref(true), loadError = ref(''), submitError = ref(''), submitting = ref(false), confirm = ref(false), clock = ref(Date.now()), formRef = ref()
 const form = reactive({ decision: '', reason: '' })
 const rules = {
-  decision: [{ required: true, message: 'Select Accept or Reject.', trigger: 'change' }],
+  decision: [{ required: true, get message() { return t('Select Accept or Reject.') }, trigger: 'change' }],
   reason: [{ validator: (_, value, callback) => callback(typeof value === 'string' && value.trim().length >= 1 && value.trim().length <= 2000 ? undefined : new Error('Enter a reason of 1 to 2000 characters.')), trigger: 'blur' }],
 }
 const detail = computed(() => {
@@ -54,33 +55,35 @@ async function submit() {
 watch(() => route.params.reviewId, load)
 onBeforeUnmount(() => { active = false; sequence += 1; clearInterval(timer) })
 load()
+
+useLocalizedValidation(formRef)
 </script>
 
 <template>
   <component :is="auth.hasDemoRole('HR') ? HrLayout : ResearchLayout">
     <section aria-labelledby="review-title" :aria-busy="loading">
-      <div class="heading"><div><p class="breadcrumb">Reviews / My Review Tasks / {{ route.params.reviewId }}</p><h1 id="review-title">Review Candidate Profile</h1><p>Evaluate the anonymised professional facts against the public job requirements.</p></div><ElButton @click="router.push({ name: 'MyReviewTasks' })">Back to Tasks</ElButton></div>
-      <ElAlert type="info" :closable="false" title="Review the assigned material and submit an independent decision." />
-      <div v-if="loading" class="panel state" role="status"><p>Loading review task...</p><ElSkeleton :rows="8" animated /></div>
-      <div v-else-if="loadError || !detail" class="panel state" role="alert"><h2>Review Task Unavailable</h2><p>{{ loadError || 'This task is unavailable or access is no longer authorised.' }}</p><ElButton @click="load">Try Again</ElButton></div>
+      <div class="heading"><div><p class="breadcrumb">{{ $t("Reviews / My Review Tasks /") }} {{ route.params.reviewId }}</p><h1 id="review-title">{{ $t("Review Candidate Profile") }}</h1><p>{{ $t("Evaluate the anonymised professional facts against the public job requirements.") }}</p></div><ElButton @click="router.push({ name: 'MyReviewTasks' })">{{ $t("Back to Tasks") }}</ElButton></div>
+      <ElAlert type="info" :closable="false" :title="$t(&quot;Review the assigned material and submit an independent decision.&quot;)" />
+      <div v-if="loading" class="panel state" role="status"><p>{{ $t("Loading review task...") }}</p><ElSkeleton :rows="8" animated /></div>
+      <div v-else-if="loadError || !detail" class="panel state" role="alert"><h2>{{ $t("Review Task Unavailable") }}</h2><p>{{ $t(loadError || 'This task is unavailable or access is no longer authorised.') }}</p><ElButton @click="load">{{ $t("Try Again") }}</ElButton></div>
       <template v-else>
-        <ol class="steps" aria-label="Review workflow"><li>1. Read Profile</li><li>2. Evaluate</li><li>{{ detail.status === 'Submitted' ? '3. Submitted' : '3. Confirm and Submit' }}</li></ol>
+        <ol class="steps" :aria-label="$t(&quot;Review workflow&quot;)"><li>{{ $t("1. Read Profile") }}</li><li>{{ $t("2. Evaluate") }}</li><li>{{ $t(detail.status === 'Submitted' ? '3. Submitted' : '3. Confirm and Submit') }}</li></ol>
         <div class="review-grid">
-          <article class="panel profile"><h2>Candidate Profile (Anonymised)</h2><p>Personal identity information is withheld. {{ demoMode ? 'All facts below are mock data.' : '' }}</p><section v-for="(label, key) in labels" :key="key"><h3>{{ label }}</h3><p>{{ detail.professional[key] }}</p></section></article>
-          <article class="panel evaluation"><h2>Your Evaluation</h2>
-            <section v-if="detail.controlled" class="instruction"><h3>Assigned Instructed-Bias Condition</h3><p>{{ detail.controlled.attribute }}: {{ detail.controlled.value }}</p><p>{{ detail.controlled.instruction }}</p></section>
-            <template v-if="detail.status === 'Submitted'"><ElAlert type="success" :closable="false" title="Review submitted. Your decision is locked and cannot be changed." /><div v-if="detail.submission" class="own-submission"><h3>Your Decision</h3><ElTag>{{ detail.submission.decision }}</ElTag><h3>Your Reason</h3><p>{{ detail.submission.reason }}</p><p v-if="detail.submission.submittedAt">Submitted: {{ new Date(detail.submission.submittedAt).toUTCString() }}</p></div><p v-else>Your original decision and reason are unavailable. This task remains locked.</p></template>
+          <article class="panel profile"><h2>{{ $t("Candidate Profile (Anonymised)") }}</h2><p>{{ $t("Personal identity information is withheld.") }} {{ $t(demoMode ? 'All facts below are mock data.' : '') }}</p><section v-for="(label, key) in labels" :key="key"><h3>{{ $t(label) }}</h3><p>{{ detail.professional[key] }}</p></section></article>
+          <article class="panel evaluation"><h2>{{ $t("Your Evaluation") }}</h2>
+            <section v-if="detail.controlled" class="instruction"><h3>{{ $t("Assigned Instructed-Bias Condition") }}</h3><p>{{ detail.controlled.attribute }}: {{ detail.controlled.value }}</p><p>{{ detail.controlled.instruction }}</p></section>
+            <template v-if="detail.status === 'Submitted'"><ElAlert type="success" :closable="false" :title="$t(&quot;Review submitted. Your decision is locked and cannot be changed.&quot;)" /><div v-if="detail.submission" class="own-submission"><h3>{{ $t("Your Decision") }}</h3><ElTag>{{ $t(detail.submission.decision) }}</ElTag><h3>{{ $t("Your Reason") }}</h3><p>{{ detail.submission.reason }}</p><p v-if="detail.submission.submittedAt">{{ $t("Submitted:") }} {{ new Date(detail.submission.submittedAt).toUTCString() }}</p></div><p v-else>{{ $t("Your original decision and reason are unavailable. This task remains locked.") }}</p></template>
             <ElForm v-else-if="editable" ref="formRef" :model="form" :rules="rules" label-position="top" :disabled="submitting || confirm || instructionMissing" @submit.prevent="openConfirmation">
-              <ElFormItem label="Overall Decision" prop="decision"><ElRadioGroup v-model="form.decision" aria-label="Overall Decision"><ElRadio value="Accept">Accept</ElRadio><ElRadio value="Reject">Reject</ElRadio></ElRadioGroup></ElFormItem>
-              <ElFormItem label="Reason" prop="reason"><ElInput v-model="form.reason" type="textarea" :rows="7" maxlength="2000" show-word-limit aria-label="Reason" placeholder="Explain the relevant professional evidence or gaps (1 to 2000 characters)." /></ElFormItem>
-              <p>Submission requires confirmation. Once confirmed, your decision and reason cannot be changed.</p><ElAlert v-if="submitError" type="error" :closable="false" :title="submitError" /><ElButton type="primary" native-type="submit" :loading="submitting" :disabled="submitting || confirm || instructionMissing">Submit Decision</ElButton>
+              <ElFormItem :label="$t(&quot;Overall Decision&quot;)" prop="decision"><ElRadioGroup v-model="form.decision" :aria-label="$t(&quot;Overall Decision&quot;)"><ElRadio value="Accept">{{ $t("Accept") }}</ElRadio><ElRadio value="Reject">{{ $t("Reject") }}</ElRadio></ElRadioGroup></ElFormItem>
+              <ElFormItem :label="$t(&quot;Reason&quot;)" prop="reason"><ElInput v-model="form.reason" type="textarea" :rows="7" maxlength="2000" show-word-limit :aria-label="$t(&quot;Reason&quot;)" :placeholder="$t(&quot;Explain the relevant professional evidence or gaps (1 to 2000 characters).&quot;)" /></ElFormItem>
+              <p>{{ $t("Submission requires confirmation. Once confirmed, your decision and reason cannot be changed.") }}</p><ElAlert v-if="submitError" type="error" :closable="false" :title="$t(submitError)" /><ElButton type="primary" native-type="submit" :loading="submitting" :disabled="submitting || confirm || instructionMissing">{{ $t("Submit Decision") }}</ElButton>
             </ElForm>
           </article>
-          <aside class="context"><article class="panel"><h2>Task Information</h2><dl><dt>Task ID</dt><dd>{{ detail.reviewId }}</dd><dt>Experiment</dt><dd>{{ detail.experimentId || 'No research experiment' }}</dd><dt>Condition</dt><dd>{{ detail.condition }}</dd><dt>Purpose</dt><dd>{{ detail.purpose }}</dd><dt>Job</dt><dd>{{ detail.job }}</dd><template v-if="detail.versions?.jobVersionId"><dt>Job Version</dt><dd>{{ detail.versions.jobVersionId }}</dd></template><template v-if="detail.assignedAt"><dt>Assigned Date (UTC)</dt><dd>{{ new Date(detail.assignedAt).toUTCString() }}</dd></template><dt>Status</dt><dd><ElTag :type="detail.status === 'Submitted' ? 'success' : 'warning'">{{ detail.status }}</ElTag></dd></dl></article><article class="panel"><h2>Public Job Requirements</h2><h3>{{ detail.job }}</h3><ul><li v-for="requirement in detail.requirements" :key="requirement">{{ requirement }}</li></ul></article><article class="panel"><h2>Review Guidelines / Rubric</h2><ul><li v-for="guideline in detail.rubric" :key="guideline">{{ guideline }}</li></ul></article></aside>
+          <aside class="context"><article class="panel"><h2>{{ $t("Task Information") }}</h2><dl><dt>{{ $t("Task ID") }}</dt><dd>{{ detail.reviewId }}</dd><dt>{{ $t("Experiment") }}</dt><dd>{{ $t(detail.experimentId || 'No research experiment') }}</dd><dt>{{ $t("Condition") }}</dt><dd>{{ $t(detail.condition) }}</dd><dt>{{ $t("Purpose") }}</dt><dd>{{ $t(detail.purpose) }}</dd><dt>{{ $t("Job") }}</dt><dd>{{ detail.job }}</dd><template v-if="detail.versions?.jobVersionId"><dt>{{ $t("Job Version") }}</dt><dd>{{ detail.versions.jobVersionId }}</dd></template><template v-if="detail.assignedAt"><dt>{{ $t("Assigned Date (UTC)") }}</dt><dd>{{ new Date(detail.assignedAt).toUTCString() }}</dd></template><dt>{{ $t("Status") }}</dt><dd><ElTag :type="detail.status === 'Submitted' ? 'success' : 'warning'">{{ $t(detail.status) }}</ElTag></dd></dl></article><article class="panel"><h2>{{ $t("Public Job Requirements") }}</h2><h3>{{ detail.job }}</h3><ul><li v-for="requirement in detail.requirements" :key="requirement">{{ requirement }}</li></ul></article><article class="panel"><h2>{{ $t("Review Guidelines / Rubric") }}</h2><ul><li v-for="guideline in detail.rubric" :key="guideline">{{ guideline }}</li></ul></article></aside>
         </div>
       </template>
-      <ElDialog v-model="confirm" title="Confirm Review Submission" width="min(520px, calc(100vw - 32px))" :close-on-click-modal="!submitting" :close-on-press-escape="!submitting" :show-close="!submitting" :before-close="done => { if (!submitting) done() }">
-        <p>Submit this independent review for {{ detail?.reviewId }}? This action locks your decision and reason.</p><h3>{{ form.decision }}</h3><p class="confirmation-reason">{{ form.reason.trim() }}</p><template #footer><ElButton :disabled="submitting" @click="confirm = false">Cancel</ElButton><ElButton type="primary" :loading="submitting" :disabled="submitting" @click="submit">Confirm Submission</ElButton></template>
+      <ElDialog v-model="confirm" :title="$t(&quot;Confirm Review Submission&quot;)" width="min(520px, calc(100vw - 32px))" :close-on-click-modal="!submitting" :close-on-press-escape="!submitting" :show-close="!submitting" :before-close="done => { if (!submitting) done() }">
+        <p>{{ $t("Submit this independent review for") }} {{ detail?.reviewId }}{{ $t("? This action locks your decision and reason.") }}</p><h3>{{ $t(form.decision) }}</h3><p class="confirmation-reason">{{ form.reason.trim() }}</p><template #footer><ElButton :disabled="submitting" @click="confirm = false">{{ $t("Cancel") }}</ElButton><ElButton type="primary" :loading="submitting" :disabled="submitting" @click="submit">{{ $t("Confirm Submission") }}</ElButton></template>
       </ElDialog>
     </section>
   </component>

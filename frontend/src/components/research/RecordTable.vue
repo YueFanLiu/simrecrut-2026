@@ -8,8 +8,7 @@ export default { setup: useWorkspace };
   <section class="panel">
     <div class="panel-title">
       <h2>
-        {{
-          {
+        {{ $t({
             R01: "Authorized experiments",
             R04: "Eligible research subjects",
             R05: "Model registry",
@@ -18,10 +17,9 @@ export default { setup: useWorkspace };
             A03: "Release registry",
             A06: "Failed processing tasks",
             A07: "Audit events",
-          }[page[0]]
-        }}
+          }[page[0]]) }}
       </h2>
-      <span>{{ filtered.length }} records</span>
+      <span>{{ filtered.length }} {{ $t("records") }}</span>
     </div>
     <div v-if="page[0] === 'R04'" class="tabs">
       <button
@@ -29,33 +27,33 @@ export default { setup: useWorkspace };
         :class="{ active: source === t }"
         @click="source = t"
       >
-        {{ t }}
+        {{ $t(t) }}
       </button>
     </div>
     <div class="toolbar">
       <input
         v-model="search"
-        placeholder="Search by name or identifier…"
-        aria-label="Search records"
+        :placeholder="$t(&quot;Search by name or identifier…&quot;)"
+        :aria-label="$t(&quot;Search records&quot;)"
       /><select
         v-if="page[0] !== 'A07'"
         v-model="status"
-        aria-label="Filter by status"
+        :aria-label="$t(&quot;Filter by status&quot;)"
       >
-        <option>All statuses</option>
-        <option v-for="s in statuses">{{ s }}</option></select
-      ><select v-if="page[0] === 'R01'" v-model="job" aria-label="Filter by job"><option>All jobs</option><option v-for="value in jobs" :key="value">{{ value }}</option></select><select v-model="sort" aria-label="Sort records"><option value="latest">Newest first</option><option value="oldest">Oldest first</option></select><button class="secondary" @click="reset">Reset</button>
+        <option value="All statuses">{{ $t("All statuses") }}</option>
+        <option v-for="s in statuses" :key="s" :value="s">{{ $t(s) }}</option></select
+      ><select v-if="page[0] === 'R01'" v-model="job" :aria-label="$t(&quot;Filter by job&quot;)"><option value="All jobs">{{ $t("All jobs") }}</option><option v-for="value in jobs" :key="value">{{ value }}</option></select><select v-model="sort" :aria-label="$t(&quot;Sort records&quot;)"><option value="latest">{{ $t("Newest first") }}</option><option value="oldest">{{ $t("Oldest first") }}</option></select><button class="secondary" @click="reset">{{ $t("Reset") }}</button>
     </div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Identifier</th>
-            <th>{{ page[0] === "A07" ? "Time / Actor" : "Name / Context" }}</th>
-            <th>{{ page[0] === "A07" ? "Action" : "Version / Type" }}</th>
-            <th>Status</th>
-            <th>Details / Frozen Configuration</th>
-            <th>Action</th>
+            <th>{{ $t("Identifier") }}</th>
+            <th>{{ $t(page[0] === "A07" ? "Time / Actor" : "Name / Context") }}</th>
+            <th>{{ $t(page[0] === "A07" ? "Action" : "Version / Type") }}</th>
+            <th>{{ $t("Status") }}</th>
+            <th>{{ $t("Details / Frozen Configuration") }}</th>
+            <th>{{ $t("Action") }}</th>
           </tr>
         </thead>
         <tbody>
@@ -77,48 +75,36 @@ export default { setup: useWorkspace };
               }}
             </td>
             <td>
-              <span class="badge" :class="badge(r.status)">{{ r.status }}</span>
+              <span class="badge" :class="badge(r.status)">{{ $t(r.status) }}</span>
             </td>
             <td>
-              {{
-                page[0] === "R01"
+              {{ $t(page[0] === "R01"
                   ? r.subjects + " subjects · " + r.job + " · " + r.weight + " · " + r.protocol + " · " + r.neutral + " · " + r.biased
                   : page[0] === "A06"
                     ? "Cleanup: " + r.cleanup
                     : page[0] === "A07"
                       ? r.resource
-                      : r.protocol || r.skills || "Assigned access"
-              }}
+                      : r.protocol || r.skills || "Assigned access") }}
             </td>
             <td>
               <button
                 v-if="page[0] === 'R01'"
                 class="text-button"
                 @click="go('/research/experiments/' + r.id)"
-              >
-                View →
-              </button>
-              <template v-else-if="page[0] === 'R04'"><label class="check"><input type="checkbox" :checked="selected.includes(r.id)" @change="select(r.id)" />Select</label><button class="text-button" @click="view(r)">View Details</button></template>
-              <button v-else class="text-button" @click="view(r)">View Details</button>
+              > {{ $t("View →") }} </button>
+              <template v-else-if="page[0] === 'R04'"><label class="check"><input type="checkbox" :checked="selected.includes(r.id)" @change="select(r.id)" />{{ $t("Select") }}</label><button class="text-button" @click="view(r)">{{ $t("View Details") }}</button></template>
+              <button v-else class="text-button" @click="view(r)">{{ $t("View Details") }}</button>
             </td>
           </tr>
           <tr v-if="!rows.length">
-            <td colspan="6" class="empty">
-              No matching records. Change your search or filters.
-            </td>
+            <td colspan="6" class="empty"> {{ $t("No matching records. Change your search or filters.") }} </td>
           </tr>
         </tbody>
       </table>
     </div>
-    <div class="table-footer"><span>Showing {{ rows.length }} of {{ filtered.length }} demo records</span><label>Rows per page<select v-model.number="pageSize"><option :value="5">5</option><option :value="10">10</option><option :value="20">20</option></select></label><button class="secondary" :disabled="currentPage === 1" @click="currentPage--">Previous</button><span>Page {{ currentPage }}</span><button class="secondary" :disabled="currentPage * pageSize >= filtered.length" @click="currentPage++">Next</button></div>
-    <div v-if="page[0] === 'R04'" class="toolbar"><label>Target draft experiment<select v-model="targetExperiment"><option value="">Select draft experiment</option><option v-for="row in drafts" :key="row.id" :value="row.id">{{ row.name }}</option></select></label><button class="primary" :disabled="!selected.length || !targetExperiment" @click="addSubjects">Add Selected Subjects to Experiment</button></div>
-    <div class="panel-body callout" v-if="page[0] === 'R05'">
-      32 → 16 → 8 → 1 network. Separate trained parameters. This registry is
-      read-only.
-    </div>
-    <div class="panel-body callout" v-if="page[0] === 'A07'">
-      Production audit queries use server-side filters. These demo records
-      contain metadata only.
-    </div>
+    <div class="table-footer"><span>{{ $t("Showing") }} {{ rows.length }} {{ $t("of") }} {{ filtered.length }} {{ $t("demo records") }}</span><label>{{ $t("Rows per page") }}<select v-model.number="pageSize"><option :value="5">5</option><option :value="10">10</option><option :value="20">20</option></select></label><button class="secondary" :disabled="currentPage === 1" @click="currentPage--">{{ $t("Previous") }}</button><span>{{ $t("Page") }} {{ currentPage }}</span><button class="secondary" :disabled="currentPage * pageSize >= filtered.length" @click="currentPage++">{{ $t("Next") }}</button></div>
+    <div v-if="page[0] === 'R04'" class="toolbar"><label>{{ $t("Target draft experiment") }}<select v-model="targetExperiment"><option value="">{{ $t("Select draft experiment") }}</option><option v-for="row in drafts" :key="row.id" :value="row.id">{{ row.name }}</option></select></label><button class="primary" :disabled="!selected.length || !targetExperiment" @click="addSubjects">{{ $t("Add Selected Subjects to Experiment") }}</button></div>
+    <div class="panel-body callout" v-if="page[0] === 'R05'"> {{ $t("32 → 16 → 8 → 1 network. Separate trained parameters. This registry is read-only.") }} </div>
+    <div class="panel-body callout" v-if="page[0] === 'A07'"> {{ $t("Production audit queries use server-side filters. These demo records contain metadata only.") }} </div>
   </section>
 </template>

@@ -7,25 +7,25 @@ export default { setup: useWorkspace };
 <template>
   <section class="panel">
     <div class="panel-title">
-      <h2>Published protocol versions</h2>
-      <span>Read-only registry</span>
+      <h2>{{ $t("Published protocol versions") }}</h2>
+      <span>{{ $t("Read-only registry") }}</span>
     </div>
     <table>
       <thead>
         <tr>
-          <th>Protocol version</th>
-          <th>Feature schema</th>
-          <th>Cutoff</th>
-          <th>Status</th>
-          <th>Action</th>
+          <th>{{ $t("Protocol version") }}</th>
+          <th>{{ $t("Feature schema") }}</th>
+          <th>{{ $t("Cutoff") }}</th>
+          <th>{{ $t("Status") }}</th>
+          <th>{{ $t("Action") }}</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td>P-2026.01</td>
-          <td>professional-v1 / 32 inputs</td>
-          <td>Unavailable</td>
-          <td><span class="badge completed">Frozen</span></td>
+          <td>{{ $t("professional-v1 / 32 inputs") }}</td>
+          <td>{{ $t("Unavailable") }}</td>
+          <td><span class="badge completed">{{ $t("Frozen") }}</span></td>
           <td>
             <button
               class="text-button"
@@ -42,16 +42,11 @@ export default { setup: useWorkspace };
                   },
                 }
               "
-            >
-              View protocol →
-            </button>
+            > {{ $t("View protocol →") }} </button>
           </td>
         </tr>
       </tbody>
     </table>
-    <div class="panel-body callout">
-      Published matching, labeling and preprocessing definitions cannot be
-      edited here.
-    </div>
+    <div class="panel-body callout"> {{ $t("Published matching, labeling and preprocessing definitions cannot be edited here.") }} </div>
   </section>
 </template>

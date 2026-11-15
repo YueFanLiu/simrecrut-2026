@@ -1,6 +1,7 @@
 <script setup>
 import { ElConfigProvider } from 'element-plus'
-import en from 'element-plus/es/locale/lang/en'
+import { elementLocale } from './i18n/index.js'
+import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -12,7 +13,8 @@ const pageKey = computed(() => wizardPages.includes(route.name)
 </script>
 
 <template>
-  <ElConfigProvider :locale="en">
+  <ElConfigProvider :locale="elementLocale">
+    <LanguageSwitcher />
     <!-- Keep draft edits when navigating between steps of the same job. -->
     <RouterView :key="pageKey" />
   </ElConfigProvider>

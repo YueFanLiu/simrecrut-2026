@@ -7,33 +7,33 @@ export default { setup: useWorkspace };
 <template>
   <div class="stats">
     <article>
-      <small>SERVICE CHECKS</small><b>5</b
-      ><span>Expected runtime dependencies</span>
+      <small>{{ $t("SERVICE CHECKS") }}</small><b>5</b
+      ><span>{{ $t("Expected runtime dependencies") }}</span>
     </article>
     <article>
-      <small>CONNECTED</small><b>—</b><span>No health API connected</span>
+      <small>{{ $t("CONNECTED") }}</small><b>—</b><span>{{ $t("No health API connected") }}</span>
     </article>
     <article>
-      <small>MODEL SLOTS</small><b>2</b><span>Neutral ML / Biased ML</span>
+      <small>{{ $t("MODEL SLOTS") }}</small><b>2</b><span>{{ $t("Neutral ML / Biased ML") }}</span>
     </article>
     <article>
-      <small>LAST CHECK</small><b class="small-number">Unavailable</b
-      ><span>Freshness cannot be verified</span>
+      <small>{{ $t("LAST CHECK") }}</small><b class="small-number">{{ $t("Unavailable") }}</b
+      ><span>{{ $t("Freshness cannot be verified") }}</span>
     </article>
   </div>
   <section class="panel">
     <div class="panel-title">
-      <h2>Runtime services</h2>
-      <span>No fabricated uptime values</span>
+      <h2>{{ $t("Runtime services") }}</h2>
+      <span>{{ $t("No fabricated uptime values") }}</span>
     </div>
     <table>
       <thead>
         <tr>
-          <th>Service</th>
-          <th>Status</th>
-          <th>Checked at</th>
-          <th>Freshness</th>
-          <th>Details</th>
+          <th>{{ $t("Service") }}</th>
+          <th>{{ $t("Status") }}</th>
+          <th>{{ $t("Checked at") }}</th>
+          <th>{{ $t("Freshness") }}</th>
+          <th>{{ $t("Details") }}</th>
         </tr>
       </thead>
       <tbody>
@@ -47,20 +47,20 @@ export default { setup: useWorkspace };
           ]"
         >
           <td>{{ s }}</td>
-          <td><span class="badge">Unknown</span></td>
+          <td><span class="badge">{{ $t("Unknown") }}</span></td>
           <td>—</td>
-          <td>Unavailable</td>
-          <td>Health contract not connected</td>
+          <td>{{ $t("Unavailable") }}</td>
+          <td>{{ $t("Health contract not connected") }}</td>
         </tr>
       </tbody>
     </table>
   </section>
   <section class="panel">
-    <div class="panel-title"><h2>Loaded model slots</h2></div>
+    <div class="panel-title"><h2>{{ $t("Loaded model slots") }}</h2></div>
     <div class="key-grid panel-body">
       <div v-for="m in ['Neutral ML', 'Biased ML']">
         <small>{{ m }}</small
-        ><strong>Load status unknown</strong>
+        ><strong>{{ $t("Load status unknown") }}</strong>
       </div>
     </div>
   </section>

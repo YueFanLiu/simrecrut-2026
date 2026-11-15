@@ -102,58 +102,58 @@ onBeforeUnmount(() => { sequence++ })
 
 <template>
   <AdminLayout>
-    <h1>{{ accountsPage ? 'User Management' : 'Roles and Permissions' }}</h1>
-    <ElAlert v-if="error || (!modal && actionError)" :title="error || actionError" type="error" :closable="false" />
-    <p v-if="notice" role="status">{{ notice }}</p>
+    <h1>{{ $t(accountsPage ? 'User Management' : 'Roles and Permissions') }}</h1>
+    <ElAlert v-if="error || (!modal && actionError)" :title="$t(error || actionError)" type="error" :closable="false" />
+    <p v-if="notice" role="status">{{ $t(notice) }}</p>
     <form v-if="accountsPage" class="toolbar" @submit.prevent="load">
-      <ElInput v-model="keyword" aria-label="Search by username or email" placeholder="Search by username or email" maxlength="100" />
-      <ElButton native-type="submit" :loading="loading" :disabled="busy">Search</ElButton>
-      <ElButton type="primary" :disabled="busy" @click="open('create')">Create Account</ElButton>
+      <ElInput v-model="keyword" :aria-label="$t(&quot;Search by username or email&quot;)" :placeholder="$t(&quot;Search by username or email&quot;)" maxlength="100" />
+      <ElButton native-type="submit" :loading="loading" :disabled="busy">{{ $t("Search") }}</ElButton>
+      <ElButton type="primary" :disabled="busy" @click="open('create')">{{ $t("Create Account") }}</ElButton>
     </form>
-    <ElButton v-else :loading="loading" :disabled="busy" @click="load">Reload Roles</ElButton>
+    <ElButton v-else :loading="loading" :disabled="busy" @click="load">{{ $t("Reload Roles") }}</ElButton>
     <ElTable v-if="accountsPage" v-loading="loading" :data="accounts" row-key="userId">
-      <ElTableColumn prop="username" label="Username" />
-      <ElTableColumn prop="email" label="Email" />
-      <ElTableColumn label="Roles"><template #default="{ row }">{{ row.roles.join(', ') }}</template></ElTableColumn>
-      <ElTableColumn prop="status" label="Status" />
-      <ElTableColumn label="Mailbox"><template #default="{ row }">{{ row.emailVerified ? 'Verified' : 'Unverified' }}</template></ElTableColumn>
-      <ElTableColumn label="Actions" min-width="270">
+      <ElTableColumn prop="username" :label="$t(&quot;Username&quot;)" />
+      <ElTableColumn prop="email" :label="$t(&quot;Email&quot;)" />
+      <ElTableColumn :label="$t(&quot;Roles&quot;)"><template #default="{ row }">{{ row.roles.map(role => $t(role)).join(', ') }}</template></ElTableColumn>
+      <ElTableColumn :label="$t('Status')"><template #default="{ row }">{{ $t(row.status) }}</template></ElTableColumn>
+      <ElTableColumn :label="$t(&quot;Mailbox&quot;)"><template #default="{ row }">{{ $t(row.emailVerified ? 'Verified' : 'Unverified') }}</template></ElTableColumn>
+      <ElTableColumn :label="$t(&quot;Actions&quot;)" min-width="270">
         <template #default="{ row }">
-          <ElButton size="small" :disabled="busy" @click="open('email', row)">Edit Email</ElButton>
-          <ElButton size="small" :disabled="busy" @click="open('roles', row)">Edit Roles</ElButton>
-          <ElButton size="small" :disabled="busy" @click="open('status', row)">{{ row.status === 'ACTIVE' ? 'Disable' : 'Enable' }}</ElButton>
+          <ElButton size="small" :disabled="busy" @click="open('email', row)">{{ $t("Edit Email") }}</ElButton>
+          <ElButton size="small" :disabled="busy" @click="open('roles', row)">{{ $t("Edit Roles") }}</ElButton>
+          <ElButton size="small" :disabled="busy" @click="open('status', row)">{{ $t(row.status === 'ACTIVE' ? 'Disable' : 'Enable') }}</ElButton>
         </template>
       </ElTableColumn>
     </ElTable>
     <ElTable v-else v-loading="loading" :data="roles" row-key="code">
-      <ElTableColumn prop="name" label="Role" />
-      <ElTableColumn prop="code" label="Code" />
-      <ElTableColumn prop="description" label="Description" />
-      <ElTableColumn label="Actions"><template #default="{ row }">
-        <ElButton :disabled="busy" @click="open('permissions', row)">Edit Permissions</ElButton>
+      <ElTableColumn prop="name" :label="$t(&quot;Role&quot;)" />
+      <ElTableColumn prop="code" :label="$t(&quot;Code&quot;)" />
+      <ElTableColumn prop="description" :label="$t(&quot;Description&quot;)" />
+      <ElTableColumn :label="$t(&quot;Actions&quot;)"><template #default="{ row }">
+        <ElButton :disabled="busy" @click="open('permissions', row)">{{ $t("Edit Permissions") }}</ElButton>
       </template></ElTableColumn>
     </ElTable>
 
-    <ElDialog :model-value="Boolean(modal)" :title="({ create: 'Create Account', email: 'Edit Email', roles: 'Edit Roles', status: 'Change Account Status', permissions: 'Edit Role Permissions' })[modal]"
+    <ElDialog :model-value="Boolean(modal)" :title="$t(({ create: 'Create Account', email: 'Edit Email', roles: 'Edit Roles', status: 'Change Account Status', permissions: 'Edit Role Permissions' })[modal])"
       :close-on-click-modal="!busy" :close-on-press-escape="!busy" :show-close="!busy" @update:model-value="modal = ''">
       <ElForm v-if="form" label-position="top" :disabled="busy" @submit.prevent="save">
-        <ElFormItem v-if="modal === 'create'" label="Username"><ElInput v-model="form.username" maxlength="64" required /></ElFormItem>
-        <ElFormItem v-if="['create', 'email'].includes(modal)" label="Email"><ElInput v-model="form.email" type="email" maxlength="254" required /></ElFormItem>
-        <ElFormItem v-if="['create', 'roles'].includes(modal)" label="Roles">
+        <ElFormItem v-if="modal === 'create'" :label="$t(&quot;Username&quot;)"><ElInput v-model="form.username" maxlength="64" required /></ElFormItem>
+        <ElFormItem v-if="['create', 'email'].includes(modal)" :label="$t(&quot;Email&quot;)"><ElInput v-model="form.email" type="email" maxlength="254" required /></ElFormItem>
+        <ElFormItem v-if="['create', 'roles'].includes(modal)" :label="$t(&quot;Roles&quot;)">
           <ElSelect v-model="form.roles" multiple><ElOption v-for="role in roleCodes" :key="role" :value="role" /></ElSelect>
         </ElFormItem>
-        <p v-if="modal === 'status'">{{ form.status === 'ACTIVE' ? 'Disable' : 'Enable' }} {{ form.username }}?</p>
+        <p v-if="modal === 'status'">{{ $t(form.status === 'ACTIVE' ? 'Disable' : 'Enable') }} {{ form.username }}?</p>
         <template v-if="modal === 'permissions'">
-          <p>{{ form.roleCode }}</p>
+          <p>{{ $t(form.roleCode) }}</p>
           <ElCheckboxGroup v-model="form.permissions" class="permissions">
             <ElCheckbox v-for="item in allowedPermissions" :key="item.code" :value="item.code"
-              :disabled="form.roleCode === 'ADMIN' && item.protectedAdminPermission">{{ item.name }} ({{ item.code }})</ElCheckbox>
+              :disabled="form.roleCode === 'ADMIN' && item.protectedAdminPermission">{{ $t(item.name) }} ({{ item.code }})</ElCheckbox>
           </ElCheckboxGroup>
         </template>
-        <ElAlert v-if="actionError" :title="actionError" type="error" :closable="false" />
+        <ElAlert v-if="actionError" :title="$t(actionError)" type="error" :closable="false" />
         <div class="toolbar">
-          <ElButton :disabled="busy" @click="modal = ''">Cancel</ElButton>
-          <ElButton type="primary" native-type="submit" :loading="busy" :disabled="['create', 'roles'].includes(modal) && !form.roles.length">Save</ElButton>
+          <ElButton :disabled="busy" @click="modal = ''">{{ $t("Cancel") }}</ElButton>
+          <ElButton type="primary" native-type="submit" :loading="busy" :disabled="['create', 'roles'].includes(modal) && !form.roles.length">{{ $t("Save") }}</ElButton>
         </div>
       </ElForm>
     </ElDialog>

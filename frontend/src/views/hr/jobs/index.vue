@@ -1,4 +1,6 @@
 <script setup>
+import { dateLocale } from '../../../i18n/index.js'
+
 import { demoMode } from '../../../config/runtime.js'
 import { managedJobs } from '../../../api/jobs.js'
 import { useRouter } from 'vue-router'
@@ -25,7 +27,7 @@ let active = true
 let sequence = 0
 watch(filters, () => { page.value = 1 })
 watch(pageSize, () => { page.value = 1 })
-const formatDate = (date) => new Intl.DateTimeFormat('en-GB', {
+const formatDate = (date) => new Intl.DateTimeFormat(dateLocale.value, {
   dateStyle: 'medium', timeZone: 'UTC',
 }).format(new Date(`${date}T00:00:00Z`))
 
@@ -52,27 +54,27 @@ onBeforeUnmount(() => { active = false; sequence += 1; jobs.value = [] })
 <template>
   <HrLayout>
     <section aria-labelledby="jobs-title" :aria-busy="loading">
-      <div class="page-heading"><div><h1 id="jobs-title">Job Management</h1><p>View the drafts and published versions of jobs you manage.</p></div>
-        <div class="heading-actions"><ElButton :loading="loading" :disabled="loading" @click="loadJobs">Refresh</ElButton><ElButton type="primary" @click="router.push({ name: 'HrJobNew' })">Create New Job</ElButton></div></div>
-      <ElAlert v-if="demoMode" type="info" :closable="false" title="Frontend demo only: this list contains tab-scoped mock jobs managed by the HR demo account. No real authentication or API request is performed. Published versions are read-only." />
-      <p class="availability">Create and edit drafts in the shared wizard, or view version history. Case Results in the sidebar opens authorised cases.</p>
-      <div class="filters"><ElInput v-model="filters.keyword" aria-label="Search managed jobs" placeholder="Search by job title, department or keyword" clearable :disabled="loading" />
-        <ElSelect v-model="filters.status" aria-label="Job status" placeholder="All Statuses" :disabled="loading"><ElOption label="All Statuses" value="" /><ElOption label="Draft" value="Draft" /><ElOption label="Published" value="Published" /></ElSelect>
-        <ElSelect v-model="filters.sort" aria-label="Sort jobs" :disabled="loading"><ElOption label="Newest First" value="latest" /><ElOption label="Oldest First" value="oldest" /></ElSelect></div>
-      <div v-if="loading" class="panel state-panel" role="status"><p>Loading managed jobs...</p><ElSkeleton :rows="6" animated /></div>
-      <div v-else-if="error" class="panel state-panel" role="alert"><h2>Jobs Could Not Be Loaded</h2><p>{{ error }}</p><ElButton type="primary" @click="loadJobs">Try Again</ElButton></div>
-      <div v-else-if="!jobs.length" class="panel state-panel"><ElEmpty description="No managed jobs yet" /><h2>No Managed Jobs Yet</h2><p>There are no job drafts or published jobs in this demo list.</p></div>
-      <div v-else-if="!filtered.length" class="panel state-panel"><ElEmpty description="No jobs match your filters" /><ElButton @click="resetFilters">Reset Filters</ElButton></div>
+      <div class="page-heading"><div><h1 id="jobs-title">{{ $t("Job Management") }}</h1><p>{{ $t("View the drafts and published versions of jobs you manage.") }}</p></div>
+        <div class="heading-actions"><ElButton :loading="loading" :disabled="loading" @click="loadJobs">{{ $t("Refresh") }}</ElButton><ElButton type="primary" @click="router.push({ name: 'HrJobNew' })">{{ $t("Create New Job") }}</ElButton></div></div>
+      <ElAlert v-if="demoMode" type="info" :closable="false" :title="$t(&quot;Frontend demo only: this list contains tab-scoped mock jobs managed by the HR demo account. No real authentication or API request is performed. Published versions are read-only.&quot;)" />
+      <p class="availability">{{ $t("Create and edit drafts in the shared wizard, or view version history. Case Results in the sidebar opens authorised cases.") }}</p>
+      <div class="filters"><ElInput v-model="filters.keyword" :aria-label="$t(&quot;Search managed jobs&quot;)" :placeholder="$t(&quot;Search by job title, department or keyword&quot;)" clearable :disabled="loading" />
+        <ElSelect v-model="filters.status" :aria-label="$t(&quot;Job status&quot;)" :placeholder="$t(&quot;All Statuses&quot;)" :disabled="loading"><ElOption :label="$t(&quot;All Statuses&quot;)" value="" /><ElOption :label="$t(&quot;Draft&quot;)" value="Draft" /><ElOption :label="$t(&quot;Published&quot;)" value="Published" /></ElSelect>
+        <ElSelect v-model="filters.sort" :aria-label="$t(&quot;Sort jobs&quot;)" :disabled="loading"><ElOption :label="$t(&quot;Newest First&quot;)" value="latest" /><ElOption :label="$t(&quot;Oldest First&quot;)" value="oldest" /></ElSelect></div>
+      <div v-if="loading" class="panel state-panel" role="status"><p>{{ $t("Loading managed jobs...") }}</p><ElSkeleton :rows="6" animated /></div>
+      <div v-else-if="error" class="panel state-panel" role="alert"><h2>{{ $t("Jobs Could Not Be Loaded") }}</h2><p>{{ $t(error) }}</p><ElButton type="primary" @click="loadJobs">{{ $t("Try Again") }}</ElButton></div>
+      <div v-else-if="!jobs.length" class="panel state-panel"><ElEmpty :description="$t(&quot;No managed jobs yet&quot;)" /><h2>{{ $t("No Managed Jobs Yet") }}</h2><p>{{ $t("There are no job drafts or published jobs in this demo list.") }}</p></div>
+      <div v-else-if="!filtered.length" class="panel state-panel"><ElEmpty :description="$t(&quot;No jobs match your filters&quot;)" /><ElButton @click="resetFilters">{{ $t("Reset Filters") }}</ElButton></div>
       <template v-else>
-        <div class="panel desktop-list"><div class="table-scroll" role="region" tabindex="0" aria-label="Managed jobs table"><table><caption>{{ filtered.length }} managed jobs · Published history cannot be edited directly</caption>
-          <thead><tr><th scope="col">Job ID</th><th scope="col">Job Title</th><th v-if="demoMode" scope="col">Department</th><th scope="col">Created Date</th><th scope="col">Status</th><th scope="col">Versions</th><th scope="col">Actions</th></tr></thead>
-          <tbody><tr v-for="job in visible" :key="job.jobId"><th scope="row">{{ job.jobId }}</th><td>{{ job.title }}</td><td v-if="demoMode">{{ job.department }}</td><td>{{ formatDate(job.createdAt) }}</td><td><ElTag :type="job.status === 'Published' ? 'success' : 'info'">{{ job.status }}</ElTag></td>
-            <td><span v-if="job.publishedVersion">Published {{ job.publishedVersion }}</span><span v-if="job.draftVersion" class="draft-version">Draft {{ job.draftVersion }}</span></td>
-            <td><div class="row-actions"><ElButton size="small" @click="router.push({ name: 'HrJobVersions', params: { jobId: job.jobId } })">Versions</ElButton><ElButton v-if="job.draftVersion" size="small" @click="router.push({ name: 'HrJobEdit', params: { jobId: job.jobId } })">Edit Draft</ElButton></div></td></tr></tbody></table></div></div>
-        <div class="mobile-list"><article v-for="job in visible" :key="job.jobId" class="panel" :aria-label="job.title"><div class="card-heading"><span>{{ job.jobId }}</span><ElTag :type="job.status === 'Published' ? 'success' : 'info'">{{ job.status }}</ElTag></div>
-          <h2>{{ job.title }}</h2><p><template v-if="demoMode">{{ job.department }} · </template>{{ formatDate(job.createdAt) }}</p><p><span v-if="job.publishedVersion">Published {{ job.publishedVersion }}</span><span v-if="job.draftVersion" class="draft-version">Draft {{ job.draftVersion }}</span></p>
-          <div class="row-actions"><ElButton @click="router.push({ name: 'HrJobVersions', params: { jobId: job.jobId } })">Versions</ElButton><ElButton v-if="job.draftVersion" @click="router.push({ name: 'HrJobEdit', params: { jobId: job.jobId } })">Edit Draft</ElButton></div></article></div>
-        <div class="pagination"><div class="page-info"><span>Showing {{ (page - 1) * pageSize + 1 }}–{{ Math.min(page * pageSize, filtered.length) }} of {{ filtered.length }} jobs</span><ElSelect v-model="pageSize" aria-label="Jobs per page"><ElOption v-for="size in [5, 10, 20]" :key="size" :value="size" :label="`${size} / page`" /></ElSelect></div>
+        <div class="panel desktop-list"><div class="table-scroll" role="region" tabindex="0" :aria-label="$t(&quot;Managed jobs table&quot;)"><table><caption>{{ filtered.length }} {{ $t("managed jobs · Published history cannot be edited directly") }}</caption>
+          <thead><tr><th scope="col">{{ $t("Job ID") }}</th><th scope="col">{{ $t("Job Title") }}</th><th v-if="demoMode" scope="col">{{ $t("Department") }}</th><th scope="col">{{ $t("Created Date") }}</th><th scope="col">{{ $t("Status") }}</th><th scope="col">{{ $t("Versions") }}</th><th scope="col">{{ $t("Actions") }}</th></tr></thead>
+          <tbody><tr v-for="job in visible" :key="job.jobId"><th scope="row">{{ job.jobId }}</th><td>{{ job.title }}</td><td v-if="demoMode">{{ job.department }}</td><td>{{ formatDate(job.createdAt) }}</td><td><ElTag :type="job.status === 'Published' ? 'success' : 'info'">{{ $t(job.status) }}</ElTag></td>
+            <td><span v-if="job.publishedVersion">{{ $t("Published") }} {{ job.publishedVersion }}</span><span v-if="job.draftVersion" class="draft-version">{{ $t("Draft") }} {{ job.draftVersion }}</span></td>
+            <td><div class="row-actions"><ElButton size="small" @click="router.push({ name: 'HrJobVersions', params: { jobId: job.jobId } })">{{ $t("Versions") }}</ElButton><ElButton v-if="job.draftVersion" size="small" @click="router.push({ name: 'HrJobEdit', params: { jobId: job.jobId } })">{{ $t("Edit Draft") }}</ElButton></div></td></tr></tbody></table></div></div>
+        <div class="mobile-list"><article v-for="job in visible" :key="job.jobId" class="panel" :aria-label="$t(job.title)"><div class="card-heading"><span>{{ job.jobId }}</span><ElTag :type="job.status === 'Published' ? 'success' : 'info'">{{ $t(job.status) }}</ElTag></div>
+          <h2>{{ job.title }}</h2><p><template v-if="demoMode">{{ job.department }} · </template>{{ formatDate(job.createdAt) }}</p><p><span v-if="job.publishedVersion">{{ $t("Published") }} {{ job.publishedVersion }}</span><span v-if="job.draftVersion" class="draft-version">{{ $t("Draft") }} {{ job.draftVersion }}</span></p>
+          <div class="row-actions"><ElButton @click="router.push({ name: 'HrJobVersions', params: { jobId: job.jobId } })">{{ $t("Versions") }}</ElButton><ElButton v-if="job.draftVersion" @click="router.push({ name: 'HrJobEdit', params: { jobId: job.jobId } })">{{ $t("Edit Draft") }}</ElButton></div></article></div>
+        <div class="pagination"><div class="page-info"><span>{{ $t("Showing") }} {{ (page - 1) * pageSize + 1 }}–{{ Math.min(page * pageSize, filtered.length) }} {{ $t("of") }} {{ filtered.length }} {{ $t("jobs") }}</span><ElSelect v-model="pageSize" :aria-label="$t(&quot;Jobs per page&quot;)"><ElOption v-for="size in [5, 10, 20]" :key="size" :value="size" :label="$t('{size} / page', { size })" /></ElSelect></div>
           <ElPagination v-model:current-page="page" :page-size="pageSize" :total="filtered.length" layout="prev, pager, next" :pager-count="5" background /></div>
       </template>
     </section>
