@@ -57,7 +57,10 @@ class CandidateCaseApiTest {
                 .andReturn().getResponse().getContentAsString();
         String id = f.json.readTree(response).path("data").path("caseId").asText();
         mvc.perform(get("/api/v1/candidate/cases/" + id + "/status").with(auth("CANDIDATE", "list")))
-                .andExpect(status().isOk()).andExpect(jsonPath("data.stage").value("UPLOAD"));
+                .andExpect(status().isOk()).andExpect(jsonPath("data.stage").value("UPLOAD"))
+                .andExpect(jsonPath("data.expiresAt").value(f.json.readTree(response).path("data").path("expiresAt").asText()))
+                .andExpect(jsonPath("data.confirmedAt").isEmpty())
+                .andExpect(jsonPath("data.objectiveOnly").value(false));
     }
 
     @Test void strictRequestsRejectOwnerSpoofingAndMissingKeys() throws Exception {

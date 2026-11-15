@@ -119,7 +119,7 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++ })
       <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">Back to Jobs</ElButton>
     </section>
     <section v-else-if="!ready" class="panel state-panel"><h1>Results Not Ready</h1>
-      <p>All three automated methods must complete before results can be viewed. Failed or missing results are never shown as zero or Reject.</p>
+      <p>{{ demoMode ? 'Complete the automated assessment to view results.' : 'Confirm your professional facts to view results.' }}</p>
       <ElButton type="primary" @click="router.replace({ name: 'SimulationProgress', params: { caseId: entry.caseId } })">Back to Progress</ElButton>
     </section>
     <section v-else aria-labelledby="results-title">

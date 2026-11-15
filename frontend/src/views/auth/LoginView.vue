@@ -90,6 +90,8 @@ async function submitLogin() {
       </el-button>
     </el-form>
 
+    <RouterLink v-if="!demoMode" class="forgot-password" :to="{ name: 'ForgotPassword' }">Forgot password?</RouterLink>
+
     <div class="registration-divider"><span>or</span></div>
     <el-button class="register-button" size="large" :disabled="loading || !canRegister"
       @click="router.push({ name: 'Register' })">Create a new account</el-button>
@@ -119,6 +121,7 @@ h1 { margin: 0; font-size: 28px; letter-spacing: -0.8px; color: #132941; }
 .remember-row > span { color: #68798c; font-size: 12px; }
 :deep(.el-checkbox__label) { color: #425269; font-size: 13px; }
 .sign-in-button, .register-button { width: 100%; font-weight: 600; }
+.forgot-password { display: block; width: fit-content; margin: 12px auto 0; color: var(--el-color-primary); font-size: 14px; }
 .registration-divider { display: flex; align-items: center; gap: 14px; margin: 20px 0 16px; color: #8491a3; font-size: 13px; }
 .registration-divider::before, .registration-divider::after { content: ''; height: 1px; background: #e8edf4; flex: 1; }
 .registration-note { margin: 10px 0 0; text-align: center; font-size: 12px; color: #68798c; }

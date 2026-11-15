@@ -2,7 +2,7 @@
 <script setup>
 import ResumeFactsTable from "../../components/simrecrut/ResumeFactsTable.vue";
 import CandidateLayout from "../../layouts/CandidateLayout.vue";
-import { onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { getResume, resumeAction, deleteResume } from "@/api/resumes";
@@ -18,6 +18,7 @@ const actionError = ref('')
 let deletionKey
 const groups = ["skills", "experience", "education", "languages", "projects"];
 const editors = ref({});
+const hasFacts = computed(() => groups.some(group => editors.value[group]?.length));
 const activeGroup = ref("skills");
 const groupLabels = { skills: "Skills", experience: "Experience", education: "Education", languages: "Languages", projects: "Projects" };
 const router = useRouter();
@@ -87,6 +88,7 @@ onUnmounted(() => {
 });
 async function publish() {
   if (busy.value || loading.value || !record.value) return;
+  if (!record.value.confirmed && !hasFacts.value) return;
   const id = route.params.id;
   busy.value = true; actionError.value = "";
   let factsLocked = Boolean(record.value.confirmed);
@@ -191,11 +193,12 @@ watch(editors, () => { confirmed.value = false }, { deep: true });
             :disabled="busy || loading" @click="removeResume">Delete CV</el-button>
         </div>
         <div class="confirmation">
+          <p v-if="!record.confirmed && !hasFacts && record.status !== 'EXTRACTING'">Add a professional fact before confirming this CV.</p>
           <el-checkbox v-if="!record.confirmed" v-model="confirmed"
-            :disabled="busy || loading || record.status === 'EXTRACTING'">
+            :disabled="busy || loading || !hasFacts || record.status === 'EXTRACTING'">
             I have reviewed these professional facts.</el-checkbox>
           <el-button v-hasPermi="['simrecrut:resume:confirm']" type="primary" :loading="busy"
-            :disabled="busy || loading || (!confirmed && !record.confirmed) || record.status === 'EXTRACTING' || record.cloud_revision === record.revision"
+            :disabled="busy || loading || (!record.confirmed && (!confirmed || !hasFacts)) || record.status === 'EXTRACTING' || record.cloud_revision === record.revision"
             @click="publish">{{ record.confirmed
               ? (record.cloud_revision === record.revision ? 'Facts published' : 'Publish confirmed facts')
               : 'Confirm and publish facts' }}</el-button>

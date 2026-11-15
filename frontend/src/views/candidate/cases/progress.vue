@@ -23,6 +23,7 @@ const complete = computed(() => entry.value?.processingStatus === 'AUTOMATED_COM
 const failed = computed(() => Boolean(entry.value?.confirmedAt && ['FAILED_RETRYABLE', 'FAILED_FINAL'].includes(entry.value.processingStatus)))
 const canRetry = computed(() => failed.value && entry.value.assessment?.retryable && (!demoMode || entry.value.assessment.retryCount < 1))
 const methods = computed(() => entry.value?.assessment?.methods || ['Objective', 'Neutral ML', 'Biased ML'].map((name) => ({ name, status: 'Waiting' })))
+const assessmentMethods = computed(() => methods.value.filter(method => method.status !== 'Skipped').map(method => method.name).join(', '))
 const heading = computed(() => ready.value ? 'Ready to Run' : running.value ? 'Simulation in Progress' : complete.value ? 'Simulation Complete' : 'Simulation Failed')
 const tagType = (status) => status === 'Complete' ? 'success' : status === 'Failed' ? 'danger' : status === 'Running' ? 'primary' : 'info'
 const formatTime = (time) => new Intl.DateTimeFormat('en-GB', { timeStyle: 'medium', timeZone: 'Europe/Paris' }).format(new Date(time))
@@ -68,7 +69,7 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
       <nav class="breadcrumb" aria-label="Breadcrumb"><RouterLink :to="{ name: 'PublishedJobs' }">Jobs</RouterLink><span>/</span>
         <RouterLink :to="{ name: 'CvReview', params: { caseId: entry.caseId } }">{{ entry.caseId }}</RouterLink><span>/</span><span aria-current="page">Simulation Progress</span></nav>
       <h1 id="progress-title">Simulation Progress</h1>
-      <p class="subtitle">Follow the three automated assessment stages for your confirmed case.</p>
+      <p class="subtitle">Follow the automated assessment stages for your confirmed case.</p>
       <ElAlert v-if="demoMode" type="info" :closable="false" title="Frontend demo only: fixed mock states, no model inference or API calls. Confirmed checkpoints survive reloads in this tab. Retry continues interrupted stages with the retained job version. Sign out clears case checkpoints." />
       <CaseProgressStepper :current-step="2" review-confirmed :simulation-complete="complete" />
       <div class="progress-grid">
@@ -76,14 +77,14 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
           <section class="panel" :aria-busy="running" aria-labelledby="status-title">
             <div class="panel-heading"><h2 id="status-title">{{ heading }}</h2><ElTag :type="complete ? 'success' : failed ? 'danger' : 'info'">{{ ready ? 'Ready' : running ? 'Running' : complete ? 'Complete' : 'Failed' }}</ElTag></div>
             <div role="status" aria-live="polite">
-              <p v-if="ready">Your confirmed facts are locked. Run the simulation to begin all three automated stages.</p>
+              <p v-if="ready">Run the simulation to assess your confirmed facts.</p>
               <p v-else-if="running">Running the {{ entry.stage }} stage. Completed methods are retained.</p>
-              <p v-else-if="complete">All three automated stages have completed. Open results to see the current human review status.</p>
+              <p v-else-if="complete">Assessment complete. Open results to see the scores and current human review status.</p>
             </div>
             <div v-if="failed" role="alert"><p class="error">{{ entry.failure }}</p><p>Failed stage: {{ entry.stage }}. Confirmed facts and the job version remain locked.</p></div>
             <div class="method-grid"><article v-for="method in methods" :key="method.name" class="method-card" :aria-label="method.name">
               <h3>{{ method.name }}</h3><ElTag :type="tagType(method.status)">{{ method.status }}</ElTag>
-              <p>{{ method.status === 'Complete' ? 'Stage completed.' : method.status === 'Running' ? 'Stage running...' : method.status === 'Failed' ? 'No result was produced.' : 'Waiting for this stage.' }}</p>
+              <p>{{ method.status === 'Complete' ? 'Stage completed.' : method.status === 'Running' ? 'Stage running...' : method.status === 'Failed' ? 'No result was produced.' : method.status === 'Skipped' ? 'Disabled for this assessment.' : 'Waiting for this stage.' }}</p>
             </article></div>
             <ElButton v-if="ready" type="primary" :loading="submitting" @click="runSimulation(entry.caseId, simulationScenario)">Run Simulation</ElButton>
             <ElButton v-if="canRetry" type="primary" :loading="submitting" @click="runSimulation(entry.caseId, simulationScenario, true)">Retry Simulation</ElButton>
@@ -100,7 +101,7 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
           <section class="panel"><h2>Simulation Parameters</h2><dl>
             <div><dt>Case ID</dt><dd>{{ entry.caseId }}</dd></div><div v-if="entry.jobTitle"><dt>Job</dt><dd>{{ entry.jobTitle }}</dd></div>
             <div v-if="entry.jobVersionId"><dt>Job version</dt><dd>{{ entry.jobVersionId }}</dd></div><div><dt>Professional facts</dt><dd>Confirmed and locked</dd></div>
-            <div><dt>Assessment methods</dt><dd>Objective, Neutral ML, Biased ML</dd></div><div v-if="demoMode"><dt>Configuration</dt><dd>Fixed frontend mock stages</dd></div>
+            <div><dt>Assessment methods</dt><dd>{{ assessmentMethods }}</dd></div><div v-if="demoMode"><dt>Configuration</dt><dd>Fixed frontend mock stages</dd></div>
           </dl></section>
           <section class="panel"><h2>Progress Summary</h2><dl><div><dt>Current stage</dt><dd>{{ entry.stage === 'Ready for review' || ready ? 'Ready to run' : entry.stage }}</dd></div>
             <div><dt>Last update</dt><dd>{{ entry.assessment?.updatedAt ? formatTime(entry.assessment.updatedAt) + ' (Paris)' : 'Not started' }}</dd></div><div v-if="demoMode"><dt>Human review</dt><dd>Pending</dd></div></dl>

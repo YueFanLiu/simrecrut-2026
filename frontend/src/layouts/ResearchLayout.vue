@@ -24,11 +24,13 @@ async function signOut() { await auth.logout(); router.replace({ name: 'Login' }
       <div class="session-controls"><span class="user-name">{{ auth.demoUser?.displayName }}</span>
         <ElButton @click="router.push({ name: 'DemoDashboard' })">Dashboard</ElButton><ElButton @click="signOut">Sign out</ElButton></div></div></header>
     <div class="workspace"><aside class="sidebar"><nav aria-label="Research navigation">
-      <RouterLink :to="{ name: 'ResearchExperiments' }" :aria-current="['ResearchExperiments', 'ResearchExperimentDetail'].includes(route.name) ? 'page' : undefined">Experiments</RouterLink>
-      <RouterLink :to="{ name: 'ResearchExperimentCreate' }" :aria-current="route.name === 'ResearchExperimentCreate' ? 'page' : undefined">Create Experiment</RouterLink>
-      <RouterLink :to="{ name: 'ResearchSubjects' }" :aria-current="route.name === 'ResearchSubjects' ? 'page' : undefined">Research Subjects</RouterLink>
-      <RouterLink :to="{ name: 'ResearchModels' }" :aria-current="route.name === 'ResearchModels' ? 'page' : undefined">Models</RouterLink>
-      <RouterLink :to="metricsTarget" :aria-current="route.name === 'ResearchMetrics' ? 'page' : undefined">Metrics</RouterLink>
+      <template v-if="demoMode">
+        <RouterLink :to="{ name: 'ResearchExperiments' }" :aria-current="['ResearchExperiments', 'ResearchExperimentDetail'].includes(route.name) ? 'page' : undefined">Experiments</RouterLink>
+        <RouterLink :to="{ name: 'ResearchExperimentCreate' }" :aria-current="route.name === 'ResearchExperimentCreate' ? 'page' : undefined">Create Experiment</RouterLink>
+        <RouterLink :to="{ name: 'ResearchSubjects' }" :aria-current="route.name === 'ResearchSubjects' ? 'page' : undefined">Research Subjects</RouterLink>
+        <RouterLink :to="{ name: 'ResearchModels' }" :aria-current="route.name === 'ResearchModels' ? 'page' : undefined">Models</RouterLink>
+        <RouterLink :to="metricsTarget" :aria-current="route.name === 'ResearchMetrics' ? 'page' : undefined">Metrics</RouterLink>
+      </template>
       <RouterLink :to="{ name: 'MyReviewTasks' }" :aria-current="['MyReviewTasks', 'ReviewTaskDetail'].includes(route.name) ? 'page' : undefined">My Review Tasks</RouterLink>
       <RouterLink v-if="!demoMode" :to="{ name: 'AssignPrimaryReviews' }" :aria-current="route.name === 'AssignPrimaryReviews' ? 'page' : undefined">Assign Primary Reviews</RouterLink>
     </nav><p v-if="demoMode">Browse authorised demo experiments and their frozen versions.</p></aside><main><slot /></main></div>

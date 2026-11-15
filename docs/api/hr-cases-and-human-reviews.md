@@ -1,10 +1,10 @@
 # HR cases and assigned Human reviews
 
 This backend module implements the document routes for HR case results and
-Candidate-case primary Human reviews. It uses independent account roles and the
-existing V1/V2/V8 tables. No frontend file, existing migration or new Flyway
-version is changed. Research experiment variants/repeats and grant-management
-endpoints are outside these seven operations.
+Candidate-case primary Human reviews. It uses independent account roles,
+existing V1/V2/V8 tables and permissions registered by Flyway V9. The seven
+operations cover case reads and primary reviews. Research experiments and access
+grants have separate lifecycles.
 
 ## Routes
 
@@ -148,12 +148,9 @@ detail and HR results remain blocked until all its PENDING/OPENED case tasks are
 submitted. Then submitted task detail can show that task's saved decision,
 reason and timestamp. This API does not add a post-submit comparison endpoint.
 
-## Deferred database configuration
+## Database configuration
 
-Per the requested workflow, this change creates no new Flyway migration and does
-not auto-insert permission records at startup. The existing schema suffices, but
-the following permission catalogue/grants still need inclusion when database
-changes are explicitly requested:
+Flyway V9 registers the review permissions and grants them to these roles.
 
 | Permission | Allowed roles |
 | --- | --- |
@@ -164,12 +161,9 @@ changes are explicitly requested:
 | `simrecrut:review:submit` | HR, RESEARCHER |
 | `simrecrut:research:review:assign` | RESEARCHER |
 
-Until those permissions are provisioned, these endpoints intentionally return
-403. Existing administrator permission management recognizes their role scopes
-once the catalogue rows exist. Current authentication sessions must be refreshed
-after permission changes using the existing identity mechanisms. Explicit grants
-must already exist for Researcher access and non-owner HR access; assigning a task
-does not silently grant access or expose every retained Candidate case.
+The endpoints require these permissions at runtime. Refresh authentication
+sessions after changing permissions. Researcher access and non-owner HR access
+also require explicit grants for each case.
 
 ## Verification boundary
 

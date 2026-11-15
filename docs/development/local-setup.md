@@ -64,14 +64,16 @@ Git. The directory markers preserve the scaffold without storing those files.
 
 ## Connected frontend
 
-Run the Java backend on port 8080 with its database, Redis, JWT signing key and
-registration mail settings configured. Flyway V5 grants the Candidate resume
-permissions. Registration sends a real email verification code; use an address
-you control. The frontend never receives backend credentials.
+Start Java with its database, Redis, JWT signing key and mail settings configured.
+Flyway V5 grants the Candidate resume permissions. Registration sends a real
+email verification code, so use an address you control. The frontend never
+receives backend credentials.
 
 From `frontend/`, run `npm run dev:connected` and open
 `http://127.0.0.1:5173/login`. This selects `.env.connected` and proxies `/dev-api`
-to the Java backend. It does not load `.env.development.local`, which may still
+to the root `.env` file's `JAVA_PORT` (8080 in `.env.example`, 8081 when unset).
+Set `VITE_BACKEND_TARGET` to use a different backend address.
+Connected mode does not load `.env.development.local`, which may still
 select the older demo mode. Stop an existing Vite server first if it uses 5173.
 A process-level `VITE_APP_DEMO_MODE` or `.env.connected.local` can override this mode.
 
@@ -80,8 +82,18 @@ PDF, extracts professional facts and opens review. Review supports draft saving,
 explicit confirmation, publication, cleanup retry and deletion. See
 [Connected resume workflow](standard-resume-workflow.md) for permissions and retention.
 Public registration supports Candidate and HR accounts, email verification and
-12-128 character passwords. Password recovery has no endpoint in this backend
-and has no link in the connected login form.
+12-128 character passwords. The connected login page links to password recovery
+by registered email. Researchers use **Assign Primary Reviews** to search for
+eligible reviewers and assign reviews by case ID.
+
+For local Objective scoring and review testing, apply
+[`register-matching-rule-v8.sql`](../../scripts/dev/register-matching-rule-v8.sql)
+and [`register-objective-only-assessment.sql`](../../scripts/dev/register-objective-only-assessment.sql)
+in that order to a development database after Flyway finishes. Set
+`JOB_MATCHING_RULE_VERSION=job-rule-dev-v1`,
+`CASE_PROTOCOL_VERSION=objective-only-dev-v2`, and `CASE_OBJECTIVE_ONLY=true`.
+New cases use the development review rubrics from that protocol. A researcher
+still needs an active `RESEARCH_READ` grant for each case they assign.
 
 Production builds use `.env.production`; the deployment must proxy `/prod-api`
 to Java with that prefix removed, or supply its own `VITE_APP_BASE_API` at build time.

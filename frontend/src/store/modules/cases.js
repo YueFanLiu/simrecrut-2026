@@ -334,16 +334,16 @@ export const useCasesStore = defineStore('cases', {
     async loadConnectedCase(caseId) {
       const { caseDetail, caseExpiry } = await import('../../api/cases.js')
       const row = await caseDetail(caseId)
-      const confirmed = ['CONFIRMED', 'AUTOMATED_RUNNING', 'AUTOMATED_COMPLETE'].includes(row.processingStatus)
-        || (row.processingStatus.startsWith('FAILED') && !['UPLOAD', 'EXTRACTION'].includes(row.stage))
       const stages = ['MATCHING', 'NEUTRAL', 'BIASED', 'FINALIZING', 'COMPLETE']
       const stage = stages.indexOf(row.stage)
       const methods = ['Objective', 'Neutral ML', 'Biased ML'].map((name, index) => ({
-        name, status: index < stage ? 'Complete' : index > stage ? 'Waiting'
-          : row.processingStatus.startsWith('FAILED') ? 'Failed' : 'Running',
+        name, status: row.objectiveOnly && index > 0 ? 'Skipped'
+          : index < stage ? 'Complete' : index > stage ? 'Waiting'
+            : row.processingStatus.startsWith('FAILED') ? 'Failed' : 'Running',
       }))
       return {
-        ...this.cases[caseId], ...row, confirmedAt: confirmed ? true : null, failure: row.message,
+        ...this.cases[caseId], ...row, confirmedAt: caseExpiry(row.confirmedAt),
+        expiresAt: caseExpiry(row.expiresAt), failure: row.message,
         assessment: { methods, retryable: row.retryable, updatedAt: caseExpiry(row.updatedAt), events: [] },
       }
     },

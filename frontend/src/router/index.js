@@ -66,7 +66,8 @@ const router = createRouter({
       component: () => import('../views/research/AssignPrimaryReviews.vue'),
       meta: { title: 'Assign Primary Reviews', requiresDemoSession: true, demoRole: 'Researcher' } }] : []),
     { path: '/research', component: () => import('../views/research/ResearchWorkspace.vue'),
-      meta: { requiresDemoSession: true, demoRole: 'Researcher' }, redirect: '/research/experiments',
+      meta: { requiresDemoSession: true, demoRole: 'Researcher', demoOnly: true },
+      redirect: { name: demoMode ? 'ResearchExperiments' : 'AssignPrimaryReviews' },
       children: [
         { path: 'experiments', name: 'ResearchExperiments', component: () => import('../views/research/ExperimentList.vue'), meta: { title: 'Research Experiments' } },
         { path: 'experiments/new', name: 'ResearchExperimentCreate', component: () => import('../views/research/ExperimentCreate.vue'), meta: { title: 'Create Experiment' } },
@@ -163,6 +164,7 @@ router.beforeEach(async (to) => {
     if (to.meta.requiresDemoSession && !auth.isDemoSignedIn) return { name: 'Login' }
     if (to.meta.demoRole && !auth.hasDemoRole(to.meta.demoRole)) return { name: 'Forbidden' }
     if (to.meta.demoRoles && !to.meta.demoRoles.some(role => auth.hasDemoRole(role))) return { name: 'Forbidden' }
+    if (to.meta.demoOnly) return { name: 'AssignPrimaryReviews' }
     if (['Login', 'Register'].includes(to.name) && auth.isDemoSignedIn) return { name: 'DemoDashboard' }
     return
   }

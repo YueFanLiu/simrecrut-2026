@@ -88,7 +88,9 @@ Unconfirmed cases expire 24 hours after creation. Confirmation commits a
 professional snapshot, explicit absence, research attributes and fixed
 `assessmentReferenceMonth` before queueing original removal. It sets a 30-day
 deadline. File cleanup failure preserves confirmed data and retries separately.
-Completing all three automated outputs replaces the deadline with completion plus
+The status endpoint returns `confirmedAt`, `expiresAt` and `objectiveOnly` so
+the client can restore the correct state and deadline after reload.
+Finishing the configured automated assessment replaces the deadline with completion plus
 30 days. Edits and retries do not otherwise extend retention. Confirmed facts
 cannot be edited; use a new case for changed professional information.
 

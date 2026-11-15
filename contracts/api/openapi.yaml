@@ -2851,10 +2851,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: list_1
       parameters:
       - in: query
@@ -3013,10 +3015,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: create_1
       parameters:
       - description: Required for writes. Reuse the same key for an unchanged retry;
@@ -3175,10 +3179,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: delete_1
       parameters:
       - in: path
@@ -3371,10 +3377,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: confirm_1
       parameters:
       - in: path
@@ -3539,10 +3547,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: upload
       parameters:
       - in: path
@@ -3712,10 +3722,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: draft_1
       parameters:
       - in: path
@@ -3862,10 +3874,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: saveDraft
       parameters:
       - in: path
@@ -4030,10 +4044,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: attributes
       parameters:
       - in: path
@@ -4180,10 +4196,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: saveAttributes
       parameters:
       - in: path
@@ -4348,10 +4366,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: results
       parameters:
       - in: path
@@ -4499,10 +4519,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: retry
       parameters:
       - in: path
@@ -4666,10 +4688,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: run
       parameters:
       - in: path
@@ -4833,10 +4857,12 @@ paths:
       description: "Requires CANDIDATE and the operation-specific simrecrut:case permission.\
         \ Own retained cases only. All writes require Idempotency-Key, including creation;\
         \ draft/attribute/confirmation writes also require revision. Upload uses multipart\
-        \ file. Confirmation freezes inputs; run requires compatible models and configured\
-        \ inference paths. HTTP 202 is accepted, not completed. Retry preserves successful\
-        \ results and frozen versions. PURGING content is inaccessible. Objective\
-        \ and ML scores use separate scales. No sample results are generated."
+        \ file. Confirmation freezes inputs. The normal run requires compatible models\
+        \ and configured inference paths. Objective-only mode skips inference; status\
+        \ includes objectiveOnly and the case retention deadline. HTTP 202 is accepted,\
+        \ not completed. Retry preserves successful results and frozen versions. PURGING\
+        \ content is inaccessible. Objective and ML scores use separate scales. No\
+        \ sample results are generated."
       operationId: status_1
       parameters:
       - in: path
@@ -8019,8 +8045,8 @@ paths:
       description: "Requires RESEARCHER, simrecrut:research:review:assign and an unexpired\
         \ RESEARCH_READ grant. Assign one primary task per condition; repeat assignment\
         \ conflicts. Reviewer eligibility is rechecked on writes. Rubrics/instructions\
-        \ come from the frozen feature schema. New permission provisioning is deferred;\
-        \ no new Flyway migration is included."
+        \ come from the frozen feature schema. Flyway V9 installs review permissions\
+        \ for the applicable roles."
       operationId: eligible
       parameters:
       - in: path
@@ -8183,8 +8209,8 @@ paths:
       description: "Requires RESEARCHER, simrecrut:research:review:assign and an unexpired\
         \ RESEARCH_READ grant. Assign one primary task per condition; repeat assignment\
         \ conflicts. Reviewer eligibility is rechecked on writes. Rubrics/instructions\
-        \ come from the frozen feature schema. New permission provisioning is deferred;\
-        \ no new Flyway migration is included."
+        \ come from the frozen feature schema. Flyway V9 installs review permissions\
+        \ for the applicable roles."
       operationId: assign
       parameters:
       - in: path
@@ -10827,10 +10853,18 @@ components:
           type: string
         cleanupStatus:
           type: string
+        confirmedAt:
+          type: string
+          format: date-time
         errorCode:
           type: string
+        expiresAt:
+          type: string
+          format: date-time
         message:
           type: string
+        objectiveOnly:
+          type: boolean
         processingStatus:
           type: string
         retryable:

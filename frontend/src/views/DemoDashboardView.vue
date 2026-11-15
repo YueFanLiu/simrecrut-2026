@@ -31,7 +31,7 @@ async function logout() {
       <el-button v-if="auth.hasDemoRole('HR')" @click="router.push({ name: 'HrJobs' })">Manage HR jobs</el-button>
       <el-button v-if="!demoMode && auth.hasDemoRole('HR')" @click="router.push({ name: 'HrCases' })">Case Results</el-button>
       <el-button v-if="!demoMode && auth.hasDemoRole('Researcher')" @click="router.push({ name: 'AssignPrimaryReviews' })">Assign Primary Reviews</el-button>
-      <el-button v-if="auth.hasDemoRole('Researcher')" @click="router.push({ name: 'ResearchExperiments' })">Browse research experiments</el-button>
+      <el-button v-if="demoMode && auth.hasDemoRole('Researcher')" @click="router.push({ name: 'ResearchExperiments' })">Browse research experiments</el-button>
       <el-button v-if="auth.hasDemoRole('HR') || auth.hasDemoRole('Researcher')" @click="router.push({ name: 'MyReviewTasks' })">My Review Tasks</el-button>
       <el-button @click="router.push({ name: 'Forbidden' })">Preview access denied</el-button>
       <el-button @click="router.push({ name: 'NotFound' })">Preview page not found</el-button>

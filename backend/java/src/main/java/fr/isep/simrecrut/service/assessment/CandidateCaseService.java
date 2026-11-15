@@ -83,7 +83,8 @@ public class CandidateCaseService {
         AssessmentCase row = owned(actor, db.find(validId(id)), false);
         return new CaseStatus(id, row.processingStatus, row.stage, "FAILED_RETRYABLE".equals(row.processingStatus),
                 row.safeErrorCode, row.safeErrorCode == null ? null : "Processing failed. Use the permitted retry action.",
-                row.cleanupStatus, row.updatedAt);
+                row.cleanupStatus, row.updatedAt, row.confirmedAt, row.purgeAfter,
+                row.automatedStartedAt == null ? objectiveOnly : !row.hasPinnedModels());
     }
 
     @PreAuthorize("hasRole('CANDIDATE') and hasAuthority('simrecrut:case:upload')")

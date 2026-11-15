@@ -1,6 +1,7 @@
 package fr.isep.simrecrut.dto.assessment;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -29,7 +30,9 @@ public final class CandidateCaseDtos {
     public record EmptyRequest() implements StrictRequest { }
     public record CaseAction(String caseId, String processingStatus, long revision, LocalDateTime expiresAt) { }
     public record CaseStatus(String caseId, String processingStatus, String stage, boolean retryable,
-            String errorCode, String message, String cleanupStatus, LocalDateTime updatedAt) { }
+            String errorCode, String message, String cleanupStatus, @JsonFormat(shape = JsonFormat.Shape.STRING) LocalDateTime updatedAt,
+            @JsonFormat(shape = JsonFormat.Shape.STRING) LocalDateTime confirmedAt,
+            @JsonFormat(shape = JsonFormat.Shape.STRING) LocalDateTime expiresAt, boolean objectiveOnly) { }
     public record CaseSummary(String caseId, String jobTitle, String processingStatus, String humanStatus,
             LocalDateTime createdAt, LocalDateTime purgeAt) { }
     public record CasePage(List<CaseSummary> items, long total, int page, int pageSize) { }

@@ -364,11 +364,12 @@ public class ApiDocumentationConfig {
         if (controller.equals("ResearchCaseReviewController")) return "Requires RESEARCHER, simrecrut:research:review:assign "
                 + "and an unexpired RESEARCH_READ grant. Assign one primary task per condition; repeat assignment conflicts. "
                 + "Reviewer eligibility is rechecked on writes. Rubrics/instructions come from the frozen feature schema. "
-                + "New permission provisioning is deferred; no new Flyway migration is included.";
+                + "Flyway V9 installs review permissions for the applicable roles.";
         if (controller.equals("CandidateCaseController")) return "Requires CANDIDATE and the operation-specific "
                 + "simrecrut:case permission. Own retained cases only. All writes require Idempotency-Key, "
                 + "including creation; draft/attribute/confirmation writes also require revision. Upload uses multipart file. "
-                + "Confirmation freezes inputs; run requires compatible models and configured inference paths. "
+                + "Confirmation freezes inputs. The normal run requires compatible models and configured inference paths. "
+                + "Objective-only mode skips inference; status includes objectiveOnly and the case retention deadline. "
                 + "HTTP 202 is accepted, not completed. Retry preserves successful results and frozen versions. "
                 + "PURGING content is inaccessible. Objective and ML scores use separate scales. No sample results are generated.";
         if (controller.equals("AdminUserController")) return "Requires ADMIN and the operation-specific simrecrut:user permission. "

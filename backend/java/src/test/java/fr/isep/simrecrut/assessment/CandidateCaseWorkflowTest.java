@@ -135,6 +135,11 @@ class CandidateCaseWorkflowTest {
         f.worker.execute(f.task(id, "CASE_ASSESS"));
 
         var result = f.service.results(f.actor, id);
+        ReflectionTestUtils.setField(f.service, "objectiveOnly", false);
+        var status = f.service.status(f.actor, id);
+        assertTrue(status.objectiveOnly());
+        assertNotNull(status.confirmedAt());
+        assertEquals(result.privacy().purgeAt(), status.expiresAt());
         assertEquals("AUTOMATED_COMPLETE", result.automatedStatus());
         assertEquals(100, result.objective().path("displayScore").asInt());
         assertNull(result.neutralMl());
