@@ -35,6 +35,7 @@ try {
     Write-Host 'Local environment and readiness regression checks passed.'
 } finally {
     $env:JAVA_PORT = $previousPort
-    if (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file }
+    # PowerShell treats Unix dotfiles as hidden, including this disposable fixture.
+    if (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file -Force }
     Remove-Item -LiteralPath $fixture
 }
