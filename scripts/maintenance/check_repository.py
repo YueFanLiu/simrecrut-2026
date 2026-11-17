@@ -20,6 +20,47 @@ BINARY_SUFFIXES = {
     ".onnx", ".pdf", ".png", ".pt", ".pth", ".safetensors", ".webp", ".zip",
 }
 MARKDOWN_EXCEPTIONS = {"README.md", "offline-ml/datasets/raw/data-sources.md"}
+# User-facing integration reports are intentionally written in Chinese.
+CHINESE_REPORTS = {
+    "docs/development/page-api-integration.md",
+    "docs/development/page-buttons-business-test.md",
+}
+FRONTEND_MESSAGES = "frontend/src/i18n/messages.json"
+CHINESE_API_MESSAGES = "backend/java/src/main/resources/i18n/messages_zh.properties"
+
+
+def language_errors(label: str, text: str) -> list[str]:
+    """Allow Chinese in declared translation values, never in arbitrary source."""
+    if label == FRONTEND_MESSAGES:
+        try:
+            entries = json.loads(text)
+        except ValueError:
+            return [f"{label}: invalid translation JSON"]
+        if not isinstance(entries, dict):
+            return [f"{label}: translations must be an object"]
+        errors = []
+        for source, translations in entries.items():
+            if HAN.search(source):
+                errors.append(f"{label}: translation source keys must be English")
+            if not isinstance(translations, dict) or set(translations) != {"zh", "fr"}:
+                errors.append(f"{label}: each entry requires zh and fr translations")
+                continue
+            for locale, value in translations.items():
+                if not isinstance(value, str) or not value.strip():
+                    errors.append(f"{label}: translation values must be nonempty text")
+                elif locale != "zh" and HAN.search(value):
+                    errors.append(f"{label}: Chinese text is only allowed in zh values")
+        return errors
+    errors = []
+    for number, line in enumerate(text.splitlines(), 1):
+        if not HAN.search(line) or label in CHINESE_REPORTS:
+            continue
+        if label == CHINESE_API_MESSAGES and "=" in line and not line.lstrip().startswith(("#", "!")):
+            key = line.split("=", 1)[0]
+            if key.strip() and not HAN.search(key):
+                continue
+        errors.append(f"{label}:{number}: text contains Han characters")
+    return errors
 
 
 def repository_files(root: Path) -> list[Path]:
@@ -107,10 +148,7 @@ def check(root: Path) -> tuple[list[str], int]:
             errors.append(f"{label}: remove the UTF-8 byte order mark")
         if "\r" in text:
             errors.append(f"{label}: use LF line endings")
-        for number, line in enumerate(text.splitlines(), 1):
-            if HAN.search(line):
-                # Report the location without echoing potentially sensitive text.
-                errors.append(f"{label}:{number}: text contains Han characters")
+        errors.extend(language_errors(label, text))
         if relative.suffix.lower() == ".md":
             if (
                 relative.parts[0] not in {"docs", ".github"}
