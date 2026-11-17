@@ -1,6 +1,9 @@
 # Build context: backend/java (also use this as the Render Root Directory).
 FROM eclipse-temurin:17-jdk-jammy AS build
 WORKDIR /build
+# Keep the wrapper on ZIP so its pinned ZIP checksum remains valid.
+RUN apt-get update && apt-get install -y --no-install-recommends unzip \
+    && rm -rf /var/lib/apt/lists/*
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 # Accept checkouts that use Windows line endings for the shell wrapper.

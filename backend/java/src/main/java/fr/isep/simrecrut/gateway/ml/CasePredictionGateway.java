@@ -8,4 +8,9 @@ import fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper.Protocol;
 public interface CasePredictionGateway {
     boolean available();
     JsonNode predict(String caseId, Model model, Protocol protocol, JsonNode professional, JsonNode research);
+    /** Use only candidate-confirmed optional media; the Neutral model receives neither field. */
+    default JsonNode predict(String caseId, Model model, Protocol protocol, JsonNode professional,
+            JsonNode research, JsonNode media) {
+        return predict(caseId, model, protocol, professional, research);
+    }
 }

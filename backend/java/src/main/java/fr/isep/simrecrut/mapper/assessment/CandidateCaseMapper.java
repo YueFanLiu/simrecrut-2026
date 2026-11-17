@@ -82,10 +82,24 @@ public interface CandidateCaseMapper {
     int deleteCase(@Param("caseId") long caseId);
     int audit(@Param("actor") long actor, @Param("action") String action, @Param("hash") String hash);
 
+    ModelInput modelInput(@Param("caseId") long caseId);
+    int saveModelInput(@Param("caseId") long caseId, @Param("hash") String hash,
+            @Param("text") boolean text, @Param("portrait") boolean portrait, @Param("status") String status);
+    int confirmModelInput(@Param("caseId") long caseId);
+    int purgedModelInput(@Param("caseId") long caseId);
+    int deleteModelInput(@Param("caseId") long caseId);
+    record ModelInput(String payloadSha256, boolean confirmed, boolean purged, boolean reviewed) { }
     record Protocol(long id, long matchingRuleVersionId, long featureSchemaVersionId, String versionCode,
             BigDecimal tRule, String schemaVersion, String schemaPath, String schemaSha256, int dimensionCount) { }
     record Model(long id, long featureSchemaVersionId, long protocolVersionId, String versionCode,
-            String modelType, double threshold, double commonThreshold, String status) { }
+            String modelType, double threshold, double commonThreshold, String status, String artifactSha256) {
+        @org.apache.ibatis.annotations.AutomapConstructor
+        public Model { }
+        public Model(long id, long schema, long protocol, String version, String type,
+                double threshold, double common, String status) {
+            this(id, schema, protocol, version, type, threshold, common, status, null);
+        }
+    }
     record Receipt(String requestHash, String casePublicId, String action, int httpStatus, String responseJson) { }
     record Attribute(String type, String value, String source, boolean confirmed) { }
     record Task(long id, String resourcePublicId, String taskType, String status, int attemptCount,

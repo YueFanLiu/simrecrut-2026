@@ -1,10 +1,10 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElAlert, ElButton, ElCheckbox, ElForm, ElFormItem, ElInput, ElTabPane, ElTabs } from 'element-plus'
+import { ElAlert, ElButton, ElCheckbox, ElForm, ElFormItem, ElInput, ElTabPane, ElTabs, ElSelect, ElOption, ElRadioGroup, ElRadio } from 'element-plus'
 import CandidateLayout from '../../../layouts/CandidateLayout.vue'
 import ResumeFactsTable from '../../../components/simrecrut/ResumeFactsTable.vue'
-import { caseAction, caseResearch, caseReview, saveCaseDraft, saveCaseResearch } from '../../../api/cases.js'
+import { caseAction, caseResearch, caseReview, saveCaseDraft, saveCaseResearch, caseModelInputs, saveCaseModelInputs } from '../../../api/cases.js'
 import { useCasesStore } from '../../../store/modules/cases.js'
 import { getCaseDestination } from '../../../utils/case-history.js'
 
@@ -12,7 +12,20 @@ const route = useRoute()
 const router = useRouter()
 const cases = useCasesStore()
 const groups = ['Skills', 'Experience', 'Education', 'Languages', 'Projects']
-const families = { SCHOOL_CATEGORY: 'School category', REFERRAL: 'Referral', GENDER: 'Gender', ETHNICITY: 'Ethnicity' }
+const legacyFamilies = { SCHOOL_CATEGORY: 'School category', REFERRAL: 'Referral', GENDER: 'Gender', ETHNICITY: 'Ethnicity' }
+const families = computed(() => options.value?.NAME_CUE
+  ? { ...legacyFamilies, NAME_CUE: 'Name cue' } : legacyFamilies)
+const options = ref(null)
+const media = ref(null)
+const portraitFile = ref('')
+const portraitInput = ref(null)
+const modelPayload = () => ({
+  useText: media.value.useText, usePortrait: media.value.usePortrait,
+  name: media.value.name || '', biography: media.value.biography || '',
+  portraitIndex: media.value.portraitIndex ?? -1,
+  ...(portraitFile.value ? { portraitBase64: portraitFile.value } : {}),
+})
+let savedMedia = null
 const entry = ref(null)
 const draft = ref(null)
 const attributes = ref({})
@@ -49,6 +62,10 @@ async function load() {
   entry.value = null
   draft.value = null
   reviewed.value = false
+  media.value = null
+  options.value = null
+  portraitFile.value = ''
+  savedMedia = null
   pending = undefined
   try {
     const row = await cases.loadConnectedCase(caseId)
@@ -59,7 +76,14 @@ async function load() {
     const research = await caseResearch(caseId)
     if (!current()) return
     if (facts.revision !== research.revision) throw new Error('The case changed while loading. Reload the draft.')
-    attributes.value = Object.fromEntries(Object.keys(families).map(type =>
+    options.value = research.allowedValues
+    if (options.value?.NAME_CUE) {
+      const inputs = await caseModelInputs(caseId)
+      if (!current()) return
+      if (inputs.revision !== facts.revision) throw new Error('The case changed while loading. Reload the draft.')
+      media.value = inputs
+    }
+    attributes.value = Object.fromEntries(Object.keys(families.value).map(type =>
       [type, research.attributes.find(item => item.type === type)?.value || 'UNKNOWN']))
     savedAttributes = JSON.stringify(attributePayload())
     applyDraft(facts)
@@ -116,8 +140,33 @@ async function perform(action) {
       const fresh = await caseReview(id)
       if (!current()) return
       applyDraft(fresh)
+      if (media.value) {
+        media.value = await caseModelInputs(id)
+        if (!current()) return
+        savedMedia = null
+      }
+    }
+    if (action === 'model') {
+      const payload = { ...modelPayload(), revision: draft.value.revision }
+      const result = await write(action, payload, key => saveCaseModelInputs(id, payload, key))
+      if (!current()) return
+      const fresh = await caseModelInputs(id)
+      if (!current()) return
+      if (fresh.revision !== result.revision) throw new Error('The case changed while loading. Reload the draft.')
+      draft.value.revision = result.revision
+      media.value = fresh
+      if (fresh.portrait && fresh.portraitIndex >= 0) {
+        media.value.candidates[fresh.portraitIndex] = fresh.portrait.dataBase64
+      }
+      portraitFile.value = ''
+      savedMedia = JSON.stringify(modelPayload())
+      feedback.value = 'Optional model inputs saved.'
+      return
     }
     if (action === 'confirm') {
+      if (media.value && JSON.stringify(modelPayload()) !== savedMedia) {
+        throw new Error('Review and save the optional model inputs before confirming.')
+      }
       const confirmation = { revision: draft.value.revision, confirmed: true }
       await write(action, confirmation, key => caseAction(id, 'confirm', confirmation, key))
       if (current()) await router.push({ name: 'SimulationProgress', params: { caseId: id } })
@@ -127,6 +176,24 @@ async function perform(action) {
   } finally {
     busy.value = false
   }
+}
+async function readPortrait(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 1400000) {
+    error.value = 'Use a PNG or JPEG portrait under 1.4 MB.'
+    event.target.value = ''
+    return
+  }
+  const sequence = loadSequence
+  const reader = new FileReader()
+  reader.onload = () => {
+    if (sequence === loadSequence) {
+      portraitFile.value = String(reader.result).split(',')[1]
+      media.value.usePortrait = true
+    }
+  }
+  reader.readAsDataURL(file)
 }
 watch(() => route.params.caseId, load, { immediate: true })
 onBeforeUnmount(() => { loadSequence++; pending = undefined })
@@ -157,10 +224,49 @@ onBeforeUnmount(() => { loadSequence++; pending = undefined })
       <p>{{ $t("Use codes from the study protocol. Leave a field blank or use UNKNOWN if you choose to omit it.") }}</p>
       <ElForm label-position="top" :disabled="busy">
         <ElFormItem v-for="(label, type) in families" :key="type" :label="$t(label)">
-          <ElInput v-model="attributes[type]" maxlength="128" />
+          <ElSelect v-if="options?.[type]" v-model="attributes[type]">
+            <ElOption v-for="value in options[type]" :key="value" :value="value"
+              :label="value.replaceAll('_', ' ')" />
+          </ElSelect>
+          <ElInput v-else v-model="attributes[type]" maxlength="128" />
         </ElFormItem>
         <ElButton @click="perform('research')">{{ $t("Save Optional Attributes") }}</ElButton>
       </ElForm>
+
+      <section v-if="media" class="model-inputs">
+        <h2>{{ $t("Optional Model Inputs") }}</h2>
+        <p>{{ $t("Only Biased uses these inputs. You can omit text, the portrait, or both.") }}</p>
+        <p>{{ $t("Research codes are assigned study settings. They do not describe your real ethnicity.") }}</p>
+        <ElForm label-position="top" :disabled="busy">
+          <ElCheckbox v-model="media.useText">{{ $t("Use the reviewed text and optional name") }}</ElCheckbox>
+          <ElFormItem :label="$t('Optional name')">
+            <ElInput v-model="media.name" maxlength="200" :disabled="!media.useText" />
+          </ElFormItem>
+          <ElFormItem :label="$t('Reviewed model text')">
+            <ElInput v-model="media.biography" type="textarea" :rows="6" maxlength="100000"
+              :disabled="!media.useText" />
+          </ElFormItem>
+          <p>{{ $t("Check the text against your CV and remove contact details before saving.") }}</p>
+          <ElCheckbox v-model="media.usePortrait">{{ $t("Use a reviewed portrait") }}</ElCheckbox>
+          <p v-if="media.portraitNotice">{{ $t(media.portraitNotice) }}</p>
+          <ElRadioGroup v-if="media.candidates?.length" v-model="media.portraitIndex"
+            :disabled="!media.usePortrait || busy" class="portrait-options" @change="portraitFile = ''">
+            <ElRadio v-for="(portrait, index) in media.candidates" :key="index" :value="index">
+              <img :src="'data:image/jpeg;base64,' + portrait" :alt="$t('Portrait candidate') + ' ' + (index + 1)" />
+            </ElRadio>
+          </ElRadioGroup>
+          <ElFormItem :label="$t('Choose another local portrait (PNG or JPEG)')">
+            <input ref="portraitInput" type="file" accept="image/png,image/jpeg" hidden
+              :disabled="busy" @change="readPortrait" />
+            <ElButton :disabled="busy" @click="portraitInput?.click()">{{ $t("Choose Portrait") }}</ElButton>
+          </ElFormItem>
+          <img v-if="portraitFile || (media.portrait && media.portraitIndex === -1)"
+            :src="'data:image/jpeg;base64,' + (portraitFile || media.portrait.dataBase64)"
+            class="portrait-preview" :alt="$t('Selected portrait preview')" />
+          <p>{{ $t("The original PDF is deleted after confirmation. Approved model inputs are deleted after both predictions finish.") }}</p>
+          <ElButton :disabled="busy" @click="perform('model')">{{ $t("Save Optional Model Inputs") }}</ElButton>
+        </ElForm>
+      </section>
 
       <h2>{{ $t("Confirm Facts") }}</h2>
       <ElCheckbox v-model="reviewed" :disabled="busy">{{ $t("I have reviewed the professional facts.") }}</ElCheckbox>
@@ -172,3 +278,10 @@ onBeforeUnmount(() => { loadSequence++; pending = undefined })
     </template>
   </CandidateLayout>
 </template>
+
+<style scoped>
+.model-inputs { margin: 2rem 0; max-width: 850px; }
+.portrait-options { display: flex; gap: 2rem; margin: 1rem 0; }
+.portrait-options img, .portrait-preview { width: 112px; height: 112px; object-fit: cover; }
+.portrait-options :deep(.el-radio) { height: auto; }
+</style>

@@ -120,7 +120,10 @@ public class CaseMatchingEngine {
     private BigDecimal match(String category, JsonNode facts, List<JsonNode> rows, JsonNode rule, String month) {
         if (category.equals("EXPERIENCE")) {
             BigDecimal target = BigDecimal.ZERO; Set<String> families = new HashSet<>();
-            for (JsonNode row : rows) {
+            // New 39-input cases score the primary experience target; extra floors remain separate gates.
+            List<JsonNode> scoringRows = "objective-curated-v8-online-v1".equals(rule.path("version").asText())
+                    ? rows.subList(0, 1) : rows;
+            for (JsonNode row : scoringRows) {
                 BigDecimal years = row.path("payload").path("targetYears").decimalValue();
                 if (years.signum() <= 0) throw CaseException.dependency();
                 target = target.max(years);
@@ -197,7 +200,8 @@ public class CaseMatchingEngine {
             else { months += to - from; from = interval[0]; to = interval[1]; }
         }
         if (!first) months += to - from;
-        return BigDecimal.valueOf(months).divide(BigDecimal.valueOf(12), 7, RoundingMode.HALF_UP);
+        int precision = "objective-curated-v8-online-v1".equals(rule.path("version").asText()) ? 20 : 7;
+        return BigDecimal.valueOf(months).divide(BigDecimal.valueOf(12), precision, RoundingMode.HALF_UP);
     }
     private String code(JsonNode rule, String catalogue, String value) {
         String normalized = rule.path("aliases").path(catalogue).path(value).asText(value);

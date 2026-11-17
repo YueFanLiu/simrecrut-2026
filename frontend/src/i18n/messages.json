@@ -7742,5 +7742,81 @@
   "No assessed gaps are available for this result.": {
     "zh": "此结果暂无可用的已评估不足说明。",
     "fr": "Aucune lacune évaluée n’est disponible pour ce résultat."
+  },
+  "Optional Model Inputs": {
+    "zh": "可选模型输入",
+    "fr": "Entrées facultatives du modèle"
+  },
+  "Only Biased uses these inputs. You can omit text, the portrait, or both.": {
+    "zh": "仅偏见模型使用这些输入。文字、头像或两者都可以不提供。",
+    "fr": "Seul le modèle Biased utilise ces entrées. Le texte, le portrait ou les deux peuvent être omis."
+  },
+  "Research codes are assigned study settings. They do not describe your real ethnicity.": {
+    "zh": "研究代码是实验设定，不代表你的真实族裔。",
+    "fr": "Les codes sont des paramètres expérimentaux. Ils ne décrivent pas votre origine réelle."
+  },
+  "Use the reviewed text and optional name": {
+    "zh": "使用核对后的文字和可选姓名",
+    "fr": "Utiliser le texte vérifié et le nom facultatif"
+  },
+  "Optional name": {
+    "zh": "可选姓名",
+    "fr": "Nom facultatif"
+  },
+  "Reviewed model text": {
+    "zh": "已核对的模型文字",
+    "fr": "Texte vérifié du modèle"
+  },
+  "Check the text against your CV and remove contact details before saving.": {
+    "zh": "保存前请对照简历核对文字，并删除联系方式。",
+    "fr": "Vérifiez le texte avec votre CV et retirez les coordonnées avant de sauvegarder."
+  },
+  "Use a reviewed portrait": {
+    "zh": "使用已核对的头像",
+    "fr": "Utiliser un portrait vérifié"
+  },
+  "Portrait candidate": {
+    "zh": "候选头像",
+    "fr": "Portrait proposé"
+  },
+  "Choose another local portrait (PNG or JPEG)": {
+    "zh": "选择另一张本地头像（PNG 或 JPEG）",
+    "fr": "Choisir un autre portrait local (PNG ou JPEG)"
+  },
+  "Selected portrait preview": {
+    "zh": "所选头像预览",
+    "fr": "Aperçu du portrait choisi"
+  },
+  "The original PDF is deleted after confirmation. Approved model inputs are deleted after both predictions finish.": {
+    "zh": "确认后删除原始 PDF。两个模型完成预测后删除已确认的模型输入。",
+    "fr": "Le PDF original est supprimé après confirmation. Les entrées approuvées sont supprimées après les deux prédictions."
+  },
+  "Save Optional Model Inputs": {
+    "zh": "保存可选模型输入",
+    "fr": "Sauvegarder les entrées facultatives"
+  },
+  "Optional model inputs saved.": {
+    "zh": "可选模型输入已保存。",
+    "fr": "Entrées facultatives sauvegardées."
+  },
+  "Review and save the optional model inputs before confirming.": {
+    "zh": "确认前请核对并保存可选模型输入。",
+    "fr": "Vérifiez et sauvegardez les entrées facultatives avant de confirmer."
+  },
+  "Use a PNG or JPEG portrait under 1.4 MB.": {
+    "zh": "请使用小于 1.4 MB 的 PNG 或 JPEG 头像。",
+    "fr": "Utilisez un portrait PNG ou JPEG de moins de 1,4 Mo."
+  },
+  "Name cue": {
+    "zh": "姓名线索",
+    "fr": "Indice de nom"
+  },
+  "Automatic portrait detection is unavailable. Select a local portrait or omit it.": {
+    "zh": "自动头像检测暂不可用，请选择本地头像或跳过。",
+    "fr": "La détection automatique du portrait est indisponible. Choisissez un portrait local ou omettez-le."
+  },
+  "Choose Portrait": {
+    "zh": "选择头像",
+    "fr": "Choisir un portrait"
   }
 }

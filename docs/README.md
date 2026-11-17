@@ -28,6 +28,11 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
 - [ADR 0001](architecture/decisions/0001-repository-and-runtime-boundaries.md):
   repository organization, runtime boundaries, and JDK 17.
 
+## Model serving
+
+- [Local model integration](deployment/model-integration.md): immutable Keras packages,
+  39-input serving, optional reviewed media, local containers and privacy cleanup.
+
 ## Development
 
 - [Connected resume workflow](development/standard-resume-workflow.md): authenticated

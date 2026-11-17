@@ -42,7 +42,9 @@ const comparisonRows = computed(() => results.value ? [
   { method: 'Biased ML Acceptance Score', score: results.value.biased?.acceptanceScore ?? '—', scale: '0–1', decision: results.value.biased?.decision ?? '—', status: objectiveOnly.value ? 'Skipped' : results.value.biased ? 'Complete' : 'Pending' },
   ...humanCards.value.map((human) => ({ method: human.title, score: 'Not applicable', scale: 'Decision only', decision: human.decision || 'No decision yet', status: human.status })),
 ] : [])
-const researchLabels = { schoolPrestige: 'School prestige', referral: 'Referral', gender: 'Gender', ethnicity: 'Ethnicity' }
+const researchLabels = { schoolPrestige: 'School prestige', referral: 'Referral', gender: 'Gender', ethnicity: 'Ethnicity', nameCue: 'Name cue',
+  SCHOOL_CATEGORY: 'School prestige', REFERRAL: 'Referral', GENDER: 'Gender',
+  ETHNICITY: 'Ethnicity', NAME_CUE: 'Name cue' }
 const formatDate = (time) => new Intl.DateTimeFormat(dateLocale.value, {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris',
 }).format(new Date(time))

@@ -24,7 +24,8 @@ training-gpu = ["numpy==2.4.2", "tensorflow[and-cuda]==2.21.0", "keras==3.15.1",
 where = ["src"]
 include = ["simrecrut_ml", "simrecrut_ml.extraction", "simrecrut_ml.extraction.*",
            "simrecrut_ml.features", "simrecrut_ml.features.*",
-           "simrecrut_ml.training", "simrecrut_ml.training.*"]
+           "simrecrut_ml.training", "simrecrut_ml.training.*",
+           "simrecrut_ml.packaging", "simrecrut_ml.packaging.*"]
 namespaces = true
 
 [tool.pytest.ini_options]

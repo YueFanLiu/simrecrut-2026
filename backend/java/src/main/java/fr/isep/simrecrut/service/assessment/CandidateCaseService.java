@@ -40,6 +40,9 @@ public class CandidateCaseService {
     private final CasePredictionGateway predictions;
     private final TransactionTemplate tx;
     private final String protocolCode;
+    private fr.isep.simrecrut.integration.ml.CaseModelInputs modelInputs;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setModelInputs(fr.isep.simrecrut.integration.ml.CaseModelInputs inputs) { this.modelInputs = inputs; }
     @Value("${simrecrut.cases.objective-only:false}")
     private boolean objectiveOnly;
 
@@ -123,6 +126,9 @@ public class CandidateCaseService {
         return mutation(actor, key, id, "EDIT", body, row -> {
             state(row, "REVIEW_REQUIRED"); revision(row, body.revision());
             row.draftJson = matching.draft(body.professional(), body.confirmedAbsent(), read(row.draftJson)).toString();
+            if (modelInputs != null && bundle(row).protocol().dimensionCount() == 39) {
+                modelInputs.refresh(row, read(row.draftJson).path("professional"));
+            }
             save(row); return new Applied(row, 200, action(row));
         });
     }
@@ -132,7 +138,8 @@ public class CandidateCaseService {
         return tx.execute(ignored -> {
             AssessmentCase row = owned(actor, db.find(validId(id)), false);
             return new ResearchAttributes(id, row.revisionNo, db.attributes(row.id).stream()
-                    .map(a -> new ResearchAttribute(a.type(), a.value(), a.source(), a.confirmed())).toList());
+                    .map(a -> new ResearchAttribute(a.type(), a.value(), a.source(), a.confirmed())).toList(),
+                    bundle(row).schema().path("researchAttributes"));
         });
     }
 
@@ -148,7 +155,7 @@ public class CandidateCaseService {
                 }
             }
             db.deleteAttributes(row.id);
-            for (String type : List.of("SCHOOL_CATEGORY", "REFERRAL", "GENDER", "ETHNICITY")) {
+            for (String type : CaseConfiguration.types(bundle(row).schema())) {
                 String value = body.attributes().stream().filter(a -> a.type().equals(type))
                         .map(AttributeInput::value).findFirst().orElse("UNKNOWN");
                 changed(db.insertAttribute(row.id, type, value));
@@ -166,10 +173,14 @@ public class CandidateCaseService {
             String referenceMonth = currentMonth();
             matching.calculate(draft, job(row), requirements(row), bundle, referenceMonth);
             changed(db.insertSnapshot(row.id, bundle.protocol().schemaVersion(), draft.path("professional").toString()));
-            if (db.attributes(row.id).isEmpty()) for (String type : List.of("SCHOOL_CATEGORY", "REFERRAL", "GENDER", "ETHNICITY")) {
+            if (db.attributes(row.id).isEmpty()) for (String type : CaseConfiguration.types(bundle(row).schema())) {
                 changed(db.insertAttribute(row.id, type, "UNKNOWN"));
             }
             db.confirmAttributes(row.id);
+            if (bundle.protocol().dimensionCount() == 39) {
+                if (modelInputs == null) throw CaseException.dependency();
+                modelInputs.confirm(row);
+            }
             row.confirmedAbsentJson = draft.path("confirmedAbsent").toString(); row.draftJson = null;
             row.assessmentReferenceMonth = referenceMonth; row.confirmedAt = now(); row.purgeAfter = row.confirmedAt.plusDays(30);
             row.processingStatus = "CONFIRMED"; row.stage = "READY"; row.cleanupStatus = "PENDING";
@@ -242,6 +253,27 @@ public class CandidateCaseService {
         });
     }
 
+    @PreAuthorize("hasRole('CANDIDATE') and hasAuthority('simrecrut:case:edit')")
+    public JsonNode modelInputs(AccountPrincipal actor, String id) {
+        return tx.execute(ignored -> {
+            AssessmentCase row = owned(actor, db.lock(validId(id)), false); state(row, "REVIEW_REQUIRED");
+            if (bundle(row).protocol().dimensionCount() != 39 || modelInputs == null) throw CaseException.conflict();
+            ObjectNode view = modelInputs.preview(row);
+            view.put("revision", row.revisionNo);
+            return view;
+        });
+    }
+
+    @PreAuthorize("hasRole('CANDIDATE') and hasAuthority('simrecrut:case:edit')")
+    public OperationResult<JsonNode> saveModelInputs(AccountPrincipal actor, String id, String key, ModelInputRequest body) {
+        return mutation(actor, key, id, "MODEL_INPUTS", body, row -> {
+            state(row, "REVIEW_REQUIRED"); revision(row, body.revision());
+            if (bundle(row).protocol().dimensionCount() != 39 || modelInputs == null) throw CaseException.conflict();
+            modelInputs.select(row, body);
+            save(row); return new Applied(row, 200, action(row));
+        });
+    }
+
     private OperationResult<JsonNode> mutation(AccountPrincipal actor, String key, String id, String action,
             Object payload, Function<AssessmentCase, Applied> work) {
         if (key == null || !key.matches("[A-Za-z0-9_-]{16,128}")) throw new IllegalArgumentException("Invalid Idempotency-Key.");
@@ -268,7 +300,7 @@ public class CandidateCaseService {
     }
 
     private void authorize(AccountPrincipal actor, String action) {
-        String permission = switch (action) { case "ATTRIBUTES", "EDIT" -> "edit"; case "RETRY" -> "run";
+        String permission = switch (action) { case "ATTRIBUTES", "EDIT", "MODEL_INPUTS" -> "edit"; case "RETRY" -> "run";
             default -> action.toLowerCase(Locale.ROOT); };
         if (actor == null || db.lockActor(actor.userId(), actor.securityVersion()) == null
                 || roles.findByUserId(actor.userId()).stream().noneMatch(r -> r.getRoleCode() == AccountRole.CANDIDATE)
