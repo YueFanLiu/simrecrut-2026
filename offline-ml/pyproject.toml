@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "simrecrut-ml"
 version = "0.1.0"
-description = "Offline CV and job fact extraction for SimRecrut"
+description = "Offline fact extraction and model training for SimRecrut"
 requires-python = ">=3.12"
 dependencies = ["pyarrow==24.0.0"]
 
@@ -14,13 +14,17 @@ dev = ["pytest==9.0.2"]
 extraction = [
     "jsonschema==4.26.0", "pypdf==6.8.0", "pdfplumber==0.11.9",
     "pypdfium2==5.14.0", "pillow==12.1.1",
+    "opencv-python-headless==4.13.0.92",
 ]
 ocr = ["tesserocr==2.11.0"]
+training = ["numpy==2.4.2", "tensorflow-cpu==2.21.0", "keras==3.15.1", "h5py==3.14.0"]
+training-gpu = ["numpy==2.4.2", "tensorflow[and-cuda]==2.21.0", "keras==3.15.1", "h5py==3.14.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["simrecrut_ml", "simrecrut_ml.extraction",
-           "simrecrut_ml.extraction.*"]
+include = ["simrecrut_ml", "simrecrut_ml.extraction", "simrecrut_ml.extraction.*",
+           "simrecrut_ml.features", "simrecrut_ml.features.*",
+           "simrecrut_ml.training", "simrecrut_ml.training.*"]
 namespaces = true
 
 [tool.pytest.ini_options]

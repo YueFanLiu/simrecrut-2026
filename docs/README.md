@@ -29,10 +29,10 @@ belong in the Java resources directory. Keep each topic in one authoritative pag
 - [Original Lark specification](research/lark-specification-source.md): complete
   Markdown source fetched at revision 221; source references are retained.
 
-The offline implementation guides are temporarily stored outside the checkout
-with the preserved data. Four extraction source files have been restored in
-`methods/` and `scripts/`; other offline modules remain empty. Detailed
-implementation guidance has not been restored.
+The root README describes the current offline data and training flow.
+Extraction, feature preparation and training separate reusable `methods/` from
+operation `scripts/`. Data, evidence and experiment outputs remain local and
+ignored by Git.
 
 ## Reserved topics
 

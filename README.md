@@ -7,10 +7,10 @@ authorized views. Matching is an intermediate calculation used by the rules and
 models.
 
 This repository provides the project layout, development rules, configuration
-examples and a Java build setup. The offline ML area contains restored extraction
-methods and two operation scripts. Other offline source modules remain empty
-scaffolds. Source modules separate shared methods from operation scripts; local
-data and the previous implementation guides remain outside the checkout.
+examples and a Java build setup. The offline ML area contains extraction and
+FairCVtest-style Keras training code. The training operation uses the accepted
+development batch and verifies its saved checksums. Offline modules separate shared methods
+from operation scripts, and datasets and training outputs stay out of Git.
 
 Product workflows, frontend pages, inference endpoints, final ML evaluation
 and packaging, database migrations and deployment are developed in their
@@ -190,10 +190,55 @@ no application database credentials and expose no training endpoint.
 training, validation, held-out evaluation, and model export. Live Candidate
 uploads do not automatically become training samples.
 Each source module has `methods/` for reusable functions and `scripts/` for
-operation scripts with explicit paths and settings. Extraction has two shared
-method files and two operation scripts; other modules remain empty. The restored
-scripts have not been run, and local datasets and the Python environment have
-not been restored.
+operations with explicit paths and settings. Extraction keeps its two method
+files and two operation scripts. The original experiment selected 500 Djinni
+profiles and 60 jobs. The current revision uses the same 300 training and
+100 validation people in `datasets/clean/training-500-multimodal-v3/`; the
+100 test people remain sealed in the original batch. Archived batches stay
+unchanged.
+
+Each development person needs at least two complete job pairs, with three
+preferred. Missing mandatory evidence holds a pair; it is never filled in. Job quotes, mapping proposals, replies and rejected
+cases stay with the local batch. Explicit prose targets take priority over
+publisher summary tags. Education and project criteria are included when their
+source evidence supports an assessment.
+
+Split people 300/100/100 before making variants. Portrait identities and assigned
+full names also stay within one split. The final test people are excluded from
+training, preprocessing fits, cutoff selection and validation reports.
+Synthetic portraits and names describe controlled cases, not the real candidates.
+The 39-position schema contains 16 professional and 23 research values. Five
+research families cover school tier, referral, gender, ethnicity and name cues.
+The rule cutoff remains the uncalibrated research setting 0.70; each network's
+decision cutoff is selected separately on validation data. A fixed fictional
+bias table is saved in the batch manifest; its effects are not claims about real
+groups or hiring decisions.
+
+The Keras adaptation of FairCVtest combines 39 structured inputs, 20 projected
+face values and 64 biography values, followed by layers of 40, 20 and 1 units.
+ResNet-50 portrait features are cached once; its weights and fastText stay frozen.
+Biased trains the face projector, BiLSTM and scoring layers. Neutral masks the
+research block and both media branches inside its saved model. Its training view
+shares the same scoring layers and skips computations whose outputs are zero.
+Missing biographies use reserved token ID 2; missing face vectors contain zeros.
+Their branch outputs are masked inside the saved models. Whole-branch dropout
+during Biased training also covers cases with missing text or photos.
+
+The training operation first fits the structured inputs, then tunes Biased with
+text and portraits. Controlled pairs include ordinary cases and extra cases near
+the rule boundary, made by changing HR weights without changing CV facts. Pair
+loss penalizes missed or incorrect decision changes. Both conditions run with
+five seeds. Each run saves epoch logs, best weights, complete models, cutoffs
+and validation predictions for all four media combinations. Checkpoint selection
+uses validation class performance, name/gender contrasts and raw hard-check
+errors. The mandatory gate is part of each saved model; raw head scores and
+error counts are retained. Training uses float32 with TF32 disabled. These
+results measure learning of the declared research rules, not real hiring accuracy.
+Education and project coverage remains limited and is recorded in the cohort
+audit; a successful simulation does not resolve that data limitation.
+Use the existing operation scripts; paths and run settings are at their top.
+For GPU training, use WSL and the `training-gpu` dependency group with the same
+Keras script. Data, pretrained assets, run outputs and `.env` remain outside Git.
 
 Shared contracts belong in `contracts/`. Planned model releases will use
 `model_artifacts/{neutral,biased}/{version}/` with weights, schema, preprocessing,

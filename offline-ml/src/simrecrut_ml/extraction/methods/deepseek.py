@@ -24,6 +24,12 @@ For resumes and profiles, fill professional facts and leave requirements empty.
 For jobs, fill requirements and leave every professional array empty.
 Use exact wording from the field text and short, sufficient source excerpts.
 Keep the original source_field keys. Do not quote field names as source text.
+For a scalar field, quote its value alone: English Level containing intermediate
+supports the level intermediate, not the invented excerpt English Level: intermediate.
+The key English Level does not supply the literal word English as source text.
+Keep a language name UNKNOWN unless it is named in an actual field value.
+Use short excerpts that avoid redacted whitespace runs. Do not quote a whole line
+if part of that line was masked. Numeric values and dates must retain their wording.
 Do not translate, expand abbreviations or invent missing qualifications.
 Distinguish completed work from plans, preferences and activities being learned.
 In jobs, distinguish requirements, preferences, company context and future duties.
@@ -50,7 +56,7 @@ _FIELD_EXAMPLE = {
         },
     },
 }
-_ADAPTER_VERSION = "deepseek-text-v1"
+_ADAPTER_VERSION = "deepseek-text-v2"
 _MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 
 

@@ -23,7 +23,6 @@ from html.parser import HTMLParser
 from itertools import islice
 from pathlib import Path
 
-
 FactExtractor = Callable[[dict], dict]
 
 
@@ -82,9 +81,16 @@ def load_djinni(parquet_path: Path, kind: str) -> Iterator[dict]:
     import pyarrow.parquet as parquet
 
     source_id = "djinni-jobs" if kind == "job" else "djinni-profiles"
-    required = {"id", "Position", "Long Description"} if kind == "job" else {
-        "id", "Position", "Moreinfo", "CV",
-    }
+    required = (
+        {"id", "Position", "Long Description"}
+        if kind == "job"
+        else {
+            "id",
+            "Position",
+            "Moreinfo",
+            "CV",
+        }
+    )
     with parquet.ParquetFile(parquet_path) as source:
         columns = source.schema_arrow.names
         if not required.issubset(columns):
@@ -124,8 +130,10 @@ def select_records(records: Iterable[dict], selection: dict) -> Iterator[dict]:
         categories = rule.get("categories")
         if not isinstance(category_field, str) or not category_field.strip():
             raise ValueError(f"Selection rule for {source_id} has no category field.")
-        if not isinstance(categories, dict) or not categories or any(
-            not isinstance(label, str) or not label.strip() for label in categories
+        if (
+            not isinstance(categories, dict)
+            or not categories
+            or any(not isinstance(label, str) or not label.strip() for label in categories)
         ):
             raise ValueError(f"Selection rule for {source_id} needs category labels.")
 
@@ -141,6 +149,104 @@ def select_records(records: Iterable[dict], selection: dict) -> Iterator[dict]:
         category = fields[category_field]
         if isinstance(category, str) and category in rule["categories"]:
             yield record
+
+
+def select_development_records(
+    records: Iterable[dict],
+    targets: dict[str, int],
+    seed: int = 42,
+) -> list[dict]:
+    """Select a reproducible Djinni development cohort before extraction.
+
+    Use publisher categories, role wording and source-length checks for
+    screening only. Balance publisher experience bands where available;
+    these bands are not confirmed relevant years. Preserve original
+    fields and source references; selected records still need fact checks.
+    """
+    if not targets or any(
+        isinstance(n, bool) or not isinstance(n, int) or n <= 0 for n in targets.values()
+    ):
+        raise ValueError("Development targets must contain positive record counts.")
+    role_pattern = re.compile(r"\b(?:developer|engineer|programmer|qa|tester|testing)\b", re.I)
+    source_rows = []
+    for record in records:
+        fields = record["fields"]
+        category = fields.get("Primary Keyword")
+        if category not in targets or not role_pattern.search(fields.get("Position") or ""):
+            continue
+        keys = ("Long Description",) if record["kind"] == "job" else ("Moreinfo", "Highlights")
+        text = "\n".join(fields.get(key) or "" for key in keys)
+        if not 350 <= len(text.strip()) <= 7500:
+            continue
+        letters = [character for character in text if character.isalpha()]
+        if (
+            not letters
+            or "\ufffd" in text
+            or sum(character.isascii() for character in letters) / len(letters) < 0.98
+        ):
+            continue
+        if record["kind"] == "job" and not re.search(
+            r"\b(?:requirements|qualifications|must have|required|we expect|you have)\b",
+            text,
+            re.I,
+        ):
+            continue
+        source_rows.append(record)
+
+    groups = {category: {band: [] for band in range(3)} for category in targets}
+    text_owners = {}
+    for record in deduplicate_records(source_rows):
+        if record.get("deduplication", {}).get("status") == "ID_CONFLICT":
+            continue
+        fields = record["fields"]
+        category = fields["Primary Keyword"]
+        text = fields.get("Moreinfo") or fields.get("Long Description") or ""
+        signature = hashlib.sha256(" ".join(text.split()).lower().encode("utf-8")).hexdigest()
+        if signature in text_owners:
+            text_owners[signature].setdefault("cohort_duplicate_refs", []).append(
+                {
+                    "source_id": record["source_id"],
+                    "source_record_id": record["source_record_id"],
+                    "row_number": record["row_number"],
+                }
+            )
+            continue
+        text_owners[signature] = record
+        years = fields.get("Experience Years", fields.get("Exp Years"))
+        number = re.search(r"\d+(?:\.\d+)?", str(years))
+        years = float(number.group()) if number else None
+        band = (
+            0 if years is not None and years <= 2 else 1 if years is not None and years <= 5 else 2
+        )
+        record["cohort"] = {
+            "category": category,
+            "publisher_experience_band": band,
+            "source_text_sha256": signature,
+            "seed": seed,
+            "note": "English text screening only; role fit and relevant years are not confirmed.",
+        }
+        rank = hashlib.sha256(f"{seed}:{signature}".encode("ascii")).hexdigest()
+        groups[category][band].append((rank, record))
+
+    selected = []
+    for category, count in targets.items():
+        queues = [
+            iter(sorted(groups[category][band], key=lambda item: item[0])) for band in range(3)
+        ]
+        rows = []
+        while len(rows) < count:
+            progress = False
+            for queue in queues:
+                item = next(queue, None)
+                if item is not None:
+                    rows.append(item[1])
+                    progress = True
+                    if len(rows) == count:
+                        break
+            if not progress:
+                raise ValueError(f"Not enough distinct source records for {category}.")
+        selected.extend(rows)
+    return selected
 
 
 def deduplicate_records(records: Iterable[dict]) -> Iterator[dict]:
@@ -172,9 +278,13 @@ def deduplicate_records(records: Iterable[dict]) -> Iterator[dict]:
             for key, value in fields.items()
             if key not in {"ID", "id", "__index_level_0__"}
         }
-        fingerprint = hashlib.sha256(json.dumps(
-            compared_fields, sort_keys=True, ensure_ascii=False,
-        ).encode("utf-8")).hexdigest()
+        fingerprint = hashlib.sha256(
+            json.dumps(
+                compared_fields,
+                sort_keys=True,
+                ensure_ascii=False,
+            ).encode("utf-8")
+        ).hexdigest()
         has_text = any(
             isinstance(fields.get(key), str) and fields[key].strip()
             for key in descriptive_fields[kind]
@@ -186,12 +296,21 @@ def deduplicate_records(records: Iterable[dict]) -> Iterator[dict]:
     for record, identity, fingerprint, has_text in pending:
         conflict = len(identity_fingerprints[identity]) > 1
         group_key = (
-            identity[0], identity[1], fingerprint,
+            identity[0],
+            identity[1],
+            fingerprint,
             identity[2] if conflict or not has_text else None,
         )
-        origin = {key: record[key] for key in (
-            "source_id", "kind", "source_record_id", "source_file", "row_number",
-        )}
+        origin = {
+            key: record[key]
+            for key in (
+                "source_id",
+                "kind",
+                "source_record_id",
+                "source_file",
+                "row_number",
+            )
+        }
         if group_key not in groups:
             groups[group_key] = {
                 **record,
@@ -206,9 +325,7 @@ def deduplicate_records(records: Iterable[dict]) -> Iterator[dict]:
 
     del pending, identity_fingerprints
     for group in groups.values():
-        group["deduplication"]["duplicate_count"] = (
-            len(group["deduplication"]["origins"]) - 1
-        )
+        group["deduplication"]["duplicate_count"] = len(group["deduplication"]["origins"]) - 1
         yield group
 
 
@@ -264,8 +381,12 @@ def read_djinni_fields(record: dict) -> dict[str, str]:
     columns = {
         "job": ("Position", "Long Description", "Exp Years", "English Level"),
         "profile": (
-            "Position", "Moreinfo", "Looking For", "Highlights",
-            "English Level", "Experience Years",
+            "Position",
+            "Moreinfo",
+            "Looking For",
+            "Highlights",
+            "English Level",
+            "Experience Years",
         ),
     }
     if record["kind"] not in columns:
@@ -302,7 +423,8 @@ def read_source_fields(record: dict) -> dict[str, str]:
 
 
 def redact_fields(
-    fields: dict[str, str], identifiers: tuple[str, ...] = (),
+    fields: dict[str, str],
+    identifiers: tuple[str, ...] = (),
 ) -> dict:
     """Return original fields, masked fields and spans for local validation.
 
@@ -324,32 +446,61 @@ def redact_fields(
     names = [value for value in identifiers if isinstance(value, str) and value.strip()]
     for text in fields.values():
         for match in re.finditer(
-            r"(?im)\b(?:full name|candidate name|name)\s*[:=][ \t]*"
-            r"([^\r\n:;]{1,100})", text,
+            r"(?im)\b(?:full name|candidate name|name)\s*[:=][ \t]*" r"([^\r\n:;]{1,100})",
+            text,
         ):
             value = re.split(
                 r"(?i)\b(?:summary|experience|education|skills|phone|email|address)\b",
-                match.group(1), maxsplit=1,
+                match.group(1),
+                maxsplit=1,
             )[0].strip()
             if value and len(value.split()) <= 5:
                 names.append(value)
             else:
                 issues.append("AMBIGUOUS_NAME_LABEL")
     role_words = {
-        "engineer", "developer", "manager", "analyst", "administrator", "consultant",
-        "tester", "director", "architect", "project", "professional", "summary",
-        "education", "experience", "skills", "information", "technology", "technical",
-        "college", "university", "school", "curriculum", "vitae", "java", "python", "sql",
+        "engineer",
+        "developer",
+        "manager",
+        "analyst",
+        "administrator",
+        "consultant",
+        "tester",
+        "director",
+        "architect",
+        "project",
+        "professional",
+        "summary",
+        "education",
+        "experience",
+        "skills",
+        "information",
+        "technology",
+        "technical",
+        "college",
+        "university",
+        "school",
+        "curriculum",
+        "vitae",
+        "java",
+        "python",
+        "sql",
+        "projects",
+        "pet-projects",
     }
     for key, text in fields.items():
         locations = []
-        dates = [match.span() for match in re.finditer(
-            r"(?<!\d)(?:"
-            r"(?:19|20)\d{2}(?:[-/]\d{1,2}){0,2}\s*[-\u2013\u2014/]\s*"
-            r"(?:19|20)\d{2}(?:[-/]\d{1,2}){0,2}"
-            r"|(?:19|20)\d{2}[-/]\d{1,2}(?:[-/]\d{1,2})?"
-            r"|\d{1,2}[-/]\d{1,2}[-/](?:19|20)\d{2})(?!\d)", text,
-        )]
+        dates = [
+            match.span()
+            for match in re.finditer(
+                r"(?<!\d)(?:"
+                r"(?:19|20)\d{2}(?:[-/]\d{1,2}){0,2}\s*[-\u2013\u2014/]\s*"
+                r"(?:19|20)\d{2}(?:[-/]\d{1,2}){0,2}"
+                r"|(?:19|20)\d{2}[-/]\d{1,2}(?:[-/]\d{1,2})?"
+                r"|\d{1,2}[-/]\d{1,2}[-/](?:19|20)\d{2})(?!\d)",
+                text,
+            )
+        ]
         for pattern in patterns:
             for match in re.finditer(pattern, text):
                 value = match.group().strip()
@@ -357,8 +508,12 @@ def redact_fields(
                     if sum(character.isdigit() for character in value) < 7:
                         continue
                     if any(match.start() < end and match.end() > start for start, end in dates):
-                        if not any(start <= match.start() and end >= match.end()
-                                   for start, end in dates):
+                        remaining = "".join(
+                            text[index]
+                            for index in range(match.start(), match.end())
+                            if not any(start <= index < end for start, end in dates)
+                        )
+                        if sum(character.isdigit() for character in remaining) >= 7:
                             issues.append("AMBIGUOUS_CONTACT_OR_DATE")
                         continue
                 locations.append(match.span())
@@ -380,8 +535,11 @@ def redact_fields(
         masked[key] = "".join(characters)
         spans[key] = sorted(set(locations))
     return {
-        "original": original, "fields": masked, "spans": spans,
-        "identifiers": list(dict.fromkeys(names)), "issues": sorted(set(issues)),
+        "original": original,
+        "fields": masked,
+        "spans": spans,
+        "identifiers": list(dict.fromkeys(names)),
+        "issues": sorted(set(issues)),
     }
 
 
@@ -409,9 +567,15 @@ def extract_facts(
             result.update({"reused": True, "new_calls": 0, "transport_retries": 0})
             return result
     result = {
-        "status": "PREPARED", "facts": None, "validation_codes": [],
-        "attempts": [], "new_calls": 0, "transport_retries": 0,
-        "elapsed_seconds": 0.0, "reused": False, "cache_key": key,
+        "status": "PREPARED",
+        "facts": None,
+        "validation_codes": [],
+        "attempts": [],
+        "new_calls": 0,
+        "transport_retries": 0,
+        "elapsed_seconds": 0.0,
+        "reused": False,
+        "cache_key": key,
     }
     if not allow_calls:
         return result
@@ -434,8 +598,11 @@ def extract_facts(
                 facts = original_reply
             reported_usage = reply.get("usage")
             reported_usage = reported_usage if isinstance(reported_usage, dict) else {}
-            usage = {name: value for name, value in reported_usage.items()
-                     if isinstance(value, int) and not isinstance(value, bool) and value >= 0}
+            usage = {
+                name: value
+                for name, value in reported_usage.items()
+                if isinstance(value, int) and not isinstance(value, bool) and value >= 0
+            }
             response_details = {
                 "original_reply": original_reply,
                 "original_response": reply.get("original_response"),
@@ -443,7 +610,8 @@ def extract_facts(
                 "finish_reason": reply.get("finish_reason"),
                 "response_id": reply.get("response_id"),
                 "system_fingerprint": reply.get("system_fingerprint"),
-                "model": reply.get("model"), "usage": usage,
+                "model": reply.get("model"),
+                "usage": usage,
             }
             result.update(response_details)
             attempt = {"outcome": "RESPONSE", **response_details}
@@ -456,8 +624,11 @@ def extract_facts(
                 raise ExtractionError("INVALID_PROVIDER_ERROR")
             error = ExtractionError(error_code, reply.get("retryable") is True)
             delay = reply.get("retry_after_seconds")
-            if (isinstance(delay, (int, float)) and not isinstance(delay, bool)
-                    and math.isfinite(delay)):
+            if (
+                isinstance(delay, (int, float))
+                and not isinstance(delay, bool)
+                and math.isfinite(delay)
+            ):
                 retry_after = min(15.0, max(1.0, delay))
         except (TimeoutError, ConnectionError, OSError):
             error = ExtractionError("EXTRACTOR_CONNECTION_FAILED", True)
@@ -480,9 +651,133 @@ def extract_facts(
     result["elapsed_seconds"] = round(time.monotonic() - started, 3)
     if cache is not None:
         cache[key] = {
-            "cache_key": key, "extractor_version": version, "result": copy.deepcopy(result),
+            "cache_key": key,
+            "extractor_version": version,
+            "result": copy.deepcopy(result),
         }
     return result
+
+
+def repair_fact_format(facts: dict | str, source: dict) -> tuple:
+    """Restore source casing and derive area flags without adding facts.
+
+    Keep the provider reply unchanged in the response cache. Record every
+    local change. Unsupported values, missing evidence and conflicts are
+    left for validation; this function does not fill missing qualifications.
+    """
+    payload = _json_object(facts) if isinstance(facts, str) else copy.deepcopy(facts)
+    changes = []
+    if not isinstance(payload, dict):
+        return payload, changes
+    if not isinstance(payload.get("professional"), dict) or not isinstance(
+        payload.get("requirements"), list
+    ):
+        return payload, changes
+    for index, field in enumerate(_fact_fields(payload)):
+        if not isinstance(field.get("evidence"), list):
+            continue
+        for item in field.get("evidence", []):
+            if not isinstance(item, dict):
+                continue
+            key, excerpt = item.get("source_field"), item.get("excerpt")
+            if key not in source["fields"] or not isinstance(excerpt, str) or not excerpt.strip():
+                continue
+            spans = _excerpt_spans(source["fields"][key], excerpt, ignore_case=True)
+            spans = [
+                (a, b)
+                for a, b in spans
+                if not any(a < end and b > start for start, end in source["spans"][key])
+            ]
+            if spans:
+                original = source["original"][key][spans[0][0] : spans[0][1]]
+                if original != excerpt:
+                    changes.append(
+                        {
+                            "field": index,
+                            "part": "excerpt",
+                            "before": excerpt,
+                            "after": original,
+                            "reason": "Restore literal source wording.",
+                        }
+                    )
+                    item["excerpt"] = original
+        value = field.get("value")
+        if field.get("status") != "OBSERVED" or not isinstance(value, str) or not value.strip():
+            continue
+        for item in field.get("evidence", []):
+            if not isinstance(item, dict) or not isinstance(item.get("excerpt"), str):
+                continue
+            excerpt = item.get("excerpt", "")
+            spans = _excerpt_spans(excerpt, value, ignore_case=True)
+            if spans:
+                original = excerpt[spans[0][0] : spans[0][1]]
+                if original != value:
+                    changes.append(
+                        {
+                            "field": index,
+                            "part": "value",
+                            "before": value,
+                            "after": original,
+                            "reason": "Restore literal source casing.",
+                        }
+                    )
+                    field["value"] = original
+                break
+        else:
+            for item in field.get("evidence", []):
+                if not isinstance(item, dict) or item.get("source_field") not in source["fields"]:
+                    continue
+                key = item["source_field"]
+                spans = _excerpt_spans(source["fields"][key], value, ignore_case=True)
+                spans = [
+                    (a, b)
+                    for a, b in spans
+                    if not any(a < end and b > start for start, end in source["spans"][key])
+                ]
+                if not spans:
+                    continue
+                original = source["original"][key][spans[0][0] : spans[0][1]]
+                if len(original) > 900:
+                    continue
+                changes.append(
+                    {
+                        "field": index,
+                        "part": "evidence",
+                        "before": item["excerpt"],
+                        "after": original,
+                        "reason": "Resolve literal value in cited field.",
+                    }
+                )
+                item["excerpt"] = original
+                field["value"] = original
+                break
+    statuses = payload.get("field_status")
+    if isinstance(statuses, dict):
+        for area, before in list(statuses.items()):
+            if area not in {"skills", "experience", "education", "languages", "projects"}:
+                continue
+            if payload.get("kind") == "job":
+                entries = [
+                    r
+                    for r in payload.get("requirements", [])
+                    if isinstance(r, dict) and r.get("criterionType") == area.upper()
+                ]
+            else:
+                entries = payload.get("professional", {}).get(area, [])
+            after = "OBSERVED" if entries else "UNKNOWN"
+            if any(field.get("status") == "CONFLICT" for field in _fact_fields(entries)):
+                after = "CONFLICT"
+            if before != after:
+                changes.append(
+                    {
+                        "area": area,
+                        "before": before,
+                        "after": after,
+                        "reason": "Derive area status from existing entries.",
+                    }
+                )
+                statuses[area] = after
+    return payload, changes
 
 
 def validate_facts(facts: dict | str, schema: dict, source: dict) -> dict:
@@ -523,26 +818,34 @@ def validate_facts(facts: dict | str, schema: dict, source: dict) -> dict:
             key, excerpt = item["source_field"], item["excerpt"]
             if key not in source["fields"]:
                 raise ExtractionError("UNKNOWN_EVIDENCE_SOURCE")
-            locations = [position for position in _excerpt_spans(source["fields"][key], excerpt)
-                         if not any(position[0] < end and position[1] > start
-                                    for start, end in source["spans"][key])]
+            locations = [
+                position
+                for position in _excerpt_spans(source["fields"][key], excerpt)
+                if not any(
+                    position[0] < end and position[1] > start
+                    for start, end in source["spans"][key]
+                )
+            ]
             if not locations:
                 raise ExtractionError("EVIDENCE_DOES_NOT_MATCH_SOURCE")
             start, end = locations[0]
             item["excerpt"] = source["original"][key][start:end]
-        if state == "CONFLICT" and len({
-            (item["source_field"], item["excerpt"]) for item in evidence
-        }) < 2:
+        if (
+            state == "CONFLICT"
+            and len({(item["source_field"], item["excerpt"]) for item in evidence}) < 2
+        ):
             raise ExtractionError("CONFLICT_HAS_NO_DISTINCT_EVIDENCE")
     for area, state in payload["field_status"].items():
         if kind == "job":
-            items = [item for item in payload["requirements"]
-                     if item["criterionType"] == area.upper()]
+            items = [
+                item for item in payload["requirements"] if item["criterionType"] == area.upper()
+            ]
         else:
             items = payload["professional"][area]
         observations = [field for item in items for field in _fact_fields(item)]
-        if any(not any(field["status"] != "UNKNOWN" for field in _fact_fields(item))
-               for item in items):
+        if any(
+            not any(field["status"] != "UNKNOWN" for field in _fact_fields(item)) for item in items
+        ):
             raise ExtractionError("EMPTY_ITEM_HAS_NO_OBSERVATION")
         expected = "OBSERVED" if items else "UNKNOWN"
         if any(field["status"] == "CONFLICT" for field in observations):
@@ -550,6 +853,51 @@ def validate_facts(facts: dict | str, schema: dict, source: dict) -> dict:
         if state != expected:
             raise ExtractionError("AREA_STATUS_MISMATCH")
     return payload
+
+
+def apply_source_reviews(records: list[dict], reviews: list[dict], schema: dict) -> list[dict]:
+    """Replay local corrections only against the same original source fields.
+
+    Review rows contain reviewed facts, literal edits and a source hash.
+    Revalidate every fact after applying a review. Provider replies remain
+    in the response cache; unknowns and conflicts cannot bypass validation.
+    """
+    by_id = {row["source_record_id"]: row for row in reviews}
+    if len(by_id) != len(reviews):
+        raise ValueError("Source review IDs must be unique.")
+    result = []
+    for record in records:
+        review = by_id.get(record["source_record_id"])
+        if review is None:
+            result.append(record)
+            continue
+        digest = hashlib.sha256(
+            json.dumps(
+                record["source_fields"],
+                sort_keys=True,
+                ensure_ascii=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        if digest != review["source_sha256"]:
+            raise ValueError("A local source review no longer matches its source fields.")
+        if record["redaction"]["issues"]:
+            raise ValueError("A source review cannot override an unresolved privacy flag.")
+        facts = validate_facts(review["facts_json"], schema, record["redaction"])
+        if facts["kind"] != record["kind"]:
+            raise ValueError("A source review cannot change the record kind.")
+        result.append(
+            {
+                **record,
+                "facts": facts,
+                "status": "VALIDATED",
+                "validation_codes": [],
+                "coverage": check_coverage(record, record["redaction"]["fields"], facts),
+                "source_review": {
+                    key: value for key, value in review.items() if key != "facts_json"
+                },
+            }
+        )
+    return result
 
 
 def check_coverage(record: dict, fields: dict[str, str], facts: dict) -> dict:
@@ -572,30 +920,42 @@ def check_coverage(record: dict, fields: dict[str, str], facts: dict) -> dict:
             spans = _excerpt_spans(fields.get(key, ""), evidence["excerpt"])
             locations.append({**evidence, "locations": spans, "ambiguous": len(spans) > 1})
     for key, text in fields.items():
-        covered = [span for item in locations if item["source_field"] == key
-                   for span in item["locations"]]
+        covered = [
+            span for item in locations if item["source_field"] == key for span in item["locations"]
+        ]
         if key in {"Position", "Exp Years", "Experience Years", "English Level"}:
             if text.strip() and not covered:
                 issues.append({"code": "UNREPRESENTED_SOURCE_FIELD", "source_field": key})
         for area, pattern in cues.items():
             for match in re.finditer(pattern, text, re.I):
-                if not any(start <= match.start() and end >= match.end()
-                           for start, end in covered):
-                    issues.append({
-                        "code": "POSSIBLE_OMISSION", "area": area, "source_field": key,
-                        "start": match.start(), "end": match.end(),
-                    })
+                if not any(
+                    start <= match.start() and end >= match.end() for start, end in covered
+                ):
+                    issues.append(
+                        {
+                            "code": "POSSIBLE_OMISSION",
+                            "area": area,
+                            "source_field": key,
+                            "start": match.start(),
+                            "end": match.end(),
+                        }
+                    )
     unknown = [key for key, value in facts["field_status"].items() if value == "UNKNOWN"]
     conflicting = [key for key, value in facts["field_status"].items() if value == "CONFLICT"]
     return {
-        "status": "CHECK_NEEDED" if issues else "NO_AUTOMATIC_FLAGS", "issues": issues,
-        "unknown_areas": unknown, "conflicting_areas": conflicting,
-        "evidence_locations": locations, "completeness_confirmed": False,
+        "status": "CHECK_NEEDED" if issues else "NO_AUTOMATIC_FLAGS",
+        "issues": issues,
+        "unknown_areas": unknown,
+        "conflicting_areas": conflicting,
+        "evidence_locations": locations,
+        "completeness_confirmed": False,
     }
 
 
 def save_results(
-    records: Iterable[dict], responses: Iterable[dict], output_dir: Path,
+    records: Iterable[dict],
+    responses: Iterable[dict],
+    output_dir: Path,
 ) -> None:
     """Write two local JSONL files, retaining the previous completed batch.
 
@@ -636,11 +996,19 @@ def clean_record(
     Missing facts, identity conflicts and privacy flags are not resolved.
     """
     result = {
-        **record, "status": "PREPARED", "facts": None, "coverage": None,
-        "validation_codes": [], "training_ready": False,
+        **record,
+        "status": "PREPARED",
+        "facts": None,
+        "coverage": None,
+        "validation_codes": [],
+        "training_ready": False,
         "extraction": {
-            "cache_keys": [], "new_calls": 0, "transport_retries": 0,
-            "schema_repairs": 0, "reused_replies": 0, "elapsed_seconds": 0.0,
+            "cache_keys": [],
+            "new_calls": 0,
+            "transport_retries": 0,
+            "schema_repairs": 0,
+            "reused_replies": 0,
+            "elapsed_seconds": 0.0,
         },
     }
     metadata = result["extraction"]
@@ -660,12 +1028,18 @@ def clean_record(
         if not any(value.strip() for value in redaction["fields"].values()):
             raise ExtractionError("EMPTY_MASKED_TEXT")
         request = {
-            "kind": record["kind"], "fields": redaction["fields"], "schema": schema,
-            "extractor_version": extractor_version, "repair_codes": [],
+            "kind": record["kind"],
+            "fields": redaction["fields"],
+            "schema": schema,
+            "extractor_version": extractor_version,
+            "repair_codes": [],
         }
         for repair in range(2):
             proposal = extract_facts(
-                request, extractor, cache=cache, allow_calls=allow_calls,
+                request,
+                extractor,
+                cache=cache,
+                allow_calls=allow_calls,
                 retry_limit=1 - metadata["transport_retries"],
             )
             metadata["cache_keys"].append(proposal["cache_key"])
@@ -678,11 +1052,13 @@ def clean_record(
                 if repair and not allow_calls and proposal["status"] == "PREPARED":
                     result["status"] = "FAILED_FINAL"
                     return result
-                result.update(status=proposal["status"],
-                              validation_codes=proposal["validation_codes"])
+                result.update(
+                    status=proposal["status"], validation_codes=proposal["validation_codes"]
+                )
                 return result
             try:
-                facts = validate_facts(proposal["facts"], schema, redaction)
+                formatted, corrections = repair_fact_format(proposal["facts"], redaction)
+                facts = validate_facts(formatted, schema, redaction)
                 if facts["kind"] != record["kind"]:
                     raise ExtractionError("FACT_KIND_MISMATCH")
             except ExtractionError as error:
@@ -695,7 +1071,10 @@ def clean_record(
                     metadata["schema_repairs"] += 1
                 continue
             result.update(
-                status="VALIDATED", facts=facts, validation_codes=[],
+                status="VALIDATED",
+                facts=facts,
+                validation_codes=[],
+                format_corrections=corrections,
                 coverage=check_coverage(record, redaction["fields"], facts),
             )
             return result
@@ -740,9 +1119,16 @@ def clean_records(
     if cache is not None:
         responses.update(cache)
     summary = {
-        "processed": 0, "statuses": {}, "new_calls": 0, "reused_replies": 0,
-        "transport_retries": 0, "schema_repairs": 0, "coverage_flags": 0,
-        "privacy_flags": 0, "elapsed_seconds": 0.0, "training_ready": 0,
+        "processed": 0,
+        "statuses": {},
+        "new_calls": 0,
+        "reused_replies": 0,
+        "transport_retries": 0,
+        "schema_repairs": 0,
+        "coverage_flags": 0,
+        "privacy_flags": 0,
+        "elapsed_seconds": 0.0,
+        "training_ready": 0,
         "output_dir": str(directory),
     }
     started = time.monotonic()
@@ -752,15 +1138,23 @@ def clean_records(
         with response_file.open("a", encoding="utf-8", newline="\n") as stream:
             for record in selected:
                 cleaned = clean_record(
-                    record, schema=schema, extractor=extractor,
-                    extractor_version=extractor_version, cache=responses, allow_calls=allow_calls,
+                    record,
+                    schema=schema,
+                    extractor=extractor,
+                    extractor_version=extractor_version,
+                    cache=responses,
+                    allow_calls=allow_calls,
                 )
                 metadata = cleaned["extraction"]
                 if metadata["new_calls"]:
                     for key in dict.fromkeys(metadata["cache_keys"]):
                         if key in responses:
-                            stream.write(json.dumps(_json_safe(responses[key]), ensure_ascii=False,
-                                                    allow_nan=False) + "\n")
+                            stream.write(
+                                json.dumps(
+                                    _json_safe(responses[key]), ensure_ascii=False, allow_nan=False
+                                )
+                                + "\n"
+                            )
                     stream.flush()
                 summary["processed"] += 1
                 status = cleaned["status"]
@@ -780,7 +1174,12 @@ def clean_records(
     return summary
 
 
-def _excerpt_spans(text: str, excerpt: str) -> list[tuple[int, int]]:
+def _excerpt_spans(
+    text: str,
+    excerpt: str,
+    *,
+    ignore_case: bool = False,
+) -> list[tuple[int, int]]:
     """Match literal wording with whitespace differences only.
 
     Token edges keep Java distinct from JavaScript and C from C++.
@@ -794,7 +1193,7 @@ def _excerpt_spans(text: str, excerpt: str) -> list[tuple[int, int]]:
         pattern = r"(?<![\w+#.])" + pattern
     if re.match(r"[\w+#]", excerpt.strip()[-1]):
         pattern += r"(?![\w+#]|\.\w)"
-    return [match.span() for match in re.finditer(pattern, text)]
+    return [match.span() for match in re.finditer(pattern, text, re.I if ignore_case else 0)]
 
 
 def _fact_fields(value) -> Iterator[dict]:
@@ -811,6 +1210,7 @@ def _fact_fields(value) -> Iterator[dict]:
 
 def _json_object(text: str) -> dict:
     """Reject duplicate keys, nonfinite numbers and nonobject replies."""
+
     def unique_keys(pairs):
         result = {}
         for key, value in pairs:
@@ -830,7 +1230,9 @@ def _json_object(text: str) -> dict:
 
     try:
         value = json.loads(
-            text, object_pairs_hook=unique_keys, parse_constant=invalid_constant,
+            text,
+            object_pairs_hook=unique_keys,
+            parse_constant=invalid_constant,
             parse_float=finite_number,
         )
     except ExtractionError:
@@ -881,8 +1283,9 @@ def _load_responses(path: Path) -> dict:
                 if not line.endswith(b"\n") and truncated:
                     break
                 raise
-            if (not isinstance(entry.get("cache_key"), str)
-                    or not isinstance(entry.get("result"), dict)):
+            if not isinstance(entry.get("cache_key"), str) or not isinstance(
+                entry.get("result"), dict
+            ):
                 raise ExtractionError("INVALID_RESPONSE_CACHE")
             cache[entry["cache_key"]] = entry
             completed += len(line)
@@ -894,3 +1297,222 @@ def _load_responses(path: Path) -> dict:
         with path.open("ab") as stream:
             stream.write(b"\n")
     return cache
+
+
+def prepare_synthetic_photos(root: Path) -> dict:
+    """Download the pinned portrait subset and require visual crop review.
+
+    Generation labels describe synthetic images, not real identities.
+    Keep downloads, source parameters and contact sheets under raw.
+    A previously reviewed manifest may be reused without redownloading.
+    """
+    import csv
+    import hashlib
+    import json
+    import random
+    import re
+    import time
+    import urllib.request
+    from collections import Counter, defaultdict
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from pathlib import Path
+
+    import cv2
+    import numpy as np
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    from PIL import Image, ImageDraw, ImageOps
+
+    destination = root / "datasets/raw/persona-fas"
+    revision = "726d025dc1d187f553a3faff3e438d879e7a57e8"
+    source_url = (
+        f"https://huggingface.co/datasets/withpersona/persona-fas-bench-v1/resolve/{revision}/"
+    )
+    destination.mkdir(parents=True, exist_ok=True)
+    (destination / "images").mkdir(exist_ok=True)
+    (destination / "crops").mkdir(exist_ok=True)
+    (destination / "review").mkdir(exist_ok=True)
+    existing = destination / "photos.parquet"
+    if existing.exists():
+        stored = pq.read_table(existing).to_pylist()
+        if len(stored) == 360 and all(row.get("visual_reviewed") for row in stored):
+            return {"photos": 360, "visual_reviewed": True}
+    metadata = destination / "generation.csv"
+    if not metadata.exists():
+        metadata.write_bytes(
+            urllib.request.urlopen(
+                source_url + "synthetic/_generation_params/imagen4/dataset.csv", timeout=60
+            ).read()
+        )
+
+    def category(text):
+        if text == "East Asian":
+            return "east_asian"
+        if text == "South Asian":
+            return "south_asian"
+        if text in {"West African", "African descent", "African American"}:
+            return "black"
+        if text in {"Middle Eastern", "North African"}:
+            return "middle_eastern_or_north_african"
+        if re.search(r"European|Caucasian|White", text):
+            return "white"
+        if re.search(r"Latin|Hispanic|American|Mixed", text):
+            return "mixed_or_other"
+        return None
+
+    with metadata.open(encoding="utf-8") as stream:
+        raw = list(csv.DictReader(stream))
+    groups = defaultdict(list)
+    for row in raw:
+        group = category(row["heritage_ethnicity"])
+        gender = {"woman": "woman", "man": "man"}.get(row["gender_identity"])
+        age = row["age_group"].lower()
+        if (
+            row["status"] != "completed"
+            or group is None
+            or gender is None
+            or any(word in age for word in ("teen", "child", "16-year"))
+            or not re.search(r"adult|professional|20|30|40|50|60|70|80|middle-aged", age)
+        ):
+            continue
+        groups[group, gender].append(row)
+    for key, rows in groups.items():
+        random.Random("42:" + str(key)).shuffle(rows)
+    print("SOURCE_POOLS", {str(key): len(rows) for key, rows in groups.items()}, flush=True)
+
+    def download(row):
+        image_id = row["image_id"]
+        if not image_id.isdecimal() or row["filename"] != f"fake-{image_id}.png":
+            raise ValueError("A portrait source row has an unexpected image path.")
+        target = destination / "images" / f"{image_id}.png"
+        try:
+            if not target.exists():
+                for attempt in range(3):
+                    try:
+                        data = urllib.request.urlopen(
+                            source_url
+                            + "synthetic/full_face_synthesis/imagen4/"
+                            + row["filename"],
+                            timeout=60,
+                        ).read()
+                        pending = target.with_suffix(".pending")
+                        pending.write_bytes(data)
+                        pending.replace(target)
+                        break
+                    except Exception:
+                        if attempt == 2:
+                            raise
+                        time.sleep(attempt + 1)
+            picture = Image.open(target).convert("RGB")
+            array = np.asarray(picture)
+            gray = cv2.cvtColor(array, cv2.COLOR_RGB2GRAY)
+            detector = cv2.CascadeClassifier(
+                cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+            )
+            faces = detector.detectMultiScale(gray, 1.1, 5, minSize=(90, 90))
+            faces = sorted(faces, key=lambda box: int(box[2]) * int(box[3]), reverse=True)
+            if not faces or (
+                len(faces) > 1 and faces[1][2] * faces[1][3] > 0.3 * faces[0][2] * faces[0][3]
+            ):
+                return None
+            x, y, width, height = map(int, faces[0])
+            margin = round(max(width, height) * 0.18)
+            bounds = (
+                max(0, x - margin),
+                max(0, y - margin),
+                min(picture.width, x + width + margin),
+                min(picture.height, y + height + margin),
+            )
+            crop = picture.crop(bounds).resize((224, 224), Image.Resampling.LANCZOS)
+            blur = cv2.Laplacian(np.asarray(crop.convert("L")), cv2.CV_64F).var()
+            if blur < 20:
+                return None
+            crop_path = destination / "crops" / f"{image_id}.png"
+            crop.save(crop_path)
+            small = np.asarray(crop.convert("L").resize((9, 8)))
+            phash = int("".join(map(str, (small[:, 1:] > small[:, :-1]).astype(int).flat)), 2)
+            return {
+                "photo_id": "persona-imagen4:" + image_id,
+                "source_row": row,
+                "ethnicity": category(row["heritage_ethnicity"]),
+                "gender": row["gender_identity"],
+                "image_path": str(target),
+                "crop_path": str(crop_path),
+                "crop_box": list(bounds),
+                "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+                "perceptual_hash": str(phash),
+                "blur_variance": float(blur),
+                "synthetic": True,
+                "source_revision": revision,
+            }
+        except Exception as error:
+            print("PHOTO_FAILURE", image_id, type(error).__name__, flush=True)
+            return None
+
+    accepted = []
+    counts = Counter()
+    hashes = []
+    for round_number in range(4):
+        queued = []
+        for key, rows in groups.items():
+            needed = 30 - counts[key]
+            if needed > 0:
+                queued.extend(rows[round_number * 36 : (round_number + 1) * 36][: needed + 6])
+        if not queued:
+            break
+        with ThreadPoolExecutor(max_workers=12) as pool:
+            results = list(pool.map(download, queued))
+        for result in results:
+            if not result or result["photo_id"] in {
+                "persona-imagen4:1895",
+                "persona-imagen4:2140",
+                "persona-imagen4:3866",
+                "persona-imagen4:563",
+                "persona-imagen4:246",
+            }:
+                continue
+            key = result["ethnicity"], result["gender"]
+            value = int(result["perceptual_hash"])
+            if counts[key] >= 30 or any((value ^ old).bit_count() <= 5 for old in hashes):
+                continue
+            hashes.append(value)
+            counts[key] += 1
+            result["split"] = (
+                "train" if counts[key] <= 18 else ("validation" if counts[key] <= 24 else "test")
+            )
+            accepted.append(result)
+        print("ACCEPTED", len(accepted), dict(counts), flush=True)
+
+    for image_id in ("237", "1019", "2398", "3680", "2276", "3926"):
+        if len(accepted) == 360:
+            break
+        row = next(row for row in raw if row["image_id"] == image_id)
+        result = download(row)
+        if result and not any(old["photo_id"] == result["photo_id"] for old in accepted):
+            result["split"] = "test"
+            result["visual_review_note"] = (
+                "Reviewed the full image. A coarse hash collision did not indicate an identical image; "
+                "face-feature duplicate grouping is still required before training."
+            )
+            accepted.append(result)
+    for photo in accepted:
+        photo.setdefault("visual_review_note", None)
+    pq.write_table(pa.Table.from_pylist(accepted), destination / "photos.parquet")
+    for sheet, start in enumerate(range(0, len(accepted), 40)):
+        canvas = Image.new("RGB", (1200, 850), "white")
+        draw = ImageDraw.Draw(canvas)
+        for index, row in enumerate(accepted[start : start + 40]):
+            x, y = (index % 8) * 150, (index // 8) * 170
+            canvas.paste(Image.open(row["crop_path"]).resize((140, 140)), (x, y))
+            draw.text(
+                (x, y + 141), row["photo_id"].split(":")[-1] + " " + row["gender"], fill="black"
+            )
+            draw.text((x, y + 154), row["ethnicity"][:20], fill="black")
+        canvas.save(destination / "review" / f"sheet-{sheet+1:02}.jpg")
+    if len(accepted) != 360:
+        raise RuntimeError(
+            "The balanced portrait pool is incomplete; inspect failures before use."
+        )
+    print("READY_FOR_VISUAL_REVIEW", len(accepted), flush=True)
+
+    return {"photos": len(accepted), "visual_reviewed": False}
