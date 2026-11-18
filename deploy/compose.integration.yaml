@@ -26,6 +26,15 @@ services:
   mailpit:
     image: axllent/mailpit:v1.27
     ports: ["127.0.0.1:18025:8025", "127.0.0.1:11025:1025"]
+  model-bundle:
+    image: python:3.12-slim-bookworm
+    command: ["python", "/model_bundle.py"]
+    read_only: true
+    environment:
+      MODEL_BUNDLE_TOKEN: ${MODEL_BUNDLE_TOKEN:-}
+    volumes:
+      - ../backend/inference/app/core/model_bundle.py:/model_bundle.py:ro
+      - ../model_artifacts:/app/model_artifacts
   inference:
     build:
       context: ..
@@ -35,6 +44,8 @@ services:
       MODEL_ARTIFACTS_PATH: /app/model_artifacts
     volumes: ["../model_artifacts:/app/model_artifacts:ro"]
     ports: ["127.0.0.1:18000:8000"]
+    depends_on:
+      model-bundle: {condition: service_completed_successfully}
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
       interval: 10s

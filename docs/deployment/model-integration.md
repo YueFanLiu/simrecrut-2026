@@ -8,7 +8,15 @@ calibrated probabilities.
 
 ## Selected packages
 
-Run the export operation from the repository root after reviewing its paths:
+The integration stack downloads the selected packages on first startup using
+`MODEL_BUNDLE_TOKEN`, a fine-grained Hugging Face token with read access to the
+[private model repository](https://huggingface.co/petitlang/simrecrut-model-artifacts).
+The download uses a pinned revision and SHA-256 digest. The setup service
+verifies each package before installing it and reuses verified local copies on
+later starts. The download token is available only to the setup service.
+
+If you have the original training run locally, you can also export the packages
+from the repository root:
 
 ```powershell
 python offline-ml/src/simrecrut_ml/packaging/scripts/export_models.py
@@ -23,20 +31,26 @@ The Biased package also contains the frozen VGGFace2 ResNet50 backbone. The
 fastText embedding is already inside each Keras model; the original word-vector
 download is not needed by the server.
 
-All package contents stay local and ignored by Git. The source experiment,
-datasets and `.env` also stay local. Do not attach weights or private manifests to
-the pull request. Copying this repository alone does not supply the models.
+Installed package contents are ignored by Git. The source experiment, datasets
+and `.env` stay local.
 
 ## Start the isolated stack
 
-Copy missing variables from [the environment example](../../.env.example) into
-the ignored root `.env`. Supply separate random database, JWT, email-code and
-internal inference secrets. Keep real provider keys out of Compose files.
-Docker Desktop must be running.
+Place the team-provided `.env` at the repository root. For a new configuration,
+use the [environment example](../../.env.example) and supply the database, JWT,
+email-code, internal inference and model download credentials. A verified
+local copy of both packages can start with an empty `MODEL_BUNDLE_TOKEN`.
+Start Docker Desktop, then run this command from the repository root.
 
 ```powershell
 docker compose --env-file .env -f deploy/compose.integration.yaml up --build -d
 ```
+
+The first start downloads about 89 MiB before inference starts. If model setup
+fails, run `docker compose --env-file .env -f deploy/compose.integration.yaml logs model-bundle`.
+Check the token's read access for a download error. For a checksum error on an
+installed version, move that version directory out of `model_artifacts` and
+start the stack again.
 
 Open `http://127.0.0.1:8088`. Mailpit is at `http://127.0.0.1:18025`; local test
 registration emails stay inside this stack. All host bindings use loopback.
