@@ -41,8 +41,10 @@ docker compose --env-file .env -f deploy/compose.integration.yaml up --build -d
 Open `http://127.0.0.1:8088`. Mailpit is at `http://127.0.0.1:18025`; local test
 registration emails stay inside this stack. All host bindings use loopback.
 The inference service receives only its internal token and a read-only package
-mount. Java receives no extraction API key in this local Compose configuration.
-HR can enter and review requirements directly without a provider call.
+mount. Add `DEEPSEEK_API_KEY` to the ignored root `.env` to enable DeepSeek
+for candidate simulation uploads. HR requirements are entered and reviewed
+directly in this local stack. Set `CV_EXTRACTION_PROVIDER=local` to run with
+local rules during development.
 
 Flyway V10 adds the NAME_CUE category and temporary-input metadata. Existing
 32-input protocols and records remain usable. The opt-in `ml-integration` profile
@@ -60,8 +62,15 @@ the comparison threshold is 0.50 and the Objective Rule threshold is 0.70.
 
 ## Input and prediction flow
 
-1. Java extracts professional facts using its existing local PDF/text/OCR rules.
-   It renders the first two bounded pages for internal portrait detection.
+1. Java reads PDF text and runs local OCR on pages without enough embedded
+   text. A list of recognized section headings and professional terms limits
+   the text sent to DeepSeek. The original PDF and images stay on the server.
+   Java checks the returned codes and evidence excerpts against their page
+   text and saves a temporary draft with its extraction version. Unknown
+   terms and unfamiliar headings can leave facts for manual review. A
+   temporary request failure allows one automatic retry, and invalid output
+   allows one repair request. The server also renders the first two bounded
+   pages for internal portrait detection.
 2. The candidate reviews the facts, assigned research categories and optional
    model text. Text starts from professional evidence in a fixed group order.
    The name is optional and entered separately. Nothing infers real ethnicity,

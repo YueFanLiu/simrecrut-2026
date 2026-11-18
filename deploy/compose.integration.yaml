@@ -64,6 +64,9 @@ services:
       SMTP_STARTTLS: "false"
       DEEPSEEK_BASE_URL: https://api.deepseek.com
       DEEPSEEK_API_KEY: ""
+      CV_EXTRACTION_PROVIDER: ${CV_EXTRACTION_PROVIDER:-deepseek}
+      CV_DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-flash}
       CASE_WORKSPACE_PATH: /app/runtime/cases
       MODEL_INPUTS_PATH: /app/runtime/model-inputs
       MODEL_ARTIFACTS_PATH: /app/model_artifacts

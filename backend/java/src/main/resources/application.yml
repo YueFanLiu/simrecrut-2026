@@ -131,6 +131,11 @@ simrecrut:
     deepseek:
       base-url: ${DEEPSEEK_BASE_URL}
       api-key: ${DEEPSEEK_API_KEY}
+    cv:
+      provider: ${CV_EXTRACTION_PROVIDER:deepseek}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      api-key: ${CV_DEEPSEEK_API_KEY:${DEEPSEEK_API_KEY:}}
+      model: ${DEEPSEEK_MODEL:deepseek-flash}
   storage:
     case-workspace: ${CASE_WORKSPACE_PATH:runtime/cases}
     model-artifacts: ${MODEL_ARTIFACTS_PATH:model_artifacts}

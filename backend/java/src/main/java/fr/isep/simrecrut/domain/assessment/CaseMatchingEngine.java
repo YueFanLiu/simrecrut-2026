@@ -43,6 +43,10 @@ public class CaseMatchingEngine {
             }
         }
         validated.set("confirmedAbsent", json.valueToTree(absence));
+        if (previous != null && previous.has("extractionVersion")) {
+            validated.set("extractionVersion", previous.get("extractionVersion"));
+        }
+        if (previous != null && previous.has("warnings")) validated.set("warnings", previous.get("warnings"));
         return validated;
     }
 

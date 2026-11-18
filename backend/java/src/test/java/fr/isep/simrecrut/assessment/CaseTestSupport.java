@@ -10,7 +10,9 @@ import fr.isep.simrecrut.entity.assessment.AssessmentCase;
 import fr.isep.simrecrut.entity.identity.*;
 import fr.isep.simrecrut.entity.job.JobVersion;
 import fr.isep.simrecrut.gateway.ml.CasePredictionGateway;
-import fr.isep.simrecrut.integration.pdf.*;
+import fr.isep.simrecrut.integration.deepseek.DeepSeekCvFactExtractionClient;
+import fr.isep.simrecrut.integration.pdf.CaseFileStore;
+import fr.isep.simrecrut.integration.pdf.LocalResumeCleaner;
 import fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper;
 import fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper.*;
 import fr.isep.simrecrut.mapper.identity.RoleMapper;
@@ -166,7 +168,9 @@ class CaseTestSupport {
         when(db.deleteTasks(anyString())).thenAnswer(i -> { tasks.values().removeIf(t -> t.resourcePublicId().equals(i.getArgument(0))); return 1; });
         when(predictions.predict(anyString(), any(), any(), any(), any())).thenAnswer(i -> prediction(i.getArgument(0), i.getArgument(1)));
         service = new CandidateCaseService(db, roles, json, new PublicIdGenerator(), files, config, engine, predictions, transactions, "");
-        worker = new CandidateCaseWorker(db, json, files, new LocalResumeCleaner(), engine, config, predictions, new PublicIdGenerator(), transactions);
+        worker = new CandidateCaseWorker(db, json, files,
+                new DeepSeekCvFactExtractionClient(json, new LocalResumeCleaner(), "local", "", "", "deepseek-flash"),
+                engine, config, predictions, new PublicIdGenerator(), transactions);
     }
     AssessmentCase copy(AssessmentCase row) { return row == null ? null : json.convertValue(row, AssessmentCase.class); }
     LocalDateTime now() { return LocalDateTime.now(ZoneOffset.UTC); }

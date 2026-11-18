@@ -209,6 +209,8 @@ onBeforeUnmount(() => { loadSequence++; pending = undefined })
     <ElButton v-if="error" :disabled="busy || loading" @click="load">{{ $t("Reload Case") }}</ElButton>
     <template v-if="draft">
       <p>{{ $t("Correct the extracted facts and mark any empty groups you have reviewed.") }}</p>
+      <ElAlert v-for="warning in draft.extractionWarnings ?? []" :key="warning"
+        type="warning" :closable="false" :title="warning" />
       <ElAlert v-if="draft.unresolvedRequiredFields.length" type="warning" :closable="false"
         :title="$t('Unresolved requirements from the last saved draft: ' + draft.unresolvedRequiredFields.join(', '))" />
       <ElTabs v-model="tab">

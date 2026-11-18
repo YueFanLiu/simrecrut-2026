@@ -9,6 +9,7 @@ import fr.isep.simrecrut.entity.assessment.AssessmentCase;
 import fr.isep.simrecrut.entity.identity.AccountRole;
 import fr.isep.simrecrut.entity.job.JobVersion;
 import fr.isep.simrecrut.gateway.ml.CasePredictionGateway;
+import fr.isep.simrecrut.integration.deepseek.DeepSeekCvFactExtractionClient;
 import fr.isep.simrecrut.integration.pdf.CaseFileStore;
 import fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper;
 import fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper.*;
@@ -84,8 +85,14 @@ public class CandidateCaseService {
     @PreAuthorize("hasRole('CANDIDATE') and hasAuthority('simrecrut:case:list')")
     public CaseStatus status(AccountPrincipal actor, String id) {
         AssessmentCase row = owned(actor, db.find(validId(id)), false);
+        String diagnostic = row.safeErrorCode == null ? null : switch (row.safeErrorCode) {
+            case DeepSeekCvFactExtractionClient.UNAVAILABLE -> "CV extraction is temporarily unavailable. Retry the extraction if available.";
+            case DeepSeekCvFactExtractionClient.NO_SOURCE -> "The professional sections could not be read. Start a new case with a clear, concise PDF.";
+            case DeepSeekCvFactExtractionClient.INVALID_DRAFT -> "The extracted facts could not be verified. Start a new case with a clearer PDF.";
+            default -> "Processing failed. Use the permitted retry action.";
+        };
         return new CaseStatus(id, row.processingStatus, row.stage, "FAILED_RETRYABLE".equals(row.processingStatus),
-                row.safeErrorCode, row.safeErrorCode == null ? null : "Processing failed. Use the permitted retry action.",
+                row.safeErrorCode, diagnostic,
                 row.cleanupStatus, row.updatedAt, row.confirmedAt, row.purgeAfter,
                 row.automatedStartedAt == null ? objectiveOnly : !row.hasPinnedModels());
     }
@@ -117,7 +124,8 @@ public class CandidateCaseService {
             AssessmentCase row = owned(actor, db.find(validId(id)), false); state(row, "REVIEW_REQUIRED");
             JsonNode draft = read(row.draftJson);
             List<String> unresolved = matching.unresolved(draft, job(row), requirements(row), bundle(row), currentMonth());
-            return new ReviewDraft(id, row.revisionNo, draft.path("professional"), strings(draft.path("confirmedAbsent")), unresolved);
+            return new ReviewDraft(id, row.revisionNo, draft.path("professional"), strings(draft.path("confirmedAbsent")),
+                    unresolved, strings(draft.path("warnings")));
         });
     }
 

@@ -37,7 +37,7 @@ public final class CandidateCaseDtos {
             LocalDateTime createdAt, LocalDateTime purgeAt) { }
     public record CasePage(List<CaseSummary> items, long total, int page, int pageSize) { }
     public record ReviewDraft(String caseId, long revision, JsonNode professional, List<String> confirmedAbsent,
-            List<String> unresolvedRequiredFields) { }
+            List<String> unresolvedRequiredFields, List<String> extractionWarnings) { }
     public record ResearchAttribute(String type, String value, String source, boolean candidateConfirmed) { }
     public record ResearchAttributes(String caseId, long revision, List<ResearchAttribute> attributes,
             JsonNode allowedValues) {

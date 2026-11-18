@@ -39,7 +39,8 @@ public class ApiLanguageResponseAdvice implements ResponseBodyAdvice<Object> {
     private Object diagnostics(Object data, Locale locale, boolean error) {
         if (data instanceof ReviewDraft draft) {
             return new ReviewDraft(draft.caseId(), draft.revision(), draft.professional(), draft.confirmedAbsent(),
-                    draft.unresolvedRequiredFields().stream().map(value -> ApiMessages.translate(value, locale)).toList());
+                    draft.unresolvedRequiredFields().stream().map(value -> ApiMessages.translate(value, locale)).toList(),
+                    draft.extractionWarnings().stream().map(value -> ApiMessages.translate(value, locale)).toList());
         }
         if (data instanceof FiveResults result) {
             return new FiveResults(result.caseId(), result.automatedStatus(), result.job(), objective(result.objective(), locale),

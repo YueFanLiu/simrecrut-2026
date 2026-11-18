@@ -3327,6 +3327,10 @@
     "zh": "此失败无法重试，请选择其他 PDF。",
     "fr": "Nouvelle tentative indisponible pour cet échec. Choisissez un autre PDF."
   },
+  "The PDF is processed on the server. When DeepSeek extraction is enabled, it receives selected professional text with personal details removed.": {
+    "zh": "服务器会处理这份 PDF。启用 DeepSeek 提取时，它只会收到去除个人信息后筛选出的职业相关文字。",
+    "fr": "Le serveur traite le PDF. Si l’extraction DeepSeek est activée, elle reçoit des extraits professionnels dont les données personnelles ont été retirées."
+  },
   "Retry is unavailable for this failure. Return to Jobs to start a new case.": {
     "zh": "此失败无法重试，请返回岗位列表创建新案例。",
     "fr": "Nouvelle tentative indisponible. Revenez aux offres pour créer un nouveau dossier."

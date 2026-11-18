@@ -8,11 +8,11 @@ import fr.isep.simrecrut.dto.assessment.CandidateCaseDtos.DeleteResult;
 import fr.isep.simrecrut.entity.assessment.AssessmentCase;
 import fr.isep.simrecrut.entity.job.JobVersion;
 import fr.isep.simrecrut.gateway.ml.CasePredictionGateway;
-import fr.isep.simrecrut.integration.pdf.*;
+import fr.isep.simrecrut.integration.deepseek.DeepSeekCvFactExtractionClient;
+import fr.isep.simrecrut.integration.pdf.CaseFileStore;
 import fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper;
 import fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper.*;
 import fr.isep.simrecrut.service.assessment.*;
-import fr.isep.simrecrut.workspace.Facts;
 import jakarta.annotation.PreDestroy;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
@@ -38,7 +38,7 @@ public class CandidateCaseWorker {
     private final CandidateCaseMapper db;
     private final ObjectMapper json;
     private final CaseFileStore files;
-    private final LocalResumeCleaner cleaner;
+    private final DeepSeekCvFactExtractionClient extraction;
     private final CaseMatchingEngine matching;
     private final CaseConfiguration configuration;
     private final CasePredictionGateway predictions;
@@ -50,9 +50,9 @@ public class CandidateCaseWorker {
     private final Semaphore capacity = new Semaphore(2);
 
     public CandidateCaseWorker(CandidateCaseMapper db, ObjectMapper json, CaseFileStore files,
-            LocalResumeCleaner cleaner, CaseMatchingEngine matching, CaseConfiguration configuration,
+            DeepSeekCvFactExtractionClient extraction, CaseMatchingEngine matching, CaseConfiguration configuration,
             CasePredictionGateway predictions, PublicIdGenerator ids, PlatformTransactionManager transactions) {
-        this.db = db; this.json = json; this.files = files; this.cleaner = cleaner; this.matching = matching;
+        this.db = db; this.json = json; this.files = files; this.extraction = extraction; this.matching = matching;
         this.configuration = configuration; this.predictions = predictions; this.ids = ids;
         tx = new TransactionTemplate(transactions);
     }
@@ -113,16 +113,15 @@ public class CandidateCaseWorker {
         String path = db.artifact(row.id);
         if (path == null) throw new IllegalArgumentException("The original PDF is unavailable.");
         byte[] pdf = files.read(path);
-        ObjectNode draft = cleaner.clean("original.pdf", pdf);
-        draft.remove(List.of("schemaVersion", "cleanerVersion", "status"));
-        draft = Facts.validate(draft); draft.putArray("confirmedAbsent");
-        ObjectNode finalDraft = draft;
-        boolean extended = db.protocol(row.protocolVersionId) != null
-                && db.protocol(row.protocolVersionId).dimensionCount() == 39;
+        Protocol protocol = db.protocol(row.protocolVersionId);
+        ObjectNode draft = extraction.extract(pdf,
+                () -> configuration.load(db.job(row.jobVersionId), protocol).rule().path("catalogs"));
+        draft.putArray("confirmedAbsent");
+        boolean extended = protocol != null && protocol.dimensionCount() == 39;
         ObjectNode prepared = extended ? modelInputs.prepare(pdf, draft.path("professional")) : null;
         guarded(lease, current -> {
             if (prepared != null) modelInputs.prepared(current, prepared);
-            current.draftJson = finalDraft.toString(); current.processingStatus = "REVIEW_REQUIRED";
+            current.draftJson = draft.toString(); current.processingStatus = "REVIEW_REQUIRED";
             current.stage = "REVIEW"; current.safeErrorCode = null; save(current);
             finish(lease, "SUCCEEDED");
         });
@@ -245,7 +244,10 @@ public class CandidateCaseWorker {
         try {
             guarded(lease, row -> {
                 boolean cleanup = lease.type().equals("CASE_CLEANUP") || lease.type().equals("CASE_MODEL_INPUT_CLEANUP") || lease.type().equals("CASE_PURGE");
-                boolean terminal = !cleanup && (lease.attempt() >= lease.maxAttempts() || error instanceof IllegalArgumentException);
+                boolean invalidExtraction = lease.type().equals("CASE_EXTRACT")
+                        && error instanceof CaseException failure && failure.status() == 422;
+                boolean terminal = !cleanup && (lease.attempt() >= lease.maxAttempts()
+                        || error instanceof IllegalArgumentException || invalidExtraction);
                 if (cleanup) row.cleanupStatus = "PENDING";
                 else {
                     row.safeErrorCode = error instanceof CaseException c ? c.code() : "CASE_PROCESSING_FAILED";

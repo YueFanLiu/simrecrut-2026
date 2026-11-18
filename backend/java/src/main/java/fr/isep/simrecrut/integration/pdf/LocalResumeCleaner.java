@@ -8,9 +8,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.stereotype.Component;
@@ -39,33 +42,9 @@ public final class LocalResumeCleaner implements ResumeCleaningGateway {
         String name = filename.toLowerCase(Locale.ROOT);
         ProfessionalFactExtractor extractor = new ProfessionalFactExtractor();
         if (name.endsWith(".pdf")) {
-            try (var pdf = Loader.loadPDF(content)) {
-                if (pdf.isEncrypted() || pdf.getNumberOfPages() < 1 || pdf.getNumberOfPages() > 20) {
-                    throw new IllegalArgumentException("PDF must be unencrypted and at most 20 pages.");
-                }
-                PDFTextStripper stripper = new PDFTextStripper();
-                int total = 0;
-                long started = System.nanoTime();
-                for (int page = 1; page <= pdf.getNumberOfPages(); page++) {
-                    if (Thread.currentThread().isInterrupted() || System.nanoTime() - started > java.util.concurrent.TimeUnit.SECONDS.toNanos(120)) throw new IOException("Extraction timed out or was cancelled.");
-                    stripper.setStartPage(page);
-                    stripper.setEndPage(page);
-                    String text = stripper.getText(pdf);
-                    total += text.length();
-                    if (total > MAX_TEXT) throw new IllegalArgumentException("Extracted text is too large.");
-                    if (text.replaceAll("[^\\p{L}\\p{N}]", "").length() < 20) {
-                        var box = pdf.getPage(page - 1).getCropBox();
-                        float dpi = (float) Math.min(200, 72 * Math.sqrt(8_000_000.0 / Math.max(1, box.getWidth() * box.getHeight())));
-                        var image = new org.apache.pdfbox.rendering.PDFRenderer(pdf).renderImageWithDPI(page - 1, dpi);
-                        long remaining = 120_000 - java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
-                        text = new TesseractOcr().read(image, remaining);
-                        total += text.length();
-                        warnings.add("Local OCR used on page " + page + "; verify the evidence.");
-                    }
-                    if (total > MAX_TEXT) throw new IllegalArgumentException("Extracted text is too large.");
-                    extractor.extract(professional, text, page);
-                }
-                if (total < 20) throw new IllegalArgumentException("PDF has no usable text after extraction. Use a readable scan or manual entry.");
+            for (PdfPage page : readPdf(content)) {
+                if (page.ocr()) warnings.add("Local OCR used on page " + page.number() + "; verify the evidence.");
+                extractor.extract(professional, page.text(), page.number());
             }
         } else if (name.endsWith(".docx")) {
             try (var document = new XWPFDocument(new ByteArrayInputStream(content))) {
@@ -91,4 +70,43 @@ public final class LocalResumeCleaner implements ResumeCleaningGateway {
         return result;
     }
 
+    public List<PdfPage> readPdf(byte[] content) throws IOException {
+        if (content == null || content.length == 0 || content.length > MAX_BYTES) {
+            throw new IllegalArgumentException("A non-empty resume up to 10 MiB is required.");
+        }
+        try (var pdf = Loader.loadPDF(content)) {
+            if (pdf.isEncrypted() || pdf.getNumberOfPages() < 1 || pdf.getNumberOfPages() > 20) {
+                throw new IllegalArgumentException("PDF must be unencrypted and at most 20 pages.");
+            }
+            PDFTextStripper stripper = new PDFTextStripper();
+            List<PdfPage> pages = new ArrayList<>();
+            int total = 0;
+            long started = System.nanoTime();
+            for (int page = 1; page <= pdf.getNumberOfPages(); page++) {
+                long remaining = 120_000 - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+                if (Thread.currentThread().isInterrupted() || remaining <= 0) {
+                    throw new IOException("Extraction timed out or was cancelled.");
+                }
+                stripper.setStartPage(page);
+                stripper.setEndPage(page);
+                String text = stripper.getText(pdf);
+                if (total + text.length() > MAX_TEXT) throw new IllegalArgumentException("Extracted text is too large.");
+                boolean ocr = text.replaceAll("[^\\p{L}\\p{N}]", "").length() < 20;
+                if (ocr) {
+                    var box = pdf.getPage(page - 1).getCropBox();
+                    float dpi = (float) Math.min(200, 72 * Math.sqrt(8_000_000.0 / Math.max(1, box.getWidth() * box.getHeight())));
+                    var image = new PDFRenderer(pdf).renderImageWithDPI(page - 1, dpi);
+                    remaining = 120_000 - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+                    text = new TesseractOcr().read(image, remaining);
+                }
+                total += text.length();
+                if (total > MAX_TEXT) throw new IllegalArgumentException("Extracted text is too large.");
+                pages.add(new PdfPage(page, text, ocr));
+            }
+            if (total < 20) throw new IllegalArgumentException("PDF has no usable text after extraction. Use a readable scan or manual entry.");
+            return pages;
+        }
+    }
+
+    public record PdfPage(int number, String text, boolean ocr) { }
 }
