@@ -12114,6 +12114,10 @@ components:
           type: array
           items:
             type: string
+        extractionWarnings:
+          type: array
+          items:
+            type: string
         professional:
           $ref: "#/components/schemas/ResumeProfessionalFacts"
         revision:

@@ -130,4 +130,3 @@ test('workspace steps and result cards render in all three languages', async () 
     }
   } finally { await server.close() }
 })
-

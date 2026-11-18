@@ -11,6 +11,9 @@ export const caseList = async () => (await pageItems(candidateCases)).map(row =>
 export const caseDetail = value => pageRequest(`${candidateCase(value)}/status`)
 export const caseReview = value => pageRequest(`${candidateCase(value)}/draft`)
 export const caseResearch = value => pageRequest(`${candidateCase(value)}/research-attributes`)
+export const caseModelInputs = value => pageRequest(`${candidateCase(value)}/model-inputs`)
+export const saveCaseModelInputs = (value, data, key) =>
+  pageRequest(`${candidateCase(value)}/model-inputs`, 'put', data, false, key)
 export const saveCaseDraft = (value, data, key) => pageRequest(`${candidateCase(value)}/draft`, 'put', data, false, key)
 export const saveCaseResearch = (value, data, key) => pageRequest(`${candidateCase(value)}/research-attributes`, 'put', data, false, key)
 export const createCase = (jobVersionId, key) => pageRequest(candidateCases, 'post', { jobVersionId }, false, key)

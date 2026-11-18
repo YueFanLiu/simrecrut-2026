@@ -194,9 +194,11 @@ class ApiLanguageTest {
             Locale locale = ApiMessages.resolveLocale(language);
             String missing = "SKILLS: confirm the facts or explicitly confirm their absence.";
             String unsupported = "Resolve unsupported degreeOrder values.";
+            String extractionWarning = "The PDF gives conflicting language levels. Review and enter the correct level.";
             mvc.perform(get("/api/language/draft").header("Accept-Language", language))
                     .andExpect(jsonPath("$.data.unresolvedRequiredFields[0]").value(ApiMessages.translate(missing, locale)))
                     .andExpect(jsonPath("$.data.unresolvedRequiredFields[1]").value(ApiMessages.translate(unsupported, locale)))
+                    .andExpect(jsonPath("$.data.extractionWarnings[0]").value(ApiMessages.translate(extractionWarning, locale)))
                     .andExpect(jsonPath("$.data.professional.source").value(missing))
                     .andExpect(jsonPath("$.data.revision").value(7));
             if (!language.equals("en")) {
@@ -244,7 +246,8 @@ class ApiLanguageTest {
             String missing = "SKILLS: confirm the facts or explicitly confirm their absence.";
             return ApiResponse.success("Case retrieved.", new ReviewDraft("case", 7,
                     new ObjectMapper().createObjectNode().put("source", missing), List.of(),
-                    List.of(missing, "Resolve unsupported degreeOrder values.")));
+                    List.of(missing, "Resolve unsupported degreeOrder values."),
+                    List.of("The PDF gives conflicting language levels. Review and enter the correct level.")));
         }
         @GetMapping("/api/language/results") ApiResponse<?> results() {
             String strength = "Skills assessed requirements are fully met.";

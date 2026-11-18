@@ -23,7 +23,7 @@ public final class CandidateCaseDtos {
             @Size(max = 5) List<@NotBlank String> confirmedAbsent) implements StrictRequest { }
     public record AttributeInput(@NotBlank String type, @NotBlank @Size(max = 128) String value)
             implements StrictRequest { }
-    public record AttributesRequest(@NotNull @Size(max = 4) List<@NotNull @Valid AttributeInput> attributes,
+    public record AttributesRequest(@NotNull @Size(max = 5) List<@NotNull @Valid AttributeInput> attributes,
             @NotNull @Positive Long revision) implements StrictRequest { }
     public record ConfirmRequest(@NotNull @Positive Long revision, @NotNull @AssertTrue Boolean confirmed)
             implements StrictRequest { }
@@ -37,9 +37,18 @@ public final class CandidateCaseDtos {
             LocalDateTime createdAt, LocalDateTime purgeAt) { }
     public record CasePage(List<CaseSummary> items, long total, int page, int pageSize) { }
     public record ReviewDraft(String caseId, long revision, JsonNode professional, List<String> confirmedAbsent,
-            List<String> unresolvedRequiredFields) { }
+            List<String> unresolvedRequiredFields, List<String> extractionWarnings) { }
     public record ResearchAttribute(String type, String value, String source, boolean candidateConfirmed) { }
-    public record ResearchAttributes(String caseId, long revision, List<ResearchAttribute> attributes) { }
+    public record ResearchAttributes(String caseId, long revision, List<ResearchAttribute> attributes,
+            JsonNode allowedValues) {
+        public ResearchAttributes(String id, long revision, List<ResearchAttribute> attributes) {
+            this(id, revision, attributes, null);
+        }
+    }
+    public record ModelInputRequest(@NotNull @Positive Long revision, @NotNull Boolean useText, @NotNull Boolean usePortrait,
+            @Size(max = 200) String name, @Size(max = 100000) String biography,
+            @Min(-1) @Max(3) Integer portraitIndex, @Size(max = 2000000) String portraitBase64)
+            implements StrictRequest { }
     public record PublicJob(String jobId, String jobVersionId, int version, String title) { }
     public record HumanResult(String status, String decision, String reason) { }
     public record Privacy(LocalDateTime purgeAt, boolean canDeleteNow) { }

@@ -53,6 +53,13 @@ public class CandidateCaseController {
     public ResponseEntity<ApiResponse<JsonNode>> saveAttributes(@AuthenticationPrincipal AccountPrincipal actor,
             @PathVariable String caseId, @RequestHeader("Idempotency-Key") String key,
             @Valid @RequestBody AttributesRequest body) { return result(service.saveAttributes(actor, caseId, key, body)); }
+    @GetMapping("/{caseId}/model-inputs")
+    public ResponseEntity<ApiResponse<JsonNode>> modelInputs(@AuthenticationPrincipal AccountPrincipal actor,
+            @PathVariable String caseId) { return ok(service.modelInputs(actor, caseId)); }
+    @PutMapping("/{caseId}/model-inputs")
+    public ResponseEntity<ApiResponse<JsonNode>> saveModelInputs(@AuthenticationPrincipal AccountPrincipal actor,
+            @PathVariable String caseId, @RequestHeader("Idempotency-Key") String key,
+            @Valid @RequestBody ModelInputRequest body) { return result(service.saveModelInputs(actor, caseId, key, body)); }
     @PostMapping("/{caseId}/confirm")
     public ResponseEntity<ApiResponse<JsonNode>> confirm(@AuthenticationPrincipal AccountPrincipal actor,
             @PathVariable String caseId, @RequestHeader("Idempotency-Key") String key,

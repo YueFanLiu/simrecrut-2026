@@ -8,11 +8,11 @@ import fr.isep.simrecrut.dto.assessment.CandidateCaseDtos.DeleteResult;
 import fr.isep.simrecrut.entity.assessment.AssessmentCase;
 import fr.isep.simrecrut.entity.job.JobVersion;
 import fr.isep.simrecrut.gateway.ml.CasePredictionGateway;
-import fr.isep.simrecrut.integration.pdf.*;
+import fr.isep.simrecrut.integration.deepseek.DeepSeekCvFactExtractionClient;
+import fr.isep.simrecrut.integration.pdf.CaseFileStore;
 import fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper;
 import fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper.*;
 import fr.isep.simrecrut.service.assessment.*;
-import fr.isep.simrecrut.workspace.Facts;
 import jakarta.annotation.PreDestroy;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
@@ -32,10 +32,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Profile("!resume-workspace")
 public class CandidateCaseWorker {
     private static final Logger LOG = LoggerFactory.getLogger(CandidateCaseWorker.class);
+    private fr.isep.simrecrut.integration.ml.CaseModelInputs modelInputs;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setModelInputs(fr.isep.simrecrut.integration.ml.CaseModelInputs value) { modelInputs = value; }
     private final CandidateCaseMapper db;
     private final ObjectMapper json;
     private final CaseFileStore files;
-    private final LocalResumeCleaner cleaner;
+    private final DeepSeekCvFactExtractionClient extraction;
     private final CaseMatchingEngine matching;
     private final CaseConfiguration configuration;
     private final CasePredictionGateway predictions;
@@ -47,9 +50,9 @@ public class CandidateCaseWorker {
     private final Semaphore capacity = new Semaphore(2);
 
     public CandidateCaseWorker(CandidateCaseMapper db, ObjectMapper json, CaseFileStore files,
-            LocalResumeCleaner cleaner, CaseMatchingEngine matching, CaseConfiguration configuration,
+            DeepSeekCvFactExtractionClient extraction, CaseMatchingEngine matching, CaseConfiguration configuration,
             CasePredictionGateway predictions, PublicIdGenerator ids, PlatformTransactionManager transactions) {
-        this.db = db; this.json = json; this.files = files; this.cleaner = cleaner; this.matching = matching;
+        this.db = db; this.json = json; this.files = files; this.extraction = extraction; this.matching = matching;
         this.configuration = configuration; this.predictions = predictions; this.ids = ids;
         tx = new TransactionTemplate(transactions);
     }
@@ -96,6 +99,7 @@ public class CandidateCaseWorker {
                 case "CASE_EXTRACT" -> extract(lease);
                 case "CASE_ASSESS" -> assess(lease);
                 case "CASE_CLEANUP" -> cleanup(lease);
+                case "CASE_MODEL_INPUT_CLEANUP" -> cleanupModelInputs(lease);
                 case "CASE_PURGE" -> purge(lease);
                 default -> throw new IllegalStateException("Unsupported case task.");
             }
@@ -108,12 +112,16 @@ public class CandidateCaseWorker {
         if (row == null) return;
         String path = db.artifact(row.id);
         if (path == null) throw new IllegalArgumentException("The original PDF is unavailable.");
-        ObjectNode draft = cleaner.clean("original.pdf", files.read(path));
-        draft.remove(List.of("schemaVersion", "cleanerVersion", "status"));
-        draft = Facts.validate(draft); draft.putArray("confirmedAbsent");
-        ObjectNode finalDraft = draft;
+        byte[] pdf = files.read(path);
+        Protocol protocol = db.protocol(row.protocolVersionId);
+        ObjectNode draft = extraction.extract(pdf,
+                () -> configuration.load(db.job(row.jobVersionId), protocol).rule().path("catalogs"));
+        draft.putArray("confirmedAbsent");
+        boolean extended = protocol != null && protocol.dimensionCount() == 39;
+        ObjectNode prepared = extended ? modelInputs.prepare(pdf, draft.path("professional")) : null;
         guarded(lease, current -> {
-            current.draftJson = finalDraft.toString(); current.processingStatus = "REVIEW_REQUIRED";
+            if (prepared != null) modelInputs.prepared(current, prepared);
+            current.draftJson = draft.toString(); current.processingStatus = "REVIEW_REQUIRED";
             current.stage = "REVIEW"; current.safeErrorCode = null; save(current);
             finish(lease, "SUCCEEDED");
         });
@@ -147,13 +155,24 @@ public class CandidateCaseWorker {
                     || model.featureSchemaVersionId() != config.protocol().featureSchemaVersionId()) throw CaseException.dependency();
             ObjectNode research = json.createObjectNode();
             Map<String, String> names = Map.of("SCHOOL_CATEGORY", "schoolPrestige", "REFERRAL", "referral",
-                    "GENDER", "gender", "ETHNICITY", "ethnicity");
+                    "GENDER", "gender", "ETHNICITY", "ethnicity", "NAME_CUE", "nameCue");
             db.attributes(row.id).forEach(a -> research.put(names.get(a.type()), a.value()));
-            JsonNode prediction = predictions.predict(row.publicId, model, config.protocol(), professional.path("professional"), research);
-            validatePrediction(row.publicId, model, config.protocol(), prediction);
+            JsonNode prediction;
+            if (config.protocol().dimensionCount() == 39) {
+                JsonNode media = type.equals("BIASED") ? modelInputs.forPrediction(row) : json.createObjectNode();
+                prediction = predictions.predict(row.publicId, model, config.protocol(),
+                        professional.path("professional"), research, media);
+                if (!Objects.equals(model.artifactSha256(), prediction.path("modelSha256").asText())
+                        || professional.path("professional").path("g").asInt() == 0
+                        && (!"Reject".equals(prediction.path("decision").asText())
+                            || !"Reject".equals(prediction.path("commonThresholdDecision").asText())
+                            || prediction.path("acceptanceScore").asDouble() != 0)) throw CaseException.dependency();
+            } else prediction = predictions.predict(row.publicId, model, config.protocol(), professional.path("professional"), research);
+            validatePrediction(row.publicId, model, config.protocol(), prediction,
+                    config.protocol().dimensionCount() != 39 || professional.path("professional").path("g").asInt() == 1);
             ObjectNode safePrediction = json.createObjectNode();
             for (String field : List.of("requestId", "caseId", "modelVersion", "featureSchemaVersion", "status",
-                    "logit", "acceptanceScore", "modelThreshold", "commonThreshold", "decision", "commonThresholdDecision")) {
+                    "logit", "acceptanceScore", "modelThreshold", "commonThreshold", "decision", "commonThresholdDecision", "modelSha256")) {
                 safePrediction.set(field, prediction.path(field));
             }
             guarded(lease, current -> {
@@ -170,10 +189,11 @@ public class CandidateCaseWorker {
             current.processingStatus = "AUTOMATED_COMPLETE"; current.stage = "COMPLETE";
             current.automatedCompletedAt = now(); current.purgeAfter = current.automatedCompletedAt.plusDays(30); current.safeErrorCode = null;
             save(current); finish(lease, "SUCCEEDED");
+            if (config.protocol().dimensionCount() == 39) db.enqueue(ids.nextId(), current.publicId, "CASE_MODEL_INPUT_CLEANUP");
         });
     }
 
-    private void validatePrediction(String caseId, Model model, Protocol protocol, JsonNode value) {
+    private void validatePrediction(String caseId, Model model, Protocol protocol, JsonNode value, boolean mandatory) {
         if (value == null || !"SUCCESS".equals(value.path("status").asText())
                 || !caseId.equals(value.path("caseId").asText())
                 || !model.versionCode().equals(value.path("modelVersion").asText())
@@ -184,26 +204,34 @@ public class CandidateCaseWorker {
         double score = value.path("acceptanceScore").asDouble();
         if (score < 0 || score > 1 || value.path("modelThreshold").asDouble() != model.threshold()
                 || value.path("commonThreshold").asDouble() != model.commonThreshold()
-                || !(score >= model.threshold() ? "Accept" : "Reject").equals(value.path("decision").asText())
-                || !(score >= model.commonThreshold() ? "Accept" : "Reject").equals(value.path("commonThresholdDecision").asText())) {
+                || !(mandatory && score >= model.threshold() ? "Accept" : "Reject").equals(value.path("decision").asText())
+                || !(mandatory && score >= model.commonThreshold() ? "Accept" : "Reject").equals(value.path("commonThresholdDecision").asText())) {
             throw CaseException.dependency();
         }
+    }
+
+    private void cleanupModelInputs(Lease lease) throws Exception {
+        modelInputs.purge(lease.caseId());
+        guarded(lease, row -> { db.purgedModelInput(row.id); finish(lease, "SUCCEEDED"); });
     }
 
     private void cleanup(Lease lease) throws Exception {
         files.removeCase(lease.caseId());
         guarded(lease, row -> {
+            if (modelInputs != null) modelInputs.prune(row);
             db.artifactsDeleted(row.id); row.cleanupStatus = "COMPLETE"; save(row); finish(lease, "SUCCEEDED");
         });
     }
 
     private void purge(Lease lease) throws Exception {
         files.removeCase(lease.caseId());
+        if (modelInputs != null) modelInputs.purge(lease.caseId());
         guarded(lease, row -> {
             db.lockExperiments(row.id); db.cancelExperimentTasks(row.id); db.invalidateExperiments(row.id);
             db.deleteMetrics(row.id); db.deleteVariantReviews(row.id); db.deleteVariantResults(row.id);
             db.deleteVariants(row.id); db.deleteBaselines(row.id); db.deleteSubjects(row.id);
             db.deleteReviews(row.id); db.deleteGrants(row.id); db.deleteAttributes(row.id); db.deleteArtifacts(row.id);
+            db.deleteModelInput(row.id);
             db.deleteSnapshots(row.id); db.deleteMatching(row.id); db.deleteObjective(row.id); db.deleteMl(row.id);
             db.deleteResults(row.id); db.redactOperations(row.publicId);
             db.completeDeletionReceipts(row.publicId, json.valueToTree(new DeleteResult(row.publicId, "DELETED")).toString());
@@ -215,8 +243,11 @@ public class CandidateCaseWorker {
     private void fail(Lease lease, Exception error) {
         try {
             guarded(lease, row -> {
-                boolean cleanup = lease.type().equals("CASE_CLEANUP") || lease.type().equals("CASE_PURGE");
-                boolean terminal = !cleanup && (lease.attempt() >= lease.maxAttempts() || error instanceof IllegalArgumentException);
+                boolean cleanup = lease.type().equals("CASE_CLEANUP") || lease.type().equals("CASE_MODEL_INPUT_CLEANUP") || lease.type().equals("CASE_PURGE");
+                boolean invalidExtraction = lease.type().equals("CASE_EXTRACT")
+                        && error instanceof CaseException failure && failure.status() == 422;
+                boolean terminal = !cleanup && (lease.attempt() >= lease.maxAttempts()
+                        || error instanceof IllegalArgumentException || invalidExtraction);
                 if (cleanup) row.cleanupStatus = "PENDING";
                 else {
                     row.safeErrorCode = error instanceof CaseException c ? c.code() : "CASE_PROCESSING_FAILED";
@@ -238,6 +269,13 @@ public class CandidateCaseWorker {
                     row.privacyStatus = "PURGING"; row.deletionReason = "RETENTION_EXPIRY";
                     row.draftJson = null; row.cleanupStatus = "PENDING";
                     db.cancelTasks(row.publicId); db.cancelReviews(row.id); save(row);
+                }
+                if (row.privacyStatus.equals("ACTIVE") && Set.of("FAILED_FINAL", "AUTOMATED_COMPLETE").contains(row.processingStatus)
+                        && db.modelInput(row.id) != null && !db.modelInput(row.id).purged()) {
+                    db.resetCleanupAttempts(row.publicId, "CASE_MODEL_INPUT_CLEANUP");
+                    if (!db.hasOpenTask(row.publicId, "CASE_MODEL_INPUT_CLEANUP")) {
+                        db.enqueue(ids.nextId(), row.publicId, "CASE_MODEL_INPUT_CLEANUP");
+                    }
                 }
                 String type = row.privacyStatus.equals("PURGING") ? "CASE_PURGE" : "CASE_CLEANUP";
                 if (row.cleanupStatus.equals("PENDING")) {
@@ -267,6 +305,7 @@ public class CandidateCaseWorker {
             case "CASE_EXTRACT" -> row.processingStatus.equals("EXTRACTING");
             case "CASE_ASSESS" -> row.processingStatus.equals("AUTOMATED_RUNNING");
             case "CASE_CLEANUP" -> row.confirmedAt != null;
+            case "CASE_MODEL_INPUT_CLEANUP" -> Set.of("AUTOMATED_COMPLETE", "FAILED_FINAL").contains(row.processingStatus);
             default -> false;
         };
     }

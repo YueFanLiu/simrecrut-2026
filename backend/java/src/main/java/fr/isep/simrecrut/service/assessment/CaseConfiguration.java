@@ -25,7 +25,7 @@ public class CaseConfiguration {
     }
     public Bundle load(JobVersion job, Protocol protocol) {
         if (job == null || protocol == null || !"FROZEN".equals(job.ruleStatus)
-                || protocol.matchingRuleVersionId() != job.matchingRuleVersionId || protocol.dimensionCount() != 32) {
+                || protocol.matchingRuleVersionId() != job.matchingRuleVersionId || !Set.of(32, 39).contains(protocol.dimensionCount())) {
             throw CaseException.dependency();
         }
         JsonNode rule = read(rules, job.configPath, job.configSha256);
@@ -40,7 +40,23 @@ public class CaseConfiguration {
                 throw CaseException.dependency();
             }
         }
-        for (String type : List.of("SCHOOL_CATEGORY", "REFERRAL", "GENDER", "ETHNICITY")) {
+        if (protocol.dimensionCount() == 39) {
+            try { fr.isep.simrecrut.integration.ml.ModelFeatureEncoder.validateSchema(schema); }
+            catch (IllegalArgumentException error) { throw CaseException.dependency(); }
+            if (schema.path("input_width").asInt() != 39 || schema.path("input_order").size() != 39
+                    || !protocol.schemaVersion().equals(schema.path("schema_version").asText())) {
+                throw CaseException.dependency();
+            }
+            var catalog = ((com.fasterxml.jackson.databind.node.ObjectNode) schema).putObject("researchAttributes");
+            fr.isep.simrecrut.integration.ml.ModelFeatureEncoder.FAMILIES.forEach((type, family) -> {
+                var values = catalog.putArray(type);
+                schema.path("research_order").path(family).forEach(v -> values.add(v.asText().toUpperCase(Locale.ROOT)));
+            });
+        }
+        Set<String> expectedTypes = new HashSet<>(List.of("SCHOOL_CATEGORY", "REFERRAL", "GENDER", "ETHNICITY"));
+        if (protocol.dimensionCount() == 39) expectedTypes.add("NAME_CUE");
+        if (!new HashSet<>(types(schema)).equals(expectedTypes)) throw CaseException.dependency();
+        for (String type : types(schema)) {
             JsonNode values = schema.path("researchAttributes").path(type);
             if (!values.isArray() || values.isEmpty() || !contains(values, "UNKNOWN")) throw CaseException.dependency();
             Set<String> unique = new HashSet<>();
@@ -62,6 +78,11 @@ public class CaseConfiguration {
             if (value == null || !value.isObject()) throw CaseException.dependency();
             return value;
         } catch (Exception exception) { throw CaseException.dependency(); }
+    }
+    public static List<String> types(JsonNode schema) {
+        List<String> types = new ArrayList<>();
+        schema.path("researchAttributes").fieldNames().forEachRemaining(types::add);
+        return types;
     }
     public static boolean contains(JsonNode array, String value) {
         for (JsonNode item : array) if (item.isTextual() && item.asText().equals(value)) return true;

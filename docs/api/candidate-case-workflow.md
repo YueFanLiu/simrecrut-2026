@@ -109,9 +109,11 @@ The referenced matching-rule file resolves under `JOB_RULE_ROOT`; the feature
 schema resolves under `MODEL_ARTIFACTS_PATH`. Both must be at most 1 MiB, remain
 inside their configured root after real-path resolution and match database SHA-256.
 The protocol, feature schema and bias protocol must be FROZEN and compatible.
-The feature table must declare 32 dimensions. The schema file supplies
-`researchAttributes` with nonempty, unique uppercase value arrays for all four
-families, including UNKNOWN. It is a server-owned versioned catalogue, not a
+Legacy feature tables declare 32 dimensions and supply `researchAttributes`
+with nonempty uppercase value arrays for four families, including UNKNOWN.
+The new 39-input path uses the canonical professional-research-v2 order and
+adapts five research families, including NAME_CUE, into the same API catalog.
+Research-attribute responses include version-specific `allowedValues`. It is a server-owned versioned catalogue, not a
 browser-provided schema or an inferred demographic mapping.
 
 Matching uses the job's five reviewed criteria, inclusion/mandatory flags and
@@ -126,7 +128,10 @@ included degree/subject requirement; unrestricted subjects need no subject match
 Experience merges overlapping relevant month intervals and divides by the frozen
 target years, capped at one. When multiple assessed experience rows exist, the
 maximum target years and union of relevant families define the category match;
-each mandatory minimum remains an independent gate. Undated reviewed durations
+each mandatory minimum remains an independent gate. The new
+objective-curated-v8-online-v1 rule instead scores its first experience target
+and rounds the final ratio once, matching the offline convention; other
+mandatory floors still apply separately. Undated reviewed durations
 cannot be combined with dated intervals or other undated durations when overlap
 cannot be determined. Resolve the periods first rather than double-counting them.
 
@@ -143,9 +148,11 @@ frozen protocol/schema. Their IDs are frozen once on the case. Configure
 `ML_BASE_URL`, `ML_INTERNAL_TOKEN`, `ML_NEUTRAL_PATH` and `ML_BIASED_PATH` for the
 team's actual internal inference service. Internal paths are explicitly configured
 because the Word document does not prescribe FastAPI route names. This change
-does not create/train Python models or supply model weights.
+does not train models or distribute weights. The implemented 39-input service,
+optional-media API, local package import and cleanup are documented in
+[local model integration](../deployment/model-integration.md).
 
-Requests contain `requestId`, `caseId`, `modelVersion`, `featureSchemaVersion` and
+Legacy 32-input requests contain `requestId`, `caseId`, `modelVersion`, `featureSchemaVersion` and
 `professional` with five-element `m`, `w`, `mw` arrays and binary `g`. Only Biased
 receives `research` with schoolPrestige, referral, gender and ethnicity. The Python
 service remains responsible for the saved category encoding and Neutral zero mask.
@@ -199,6 +206,8 @@ Tests use generated PDFs, temporary private directories, isolated persistence
 doubles and an isolated loopback inference server. They cover access, strict
 fields, revisions, replay, real parsing, confirmation locks, matching, frozen
 models, partial recovery, lost leases, deletion races and public projections.
-Swagger/OpenAPI exports the actual routes. No frontend files are changed.
+Swagger/OpenAPI exports the actual routes. Connected review and results use the real case APIs.
 Real MySQL migration/concurrency, production storage ACLs, installed OCR models
-and the team's live Python inference/artifacts require target-environment checks.
+and production deployment still require target-environment checks. The new
+39-input integration has separate isolated local checks with real saved weights;
+see the linked model integration guide. The sealed research test set stays closed.

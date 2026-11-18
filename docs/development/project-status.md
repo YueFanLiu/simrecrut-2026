@@ -1,6 +1,6 @@
 # Current implementation status
 
-Reviewed against the local develop implementation on 2026-11-16.
+Application baseline: develop `6c82ab4`. Offline ML integration checked on 2026-11-17.
 
 Implemented code covers the Vue workspaces, JWT/Redis identity, registration and
 recovery mail, structured resume import/review, HR job drafts and publication,
@@ -9,9 +9,11 @@ human-review assignment/submission. These modules have API adapters and backend
 services. Many database and model test boundaries use mocks; their passing results
 do not certify a complete live multi-role workflow.
 
-The independent Python inference process, offline training/evaluation/packaging,
-Neutral and Biased model artifacts, persistent research experiments and several
-administration operations remain incomplete. Their demonstration pages and client
+The independent Python inference process, versioned online model packages,
+persistent research experiments and several administration operations remain
+incomplete. Offline fact extraction, Objective Rule features and multimodal Keras
+training are implemented on MLOfflineTraining. Local trained weights and validation
+records are retained outside Git; the final test remains sealed. Their demonstration pages and client
 function declarations must not be counted as implemented services. Connected
 routes for unavailable modules remain explicit.
 

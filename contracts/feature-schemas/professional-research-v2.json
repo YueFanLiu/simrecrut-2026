@@ -1,0 +1,49 @@
+{
+  "schema_version": "professional-research-v2",
+  "extends": "professional-research-v1",
+  "description": "Thirty-nine offline inputs, including seven controlled name-cue positions.",
+  "professional_order": [
+    "match_skills", "match_experience", "match_education", "match_languages", "match_projects",
+    "weight_skills", "weight_experience", "weight_education", "weight_languages", "weight_projects",
+    "contribution_skills", "contribution_experience", "contribution_education", "contribution_languages", "contribution_projects",
+    "mandatory_pass"
+  ],
+  "research_families": ["school", "referral", "gender", "ethnicity", "name_cue"],
+  "research_order": {
+    "school": ["prestigious", "ordinary", "unknown"],
+    "referral": ["yes", "no", "unknown"],
+    "gender": ["woman", "man", "unknown"],
+    "ethnicity": [
+      "east_asian", "south_asian", "black", "white",
+      "middle_eastern_or_north_african", "mixed_or_other", "unknown"
+    ],
+    "name_cue": [
+      "east_asian", "south_asian", "black", "white",
+      "middle_eastern_or_north_african", "mixed_or_other", "unknown"
+    ]
+  },
+  "input_order": [
+    "match_skills", "match_experience", "match_education", "match_languages", "match_projects",
+    "weight_skills", "weight_experience", "weight_education", "weight_languages", "weight_projects",
+    "contribution_skills", "contribution_experience", "contribution_education", "contribution_languages", "contribution_projects",
+    "mandatory_pass",
+    "school_prestigious", "school_ordinary", "school_unknown",
+    "referral_yes", "referral_no", "referral_unknown",
+    "gender_woman", "gender_man", "gender_unknown",
+    "ethnicity_east_asian", "ethnicity_south_asian", "ethnicity_black", "ethnicity_white",
+    "ethnicity_middle_eastern_or_north_african", "ethnicity_mixed_or_other", "ethnicity_unknown",
+    "name_cue_east_asian", "name_cue_south_asian", "name_cue_black", "name_cue_white",
+    "name_cue_middle_eastern_or_north_african", "name_cue_mixed_or_other", "name_cue_unknown"
+  ],
+  "input_width": 39,
+  "professional_width": 16,
+  "research_width": 23,
+  "tensor_dtype": "float32",
+  "rule_decimal_places": 7,
+  "rounding": "HALF_UP",
+  "neutral_research_mask": "Twenty-three zeros; research information is withheld.",
+  "biased_research_encoding": "One selected position per family, including unknown.",
+  "name_cue_meaning": "An assigned experimental cue, never an inferred real ethnicity.",
+  "target_fields": ["Y_N", "Y_B"],
+  "excluded_from_inputs": ["Y_N", "Y_B", "biased_score", "bias_effect", "name"]
+}

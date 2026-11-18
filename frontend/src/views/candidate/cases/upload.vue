@@ -96,6 +96,7 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
         <span>{{ $t("Case:") }} {{ entry.caseId }}</span><span>{{ $t("Expires:") }} {{ expiresAt }} {{ $t("(Paris time)") }}</span></div>
       <ElAlert v-if="demoMode" class="demo-notice" type="info" :closable="false"
         :title="$t(&quot;Frontend demo only: PDF checks run locally. No file is uploaded and no OCR or AI extraction occurs. Sample facts are unrelated to your PDF. Reload before confirmation requires a new upload; confirmed checkpoints survive reload in this tab.&quot;)" />
+      <p v-else>{{ $t("The PDF is processed on the server. When DeepSeek extraction is enabled, it receives selected professional text with personal details removed.") }}</p>
       <CaseProgressStepper :ready-for-review="ready" />
       <div class="upload-grid">
         <div class="upload-column">
@@ -130,7 +131,8 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
               type="primary" @click="retryCase(entry.caseId, extractionScenario)">
               {{ $t(entry.stage === 'Upload' ? 'Retry Upload' : 'Retry Extraction') }}
             </ElButton>
-            <p v-else>{{ $t("Retry is unavailable for this failure. Choose a different PDF.") }}</p>
+            <p v-else-if="demoMode">{{ $t("Retry is unavailable for this failure. Choose a different PDF.") }}</p>
+            <ElButton v-else @click="router.push({ name: 'PublishedJobs' })">{{ $t("Back to Jobs") }}</ElButton>
           </div>
           <div v-else-if="ready" class="ready-state" role="status">
             <h3>{{ $t("Ready for Fact Review") }}</h3>

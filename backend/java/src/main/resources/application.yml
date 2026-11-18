@@ -42,9 +42,9 @@ spring:
     username: ${SMTP_USERNAME:}
     password: ${SMTP_PASSWORD:}
     properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
-      mail.smtp.starttls.required: true
+      mail.smtp.auth: ${SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:true}
+      mail.smtp.starttls.required: ${SMTP_STARTTLS:true}
       # The server has already accepted the message before the connection closes.
       mail.smtp.quitwait: false
       mail.smtp.connectiontimeout: 5000
@@ -131,9 +131,15 @@ simrecrut:
     deepseek:
       base-url: ${DEEPSEEK_BASE_URL}
       api-key: ${DEEPSEEK_API_KEY}
+    cv:
+      provider: ${CV_EXTRACTION_PROVIDER:deepseek}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      api-key: ${CV_DEEPSEEK_API_KEY:${DEEPSEEK_API_KEY:}}
+      model: ${DEEPSEEK_MODEL:deepseek-flash}
   storage:
     case-workspace: ${CASE_WORKSPACE_PATH:runtime/cases}
     model-artifacts: ${MODEL_ARTIFACTS_PATH:model_artifacts}
+    model-inputs: ${MODEL_INPUTS_PATH:runtime/model-inputs}
   registration:
     code-ttl: 10m
     resend-cooldown: 60s

@@ -30,10 +30,16 @@ public class HttpCasePredictionGateway implements CasePredictionGateway {
             @Value("${simrecrut.ml.biased-path:}") String biasedPath) {
         this.json = json; this.base = base; this.token = token; this.neutralPath = neutralPath; this.biasedPath = biasedPath;
     }
+    @Value("${simrecrut.storage.model-artifacts:model_artifacts}")
+    private String artifactRoot = "model_artifacts";
     @Override public boolean available() {
         return !base.isBlank() && !token.isBlank() && neutralPath.startsWith("/") && biasedPath.startsWith("/");
     }
     @Override public JsonNode predict(String caseId, Model model, Protocol protocol, JsonNode professional, JsonNode research) {
+        return predict(caseId, model, protocol, professional, research, json.createObjectNode());
+    }
+    @Override public JsonNode predict(String caseId, Model model, Protocol protocol, JsonNode professional,
+            JsonNode research, JsonNode media) {
         if (!available()) throw CaseException.dependency();
         String requestId = UUID.randomUUID().toString();
         ObjectNode body = json.createObjectNode().put("requestId", requestId).put("caseId", caseId)
@@ -42,6 +48,22 @@ public class HttpCasePredictionGateway implements CasePredictionGateway {
         if (model.modelType().equals("BIASED")) body.set("research", research);
         String path = model.modelType().equals("NEUTRAL") ? neutralPath : biasedPath;
         try {
+            if (protocol.dimensionCount() == 39) {
+                java.nio.file.Path rootPath = java.nio.file.Path.of(artifactRoot).toRealPath();
+                java.nio.file.Path file = rootPath.resolve(protocol.schemaPath()).normalize().toRealPath();
+                if (!file.startsWith(rootPath) || java.nio.file.Files.size(file) > 1_048_576) throw CaseException.dependency();
+                byte[] schemaBytes = java.nio.file.Files.readAllBytes(file);
+                if (!fr.isep.simrecrut.service.assessment.CandidateCaseService.hash(schemaBytes).equals(protocol.schemaSha256())) {
+                    throw CaseException.dependency();
+                }
+                body.remove(List.of("professional", "research"));
+                body.set("features", ModelFeatureEncoder.encode(json, professional, research,
+                        json.readTree(schemaBytes), model.modelType().equals("NEUTRAL")));
+                body.put("modelSha256", model.artifactSha256());
+                if (model.modelType().equals("BIASED")) {
+                    for (String field : List.of("biography", "portrait")) if (media.hasNonNull(field)) body.set(field, media.get(field));
+                }
+            }
             URI root = URI.create(base);
             URI uri = URI.create(base.replaceAll("/+$", "") + path);
             if (!Set.of("http", "https").contains(uri.getScheme()) || !Objects.equals(root.getHost(), uri.getHost())) {
@@ -64,11 +86,15 @@ public class HttpCasePredictionGateway implements CasePredictionGateway {
             for (String field : List.of("logit", "acceptanceScore", "modelThreshold", "commonThreshold")) {
                 if (!result.path(field).isNumber() || !Double.isFinite(result.path(field).asDouble())) throw CaseException.dependency();
             }
+            if (protocol.dimensionCount() == 39 && !Objects.equals(model.artifactSha256(), result.path("modelSha256").asText())) {
+                throw CaseException.dependency();
+            }
+            boolean mandatory = protocol.dimensionCount() != 39 || professional.path("g").asInt(-1) == 1;
             double score = result.path("acceptanceScore").asDouble();
             if (score < 0 || score > 1 || result.path("modelThreshold").asDouble() != model.threshold()
                     || result.path("commonThreshold").asDouble() != model.commonThreshold()
-                    || !decision(score, model.threshold()).equals(result.path("decision").asText())
-                    || !decision(score, model.commonThreshold()).equals(result.path("commonThresholdDecision").asText())) {
+                    || !decision(mandatory, score, model.threshold()).equals(result.path("decision").asText())
+                    || !decision(mandatory, score, model.commonThreshold()).equals(result.path("commonThresholdDecision").asText())) {
                 throw CaseException.dependency();
             }
             return result;
@@ -76,7 +102,7 @@ public class HttpCasePredictionGateway implements CasePredictionGateway {
             Thread.currentThread().interrupt(); throw CaseException.dependency();
         } catch (Exception exception) { throw CaseException.dependency(); }
     }
-    private String decision(double score, double threshold) { return score >= threshold ? "Accept" : "Reject"; }
+    private String decision(boolean mandatory, double score, double threshold) { return mandatory && score >= threshold ? "Accept" : "Reject"; }
 
     /** Bound the complete response, including slow bodies, before accepting prediction JSON. */
     private static final class LimitedBody implements HttpResponse.BodySubscriber<byte[]> {

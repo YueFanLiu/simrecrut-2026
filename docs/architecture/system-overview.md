@@ -11,7 +11,7 @@ The source specification is [SimRecrut - Third Meeting Preparation](https://ijpp
 | `frontend/` | Vue 3 pages, permitted user actions, request handling, and progress polling | Browser application served through Nginx |
 | `backend/java/` | JDK 17 Spring Boot API, authentication, authorization, business rules, persistence, and background work | One Java business service |
 | `backend/inference/` | FastAPI input validation, feature encoding, model loading, and prediction | Separate internal Python process/container |
-| `offline-ml/` | Data preparation, training, evaluation, and release-package export | Independent offline commands; excluded from the default online deployment |
+| `offline-ml/` | Data preparation, training, evaluation, and release-package export | Extraction, feature preparation, Keras training and package export implemented; source modules separate `methods/` and `scripts/`; excluded from the default online deployment |
 
 The three source components are frontend, backend, and offline ML. The backend contains two runtimes with separate dependencies and health checks. Cloud MySQL is external infrastructure. Redis supports temporary runtime data; MySQL stores durable business state. Restricted storage holds temporary case files and versioned model artifacts.
 
@@ -60,8 +60,8 @@ These are implementation requirements and acceptance criteria, not guarantees su
 
 ## Prediction and model release
 
-`contracts/` holds the versioned API, feature-schema, model-package, and reference-example specifications shared by Java, inference, and offline ML. Both online models use separately trained parameters with the specified `32 -> 16 -> 8 -> 1` network. Neutral uses the professional block plus a zero research block; Biased uses the same professional block plus the declared category encoding. Unknown attributes remain explicit; they are not inferred from a CV.
+`contracts/` holds the versioned API, feature-schema, model-package, and reference-example specifications shared by Java, inference, and offline ML. Legacy 32-input protocols remain separate. The implemented models combine 39 structured values, 20 projected face features and 64 biography features, followed by 40 and 20 units and a sigmoid score with a mandatory-condition gate. Neutral masks all research and media inputs inside the saved network. Biased uses candidate-confirmed optional media and explicit assigned categories. Unknown categories remain explicit; they are not inferred from a CV. See [local model integration](../deployment/model-integration.md) for package selection, preprocessing and serving.
 
-Offline ML exports weights, schema/preprocessing, thresholds, manifest, checksums, and evaluation evidence to `model_artifacts/{neutral,biased}/{version}/`. `service/modelregistry/metadata` imports and validates offline provenance and run evidence; it does not run training. Registration, approval, activation, and retirement preserve compatible historical versions.
+Offline ML exports weights, schema/preprocessing, thresholds, manifest, checksums, and evaluation evidence to `model_artifacts/{neutral,biased}/{version}/`. The opt-in `LocalModelRegistryImport` registers checked provenance in the isolated local database; it does not run training or approve production use. Registration, approval, activation, and retirement preserve compatible historical versions.
 
 The internal inference API returns predictions and version identifiers. Java checks request/case identity, frozen versions, finite values, privacy, and task ownership before saving a successful result. Technical failures remain task/case failures; never fabricate zero scores or Reject decisions. Public DTOs expose only the fields permitted for the caller.

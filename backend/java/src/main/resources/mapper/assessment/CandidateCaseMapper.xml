@@ -56,12 +56,12 @@
     </select>
     <select id="activeModels" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Model">
         SELECT id, feature_schema_version_id, protocol_version_id, version_code, model_type,
-            threshold, common_threshold, status FROM sim_model_version
+            threshold, common_threshold, status, artifact_sha256 FROM sim_model_version
         WHERE protocol_version_id = #{protocolId} AND status = 'ACTIVE' ORDER BY id FOR SHARE
     </select>
     <select id="model" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Model">
         SELECT id, feature_schema_version_id, protocol_version_id, version_code, model_type,
-            threshold, common_threshold, status FROM sim_model_version WHERE id = #{id}
+            threshold, common_threshold, status, artifact_sha256 FROM sim_model_version WHERE id = #{id}
     </select>
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sim_assessment_case (candidate_user_id, job_version_id, protocol_version_id, public_id,
@@ -123,7 +123,7 @@
     </insert>
     <select id="pendingTasks" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Task">
         SELECT id, resource_public_id, task_type, status, attempt_count, lease_token, lease_until, max_attempts
-        FROM sim_async_task WHERE task_type IN ('CASE_EXTRACT', 'CASE_ASSESS', 'CASE_CLEANUP', 'CASE_PURGE')
+        FROM sim_async_task WHERE task_type IN ('CASE_EXTRACT', 'CASE_ASSESS', 'CASE_CLEANUP', 'CASE_MODEL_INPUT_CLEANUP', 'CASE_PURGE')
         AND (status = 'QUEUED' OR (status = 'RUNNING' AND lease_until &lt; UTC_TIMESTAMP(3))) ORDER BY id LIMIT 8
     </select>
     <select id="lockTask" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$Task">
@@ -200,7 +200,10 @@
     </insert>
     <select id="maintenanceCases" resultType="fr.isep.simrecrut.entity.assessment.AssessmentCase">
         SELECT * FROM sim_assessment_case WHERE privacy_status = 'PURGING' OR purge_after &lt;= UTC_TIMESTAMP(3)
-            OR cleanup_status = 'PENDING' ORDER BY id LIMIT 100
+            OR cleanup_status = 'PENDING'
+            OR (processing_status IN ('FAILED_FINAL', 'AUTOMATED_COMPLETE') AND EXISTS
+                (SELECT 1 FROM sim_case_model_input m WHERE m.case_id = sim_assessment_case.id AND m.purged_at IS NULL))
+            ORDER BY id LIMIT 100
     </select>
     <update id="cancelReviews">
         UPDATE sim_human_review SET status = 'CANCELLED' WHERE case_id = #{caseId} AND status IN ('PENDING', 'OPENED')
@@ -254,4 +257,24 @@
         INSERT INTO sim_audit_event (actor_user_id, action, resource_type, resource_ref_hash, status)
         VALUES (#{actor}, #{action}, 'CASE', #{hash}, 'SUCCESS')
     </insert>
+    <select id="modelInput" resultType="fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper$ModelInput">
+        SELECT payload_sha256, confirmed_at IS NOT NULL AS confirmed, purged_at IS NOT NULL AS purged,
+            cleanup_status = 'REVIEWED' AS reviewed FROM sim_case_model_input WHERE case_id = #{caseId}
+    </select>
+    <insert id="saveModelInput">
+        INSERT INTO sim_case_model_input (case_id, payload_sha256, enabled_text, enabled_portrait, cleanup_status)
+        VALUES (#{caseId}, #{hash}, #{text}, #{portrait}, #{status}) AS incoming
+        ON DUPLICATE KEY UPDATE payload_sha256 = incoming.payload_sha256,
+            enabled_text = incoming.enabled_text, enabled_portrait = incoming.enabled_portrait,
+            cleanup_status = incoming.cleanup_status
+    </insert>
+    <update id="confirmModelInput">
+        UPDATE sim_case_model_input SET confirmed_at = UTC_TIMESTAMP(3), cleanup_status = 'NONE'
+        WHERE case_id = #{caseId} AND confirmed_at IS NULL AND cleanup_status = 'REVIEWED' AND purged_at IS NULL
+    </update>
+    <update id="purgedModelInput">
+        UPDATE sim_case_model_input SET purged_at = UTC_TIMESTAMP(3), cleanup_status = 'COMPLETE', payload_sha256 = NULL
+        WHERE case_id = #{caseId}
+    </update>
+    <delete id="deleteModelInput">DELETE FROM sim_case_model_input WHERE case_id = #{caseId}</delete>
 </mapper>

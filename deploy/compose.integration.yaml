@@ -1,0 +1,103 @@
+name: simrecrut-ml-local
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: simrecrut_ml
+      MYSQL_USER: simrecrut
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set the local application password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set the local root password}
+      TZ: UTC
+    ports: ["127.0.0.1:13306:3306"]
+    volumes: ["mysql-data:/var/lib/mysql"]
+    healthcheck:
+      test: [CMD-SHELL, 'mysqladmin ping -h 127.0.0.1 -u root -p"$$MYSQL_ROOT_PASSWORD" --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:16379:6379"]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ["127.0.0.1:18025:8025", "127.0.0.1:11025:1025"]
+  inference:
+    build:
+      context: ..
+      dockerfile: backend/inference/Dockerfile
+    environment:
+      ML_INTERNAL_TOKEN: ${ML_INTERNAL_TOKEN:?Set the local internal token}
+      MODEL_ARTIFACTS_PATH: /app/model_artifacts
+    volumes: ["../model_artifacts:/app/model_artifacts:ro"]
+    ports: ["127.0.0.1:18000:8000"]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 20
+  backend:
+    build: ../backend/java
+    environment:
+      SPRING_PROFILES_ACTIVE: local,ml-integration
+      JAVA_PORT: "10000"
+      JAVA_TOOL_OPTIONS: -Djava.awt.headless=true -Dfile.encoding=UTF-8
+      DB_URL: jdbc:mysql://mysql:3306/simrecrut_ml?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: simrecrut
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+      JWT_SIGNING_SECRET: ${JWT_SIGNING_SECRET:?Set the local JWT secret}
+      REGISTRATION_CODE_SECRET: ${REGISTRATION_CODE_SECRET:?Set the local mail-code secret}
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SMTP_FROM: noreply@simrecrut.test
+      SMTP_AUTH: "false"
+      SMTP_STARTTLS: "false"
+      DEEPSEEK_BASE_URL: https://api.deepseek.com
+      DEEPSEEK_API_KEY: ""
+      CV_EXTRACTION_PROVIDER: ${CV_EXTRACTION_PROVIDER:-deepseek}
+      CV_DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-flash}
+      CASE_WORKSPACE_PATH: /app/runtime/cases
+      MODEL_INPUTS_PATH: /app/runtime/model-inputs
+      MODEL_ARTIFACTS_PATH: /app/model_artifacts
+      JOB_RULE_ROOT: /app/model_artifacts/rules
+      JOB_MATCHING_RULE_VERSION: objective-curated-v8-online-v1
+      CASE_PROTOCOL_VERSION: ml39-20261117-v1
+      CASE_OBJECTIVE_ONLY: "false"
+      ML_BASE_URL: http://inference:8000
+      ML_INTERNAL_TOKEN: ${ML_INTERNAL_TOKEN}
+      ML_NEUTRAL_PATH: /internal/predict/neutral
+      ML_BIASED_PATH: /internal/predict/biased
+    ports: ["127.0.0.1:18080:10000"]
+    volumes: ["../model_artifacts:/app/model_artifacts:ro", "backend-runtime:/app/runtime"]
+    depends_on:
+      mysql: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      inference: {condition: service_healthy}
+      mailpit: {condition: service_started}
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://127.0.0.1:10000/actuator/health/readiness]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 20
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    ports: ["127.0.0.1:8088:8080"]
+    depends_on:
+      backend: {condition: service_healthy}
+volumes:
+  mysql-data:
+  backend-runtime:

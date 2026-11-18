@@ -1,0 +1,25 @@
+name: Inference contracts
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install contract test dependencies
+        run: >-
+          python -m pip install pytest==9.0.2 fastapi==0.136.3 httpx==0.28.1
+          numpy==2.4.2 pillow==12.1.1 opencv-python-headless==4.13.0.92
+      - name: Check internal API without private weights
+        run: python -m pytest backend/inference/tests -q
+      - name: Check immutable package exports with synthetic files
+        run: PYTHONPATH=offline-ml/src python -m pytest offline-ml/tests/packaging -q
