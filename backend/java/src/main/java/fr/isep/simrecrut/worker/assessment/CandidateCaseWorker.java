@@ -218,7 +218,8 @@ public class CandidateCaseWorker {
     private void cleanup(Lease lease) throws Exception {
         files.removeCase(lease.caseId());
         guarded(lease, row -> {
-            if (modelInputs != null) modelInputs.prune(row);
+            Protocol protocol = db.protocol(row.protocolVersionId);
+            if (modelInputs != null && protocol != null && protocol.dimensionCount() == 39) modelInputs.prune(row);
             db.artifactsDeleted(row.id); row.cleanupStatus = "COMPLETE"; save(row); finish(lease, "SUCCEEDED");
         });
     }

@@ -2,6 +2,7 @@ package fr.isep.simrecrut.service.assessment;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.isep.simrecrut.entity.job.JobVersion;
 import fr.isep.simrecrut.mapper.assessment.CandidateCaseMapper.Protocol;
 import java.nio.file.*;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("!resume-workspace")
 public class CaseConfiguration {
+    private static final String LEGACY_DEV_RULE_SHA256 =
+            "0a99d721e4a46d77bdd30be20af5643c10352fd547faa542f00f0e0bf6b79af7";
     private final ObjectMapper json;
     private final Path rules;
     private final Path artifacts;
@@ -29,6 +32,14 @@ public class CaseConfiguration {
             throw CaseException.dependency();
         }
         JsonNode rule = read(rules, job.configPath, job.configSha256);
+        if (protocol.dimensionCount() == 32 && "job-rule-dev-v1".equals(job.matchingRuleVersion)
+                && LEGACY_DEV_RULE_SHA256.equals(job.configSha256)) {
+            // The original frozen development rule lists these levels in ascending order.
+            ObjectNode compatible = rule.deepCopy();
+            compatible.set("degreeOrder", rule.path("catalogs").path("degreeLevelCodes"));
+            compatible.set("languageLevelOrder", rule.path("catalogs").path("languageLevelCodes"));
+            rule = compatible;
+        }
         JsonNode schema = read(artifacts, protocol.schemaPath(), protocol.schemaSha256());
         for (String catalogue : List.of("skillCodes", "roleFamilyCodes", "degreeLevelCodes", "subjectCodes",
                 "languageCodes", "languageLevelCodes", "conditionCodes")) {

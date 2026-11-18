@@ -136,6 +136,8 @@ async function perform(action) {
       const result = await write('draft', update, key => saveCaseDraft(id, update, key))
       if (!current()) return
       draft.value.revision = result.revision
+      // The previous validation messages describe a different revision.
+      draft.value.unresolvedRequiredFields = []
       savedDraft = JSON.stringify(payload)
       const fresh = await caseReview(id)
       if (!current()) return
@@ -212,7 +214,7 @@ onBeforeUnmount(() => { loadSequence++; pending = undefined })
       <ElAlert v-for="warning in draft.extractionWarnings ?? []" :key="warning"
         type="warning" :closable="false" :title="warning" />
       <ElAlert v-if="draft.unresolvedRequiredFields.length" type="warning" :closable="false"
-        :title="$t('Unresolved requirements from the last saved draft: ' + draft.unresolvedRequiredFields.join(', '))" />
+        :title="$t('Unresolved requirements from the last saved draft:') + ' ' + draft.unresolvedRequiredFields.map(field => $t(field)).join(', ')" />
       <ElTabs v-model="tab">
         <ElTabPane v-for="group in groups" :key="group" :label="$t(group)" :name="group">
           <ResumeFactsTable v-model="draft.professional[group.toLowerCase()]" :group="group.toLowerCase()" :locked="busy" />
