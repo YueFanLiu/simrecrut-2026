@@ -25,6 +25,20 @@ files, SQL migrations, executable configuration, and concise source comments sta
 Add a root metadata file only when a tool or repository convention requires that location; link it
 to the central documentation instead of duplicating policies.
 
+Dataset folder descriptions, download instructions and processing procedures
+belong under `docs/research/` with the corresponding implementation.
+The single `offline-ml/datasets/raw/data-sources.md` file is an exception: it
+briefly identifies the sources and their local folders. Other project Markdown
+files stay outside dataset directories. Downloaded publisher cards remain
+original source material. Raw, derived and cached data, including source
+metadata, remain ignored by Git.
+
+Keep source specifications separate from implementation guides. Update guides
+with their code and remove stale commands and links when an implementation is
+removed or rebuilt. Source evidence, local policies and provider replies belong
+in restricted local data. Update existing records rather than creating a new
+report or approval file for each check.
+
 ## One authoritative explanation
 
 [Local Setup](local-setup.md) owns environment loading, local prerequisites, and local startup

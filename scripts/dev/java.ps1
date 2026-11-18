@@ -5,29 +5,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
-$localEnvPath = Join-Path $projectRoot '.env'
+. (Join-Path $PSScriptRoot 'local-environment.ps1')
+$null = Import-LocalEnvironment $projectRoot
 
-if (Test-Path -LiteralPath $localEnvPath) {
-    foreach ($envLine in [System.IO.File]::ReadAllLines($localEnvPath)) {
-        $envAssignment = $envLine.Trim()
-        if ($envAssignment.Length -eq 0 -or $envAssignment.StartsWith('#')) {
-            continue
-        }
-        if ($envAssignment -notmatch '^([A-Za-z_][A-Za-z0-9_]*)=(.*)$') {
-            throw 'Invalid .env assignment. Use one literal NAME=value per line.'
-        }
-        $variableName = $Matches[1]
-        $variableValue = $Matches[2].Trim()
-        if ($variableValue.Length -ge 2) {
-            $firstCharacter = $variableValue[0]
-            $lastCharacter = $variableValue[$variableValue.Length - 1]
-            if (($firstCharacter -eq '"' -and $lastCharacter -eq '"') -or
-                ($firstCharacter -eq "'" -and $lastCharacter -eq "'")) {
-                $variableValue = $variableValue.Substring(1, $variableValue.Length - 2)
-            }
-        }
-        # Literal parsing keeps credentials out of shell evaluation and output.
-        [Environment]::SetEnvironmentVariable($variableName, $variableValue, 'Process')
+# Resolve redirected Windows desktops, including OneDrive, without exposing mail credentials.
+if ([string]::IsNullOrWhiteSpace($env:SIMRECRUT_MAIL_FILE)) {
+    $desktopDirectory = [Environment]::GetFolderPath('DesktopDirectory')
+    if (-not [string]::IsNullOrWhiteSpace($desktopDirectory)) {
+        $env:SIMRECRUT_MAIL_FILE = Join-Path $desktopDirectory 'simrecrut-gmail.private.env'
     }
 }
 

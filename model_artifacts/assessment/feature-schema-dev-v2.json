@@ -1,0 +1,13 @@
+{
+  "researchAttributes": {
+    "SCHOOL_CATEGORY": ["UNKNOWN"],
+    "REFERRAL": ["UNKNOWN"],
+    "GENDER": ["UNKNOWN"],
+    "ETHNICITY": ["UNKNOWN"]
+  },
+  "reviewProtocol": {
+    "standardRubric": {"guidance": "Assess the professional facts against the published requirements."},
+    "instructedBiasRubric": {"guidance": "Review the development scenario and explain the decision using professional evidence."},
+    "instructedBiasInstruction": "Development fixture for testing review submission. Treat UNKNOWN values as missing and base your decision on the professional evidence."
+  }
+}

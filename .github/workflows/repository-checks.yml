@@ -17,3 +17,8 @@ jobs:
           python-version: '3.12'
       - name: Check language, documentation, and layout
         run: python scripts/maintenance/check_repository.py
+      - name: Verify translation policy boundaries
+        run: python scripts/maintenance/test_check_repository.py
+      - name: Verify local environment and readiness helpers
+        shell: pwsh
+        run: ./scripts/dev/test-local-environment.ps1

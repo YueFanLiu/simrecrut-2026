@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="fr.isep.simrecrut.mapper.assessment.LocalModelRegistryMapper">
+    <insert id="rule">
+        INSERT INTO sim_matching_rule_version (version_code, config_path, config_sha256, description, status, frozen_at)
+        SELECT #{rule}, #{rulePath}, #{ruleHash}, 'Local 39-input research simulation rules.', 'FROZEN', UTC_TIMESTAMP(3)
+        WHERE NOT EXISTS (SELECT 1 FROM sim_matching_rule_version WHERE version_code = #{rule})
+    </insert>
+    <insert id="schema">
+        INSERT INTO sim_feature_schema_version (version_code, dimension_count, schema_path, schema_sha256, status, frozen_at)
+        SELECT #{schema}, 39, #{schemaPath}, #{schemaHash}, 'FROZEN', UTC_TIMESTAMP(3)
+        WHERE NOT EXISTS (SELECT 1 FROM sim_feature_schema_version WHERE version_code = #{schema})
+    </insert>
+    <insert id="bias">
+        INSERT INTO sim_bias_protocol_version (version_code, school_effect_json, referral_effect_json,
+            gender_effect_json, ethnicity_effect_json, name_cue_effect_json, calibration_summary_json, status, frozen_at)
+        SELECT #{bias}, #{school}, #{referral}, #{gender}, #{ethnicity}, #{nameCue}, #{labels}, 'FROZEN', UTC_TIMESTAMP(3)
+        WHERE NOT EXISTS (SELECT 1 FROM sim_bias_protocol_version WHERE version_code = #{bias})
+    </insert>
+    <insert id="protocol">
+        INSERT INTO sim_protocol_version (matching_rule_version_id, feature_schema_version_id,
+            bias_protocol_version_id, version_code, t_rule, status)
+        SELECT r.id, f.id, b.id, #{protocol}, #{ruleThreshold}, 'FROZEN'
+        FROM sim_matching_rule_version r, sim_feature_schema_version f, sim_bias_protocol_version b
+        WHERE r.version_code = #{rule} AND f.version_code = #{schema} AND b.version_code = #{bias}
+        AND NOT EXISTS (SELECT 1 FROM sim_protocol_version WHERE version_code = #{protocol})
+    </insert>
+    <insert id="actor">
+        INSERT INTO sim_user (public_id, username, email, password_hash, status, password_updated_at)
+        SELECT #{actorId}, 'local_model_import', 'model-import@simrecrut.invalid', #{password}, 'DISABLED', UTC_TIMESTAMP(3)
+        WHERE NOT EXISTS (SELECT 1 FROM sim_user WHERE username = 'local_model_import')
+    </insert>
+    <insert id="corpus">
+        INSERT INTO sim_corpus_version (version_code, manifest_path, manifest_sha256, profile_count, job_count,
+            split_strategy_json, frozen_at)
+        SELECT #{corpus}, #{manifestPath}, #{manifestHash}, 0, 0, #{provenance}, UTC_TIMESTAMP(3)
+        WHERE NOT EXISTS (SELECT 1 FROM sim_corpus_version WHERE version_code = #{corpus})
+    </insert>
+    <insert id="experiment">
+        INSERT INTO sim_training_experiment (corpus_version_id, protocol_version_id, created_by, public_id,
+            model_type, architecture_json, optimizer_json)
+        SELECT c.id, p.id, u.id, #{experimentId}, #{type}, #{provenance}, #{training}
+        FROM sim_corpus_version c, sim_protocol_version p, sim_user u
+        WHERE c.version_code = #{corpus} AND p.version_code = #{protocol} AND u.username = 'local_model_import'
+        AND NOT EXISTS (SELECT 1 FROM sim_training_run tr JOIN sim_training_experiment e
+            ON e.id = tr.training_experiment_id WHERE tr.artifact_path = #{packagePath})
+    </insert>
+    <insert id="run">
+        INSERT INTO sim_training_run (training_experiment_id, seed, status, selected_threshold, metrics_json,
+            artifact_path, completed_at)
+        SELECT e.id, #{seed}, 'COMPLETED', #{threshold}, #{validation}, #{packagePath}, UTC_TIMESTAMP(3)
+        FROM sim_training_experiment e WHERE e.public_id = #{experimentId}
+    </insert>
+    <insert id="model">
+        INSERT INTO sim_model_version (training_run_id, feature_schema_version_id, protocol_version_id, version_code,
+            model_type, artifact_path, artifact_sha256, threshold, common_threshold, status, evaluation_json, activated_at)
+        SELECT tr.id, p.feature_schema_version_id, p.id, #{version}, #{type}, #{manifestPath}, #{manifestHash},
+            #{threshold}, #{common}, 'ACTIVE', #{evaluation}, UTC_TIMESTAMP(3)
+        FROM sim_training_run tr, sim_protocol_version p
+        WHERE tr.artifact_path = #{packagePath} AND p.version_code = #{protocol}
+    </insert>
+    <select id="existingDigest" resultType="string">
+        SELECT artifact_sha256 FROM sim_model_version WHERE version_code = #{version}
+    </select>
+</mapper>

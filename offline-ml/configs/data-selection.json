@@ -1,0 +1,81 @@
+{
+  "version": "it-source-selection-v1",
+  "status": "PROVISIONAL",
+  "description": "Initial filter using exact publisher categories. Families remain unreviewed; this filter does not establish professional facts or pair compatibility.",
+  "sources": {
+    "djinni-jobs": {
+      "category_field": "Primary Keyword",
+      "categories": {
+        ".NET": "software-development",
+        "JavaScript": "software-development",
+        "PHP": "software-development",
+        "Python": "software-development",
+        "Java": "software-development",
+        "Node.js": "software-development",
+        "C++": "software-development",
+        "Ruby": "software-development",
+        "Scala": "software-development",
+        "Golang": "software-development",
+        "Rust": "software-development",
+        "React": "software-development",
+        "SQL": "data-and-analytics",
+        "Data Science": "data-and-analytics",
+        "Data Engineer": "data-and-analytics",
+        "Data Analyst": "data-and-analytics",
+        "Sysadmin": "infrastructure-and-security",
+        "DevOps": "infrastructure-and-security",
+        "Security": "infrastructure-and-security",
+        "Android": "mobile-development",
+        "iOS": "mobile-development",
+        "Flutter": "mobile-development",
+        "QA": "software-testing",
+        "QA Automation": "software-testing",
+        "Unity": "game-development",
+        "Salesforce": "enterprise-applications",
+        "SAP": "enterprise-applications",
+        "Block-chain": "blockchain-development",
+        "Technical Writing": "technical-writing"
+      }
+    },
+    "djinni-profiles": {
+      "category_field": "Primary Keyword",
+      "categories": {
+        ".NET": "software-development",
+        "JavaScript": "software-development",
+        "PHP": "software-development",
+        "Python": "software-development",
+        "Java": "software-development",
+        "Node.js": "software-development",
+        "C++": "software-development",
+        "Ruby": "software-development",
+        "Scala": "software-development",
+        "Golang": "software-development",
+        "Rust": "software-development",
+        "React": "software-development",
+        "SQL": "data-and-analytics",
+        "Data Science": "data-and-analytics",
+        "Data Engineer": "data-and-analytics",
+        "Data Analyst": "data-and-analytics",
+        "Sysadmin": "infrastructure-and-security",
+        "DevOps": "infrastructure-and-security",
+        "Security": "infrastructure-and-security",
+        "Android": "mobile-development",
+        "iOS": "mobile-development",
+        "Flutter": "mobile-development",
+        "QA": "software-testing",
+        "QA Automation": "software-testing",
+        "Unity": "game-development",
+        "Salesforce": "enterprise-applications",
+        "SAP": "enterprise-applications",
+        "Block-chain": "blockchain-development",
+        "Technical Writing": "technical-writing"
+      }
+    },
+    "resume-dataset": {
+      "category_field": "Category",
+      "categories": {
+        "INFORMATION-TECHNOLOGY": "information-technology"
+      }
+    }
+  }
+}

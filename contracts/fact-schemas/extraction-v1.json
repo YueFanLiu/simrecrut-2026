@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Unconfirmed offline fact extraction",
+  "description": "Lark revision 221 extraction proposals, before human review and frozen mappings.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "professional", "requirements", "field_status"],
+  "properties": {
+    "schema_version": {"const": "fact-extraction-v1"},
+    "kind": {"enum": ["resume", "profile", "job"]},
+    "professional": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["skills", "experience", "education", "languages", "projects"],
+      "properties": {
+        "skills": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/skill"}},
+        "experience": {"type": "array", "maxItems": 40, "items": {"$ref": "#/$defs/experience"}},
+        "education": {"type": "array", "maxItems": 30, "items": {"$ref": "#/$defs/education"}},
+        "languages": {"type": "array", "maxItems": 20, "items": {"$ref": "#/$defs/language"}},
+        "projects": {"type": "array", "maxItems": 30, "items": {"$ref": "#/$defs/project"}}
+      }
+    },
+    "requirements": {
+      "type": "array", "maxItems": 100,
+      "items": {"$ref": "#/$defs/requirement"}
+    },
+    "field_status": {
+      "type": "object", "additionalProperties": false,
+      "required": ["skills", "experience", "education", "languages", "projects"],
+      "properties": {
+        "skills": {"$ref": "#/$defs/status"},
+        "experience": {"$ref": "#/$defs/status"},
+        "education": {"$ref": "#/$defs/status"},
+        "languages": {"$ref": "#/$defs/status"},
+        "projects": {"$ref": "#/$defs/status"}
+      }
+    }
+  },
+  "$defs": {
+    "status": {"enum": ["OBSERVED", "UNKNOWN", "CONFLICT"]},
+    "code": {"type": "null", "description": "Assigned only through later reviewed mappings."},
+    "codes": {"type": "array", "maxItems": 0},
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_field", "excerpt"],
+      "properties": {
+        "source_field": {"type": "string", "minLength": 1, "maxLength": 80},
+        "excerpt": {"type": "string", "minLength": 1, "maxLength": 900}
+      }
+    },
+    "field": {
+      "type": "object", "additionalProperties": false,
+      "required": ["value", "status", "evidence"],
+      "properties": {
+        "value": {"type": ["string", "null"], "maxLength": 500},
+        "status": {"$ref": "#/$defs/status"},
+        "evidence": {"type": "array", "maxItems": 6, "items": {"$ref": "#/$defs/evidence"}}
+      },
+      "description": "Observed source wording only; offsets are resolved locally against the original."
+    },
+    "skill": {
+      "type": "object", "additionalProperties": false,
+      "required": ["skillCode", "wording"],
+      "properties": {"skillCode": {"$ref": "#/$defs/code"}, "wording": {"$ref": "#/$defs/field"}}
+    },
+    "experience": {
+      "type": "object", "additionalProperties": false,
+      "required": ["roleFamilyCode", "roleTitle", "startMonth", "endMonth", "isCurrent", "supportedSkillCodes", "reviewedRelevantYears", "period", "duration"],
+      "properties": {
+        "roleFamilyCode": {"$ref": "#/$defs/code"},
+        "roleTitle": {"$ref": "#/$defs/field"},
+        "startMonth": {"type": "null"},
+        "endMonth": {"type": "null"},
+        "isCurrent": {"type": "null"},
+        "supportedSkillCodes": {"$ref": "#/$defs/codes"},
+        "reviewedRelevantYears": {"type": "null"},
+        "period": {"$ref": "#/$defs/field"},
+        "duration": {"$ref": "#/$defs/field"}
+      }
+    },
+    "education": {
+      "type": "object", "additionalProperties": false,
+      "required": ["degreeLevelCode", "subjectCode", "degree", "subject", "completion"],
+      "properties": {
+        "degreeLevelCode": {"$ref": "#/$defs/code"},
+        "subjectCode": {"$ref": "#/$defs/code"},
+        "degree": {"$ref": "#/$defs/field"},
+        "subject": {"$ref": "#/$defs/field"},
+        "completion": {"$ref": "#/$defs/field"}
+      }
+    },
+    "language": {
+      "type": "object", "additionalProperties": false,
+      "required": ["languageCode", "levelCode", "language", "level"],
+      "properties": {
+        "languageCode": {"$ref": "#/$defs/code"},
+        "levelCode": {"$ref": "#/$defs/code"},
+        "language": {"$ref": "#/$defs/field"},
+        "level": {"$ref": "#/$defs/field"}
+      }
+    },
+    "project": {
+      "type": "object", "additionalProperties": false,
+      "required": ["projectId", "supportedConditionCodes", "supportedSkillCodes", "description"],
+      "properties": {
+        "projectId": {"type": "null"},
+        "supportedConditionCodes": {"$ref": "#/$defs/codes"},
+        "supportedSkillCodes": {"$ref": "#/$defs/codes"},
+        "description": {"$ref": "#/$defs/field"}
+      }
+    },
+    "requirement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["criterionType", "requirementCode", "assessmentIncluded", "mandatory", "publicVisible", "sourceUse", "wording", "alternatives", "payload"],
+      "properties": {
+        "criterionType": {"enum": ["SKILLS", "EXPERIENCE", "EDUCATION", "LANGUAGES", "PROJECTS"]},
+        "requirementCode": {"type": "null"},
+        "assessmentIncluded": {"type": "null"},
+        "mandatory": {"type": "null"},
+        "publicVisible": {"type": "null"},
+        "sourceUse": {"enum": ["REQUIREMENT_WORDING", "PREFERRED", "COMPANY_CONTEXT", "FUTURE_DUTY", "UNRESOLVED"]},
+        "wording": {"$ref": "#/$defs/field"},
+        "alternatives": {"$ref": "#/$defs/field"},
+        "payload": {"type": "object"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"criterionType": {"const": "SKILLS"}}},
+          "then": {"properties": {"payload": {"type": "object", "additionalProperties": false, "required": ["assessedSkillCodes"], "properties": {"assessedSkillCodes": {"$ref": "#/$defs/codes"}}}}}
+        },
+        {
+          "if": {"properties": {"criterionType": {"const": "EXPERIENCE"}}},
+          "then": {"properties": {"payload": {"type": "object", "additionalProperties": false, "required": ["targetYears", "minimumYears", "relevantRoleFamilyCodes", "statedYears"], "properties": {"targetYears": {"type": "null"}, "minimumYears": {"type": "null"}, "relevantRoleFamilyCodes": {"$ref": "#/$defs/codes"}, "statedYears": {"$ref": "#/$defs/field"}}}}}
+        },
+        {
+          "if": {"properties": {"criterionType": {"const": "EDUCATION"}}},
+          "then": {"properties": {"payload": {"type": "object", "additionalProperties": false, "required": ["minimumDegreeLevelCode", "acceptedSubjectCodes", "unrestrictedSubject"], "properties": {"minimumDegreeLevelCode": {"type": "null"}, "acceptedSubjectCodes": {"$ref": "#/$defs/codes"}, "unrestrictedSubject": {"type": "null"}}}}}
+        },
+        {
+          "if": {"properties": {"criterionType": {"const": "LANGUAGES"}}},
+          "then": {"properties": {"payload": {"type": "object", "additionalProperties": false, "required": ["requiredLanguages"], "properties": {"requiredLanguages": {"type": "array", "maxItems": 20, "items": {"$ref": "#/$defs/language"}}}}}}
+        },
+        {
+          "if": {"properties": {"criterionType": {"const": "PROJECTS"}}},
+          "then": {"properties": {"payload": {"type": "object", "additionalProperties": false, "required": ["assessedConditionCodes"], "properties": {"assessedConditionCodes": {"$ref": "#/$defs/codes"}}}}}
+        }
+      ]
+    }
+  }
+}
