@@ -78,5 +78,5 @@ useLocalizedValidation(formRef)
 </template>
 
 <style scoped>
-h1 {margin:0;font-size:27px;color:#132941} p {font-size:14px;color:#627086;line-height:1.6} .wide {width:100%} .back {margin-top:18px} .el-alert {margin-bottom:16px} :deep(.el-form-item__label) {font-weight:600;color:#22344b} :deep(.el-form-item__error) {position:static} .el-form {margin-top:22px}
+h1 {margin:0;font-size:27px;color:var(--sr-ink)} p {font-size:14px;color:var(--sr-text-muted);line-height:1.6} .wide {width:100%} .back {margin-top:18px} .el-alert {margin-bottom:16px} :deep(.el-form-item__label) {font-weight:600;color:var(--sr-text)} :deep(.el-form-item__error) {position:static} .el-form {margin-top:22px}
 </style>

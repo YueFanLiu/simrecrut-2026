@@ -27,6 +27,37 @@ public final class LocalResumeCleaner implements ResumeCleaningGateway {
 
     @Override
     public ObjectNode clean(String filename, byte[] content) throws IOException {
+        return clean(filename, content, false);
+    }
+
+    /** Candidate review also needs the personal header and catch-all sections; research datasets do not. */
+    public ObjectNode cleanWithProfile(String filename, byte[] content) throws IOException {
+        return clean(filename, content, true);
+    }
+
+    /** Professional rules plus local personal and other-information extraction for already-read pages. */
+    public ObjectNode cleanPages(List<PdfPage> pages, byte[] pdf) {
+        ObjectNode result = JsonNodeFactory.instance.objectNode();
+        result.put("schemaVersion", "resume-draft-v1");
+        result.put("cleanerVersion", "local-rules-v2");
+        result.put("status", "REVIEW_REQUIRED");
+        ObjectNode professional = result.putObject("professional");
+        for (String group : List.of("skills", "experience", "education", "languages", "projects")) {
+            professional.putArray(group);
+        }
+        ArrayNode warnings = result.putArray("warnings");
+        ProfessionalFactExtractor extractor = new ProfessionalFactExtractor();
+        for (PdfPage page : pages) {
+            if (page.ocr()) warnings.add("Local OCR used on page " + page.number() + "; verify the evidence.");
+            extractor.extract(professional, page.text(), page.number());
+        }
+        professional.setAll(new CvProfileExtractor().extract(pages, pdf));
+        warnings.add("Conservative English and French rules. Unknown dates, subjects and language levels require manual review.");
+        warnings.add("Draft codes are provisional. Do not use these drafts as confirmed training labels.");
+        return result;
+    }
+
+    private ObjectNode clean(String filename, byte[] content, boolean profile) throws IOException {
         if (filename == null || content == null || content.length == 0 || content.length > MAX_BYTES) {
             throw new IllegalArgumentException("A non-empty resume up to 10 MiB is required.");
         }
@@ -42,10 +73,12 @@ public final class LocalResumeCleaner implements ResumeCleaningGateway {
         String name = filename.toLowerCase(Locale.ROOT);
         ProfessionalFactExtractor extractor = new ProfessionalFactExtractor();
         if (name.endsWith(".pdf")) {
-            for (PdfPage page : readPdf(content)) {
+            List<PdfPage> pages = readPdf(content);
+            for (PdfPage page : pages) {
                 if (page.ocr()) warnings.add("Local OCR used on page " + page.number() + "; verify the evidence.");
                 extractor.extract(professional, page.text(), page.number());
             }
+            if (profile) professional.setAll(new CvProfileExtractor().extract(pages, content));
         } else if (name.endsWith(".docx")) {
             try (var document = new XWPFDocument(new ByteArrayInputStream(content))) {
                 StringBuilder text = new StringBuilder();
@@ -57,11 +90,13 @@ public final class LocalResumeCleaner implements ResumeCleaningGateway {
                 }
                 if (text.length() > MAX_TEXT) throw new IllegalArgumentException("Extracted text is too large.");
                 extractor.extract(professional, text.toString(), null);
+                if (profile) professional.setAll(new CvProfileExtractor().extract(text.toString()));
             }
         } else if (name.endsWith(".txt")) {
             String text = StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(content)).toString();
             if (text.length() > MAX_TEXT) throw new IllegalArgumentException("Extracted text is too large.");
             extractor.extract(professional, text, null);
+            if (profile) professional.setAll(new CvProfileExtractor().extract(text));
         } else {
             throw new IllegalArgumentException("Supported formats: PDF, DOCX and UTF-8 TXT.");
         }

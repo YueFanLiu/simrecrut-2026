@@ -1,15 +1,124 @@
+/*
+ * SimRecrut theme: ISEP colours (blue, orange/yellow, white).
+ * Every page reads its colours from the variables below, so the whole site
+ * can be retuned here (for example to the exact hex values of the ISEP
+ * brand charter) without touching individual pages.
+ */
 :root {
+  /* ISEP brand colours */
+  --isep-blue: #1f4fa8;
+  --isep-navy: #0e2147;
+  --isep-orange: #f39200;
+  --isep-yellow: #fdc300;
+  --isep-white: #ffffff;
+
+  /* Primary (blue) scale */
+  --sr-primary-dark: #143a80;
+  --sr-primary: var(--isep-blue);
+  --sr-primary-light: #4a78c9;
+  --sr-primary-200: #b9cbec;
+  --sr-primary-100: #dde6f6;
+  --sr-primary-50: #eef3fb;
+
+  /* Accent (orange / yellow) scale */
+  --sr-accent: var(--isep-orange);
+  --sr-accent-strong: #b35f00; /* orange that stays readable as text on white */
+  --sr-accent-yellow: var(--isep-yellow);
+  --sr-accent-100: #ffe7c2;
+  --sr-accent-50: #fff6e8;
+  --sr-brand-gradient: linear-gradient(90deg, var(--isep-navy) 0%, var(--isep-blue) 60%, var(--isep-orange) 60%, var(--isep-yellow) 100%);
+
+  /* Text */
+  --sr-ink: var(--isep-navy);
+  --sr-text: #1f3256;
+  --sr-text-secondary: #3a4b68;
+  --sr-text-muted: #56647d;
+  --sr-text-subtle: #8a96aa;
+
+  /* Surfaces and borders */
+  --sr-page: #f4f6fb;
+  --sr-surface: var(--isep-white);
+  --sr-surface-tint: #f7f9fd;
+  --sr-surface-sunken: #eef2f8;
+  --sr-border: #e2e8f1;
+  --sr-border-strong: #c5cfdf;
+
+  /* Shape and depth */
+  --sr-radius-sm: 6px;
+  --sr-radius: 10px;
+  --sr-radius-lg: 16px;
+  --sr-shadow-sm: 0 1px 2px rgb(14 33 71 / 6%);
+  --sr-shadow: 0 4px 16px rgb(14 33 71 / 7%);
+  --sr-shadow-lg: 0 18px 48px rgb(14 33 71 / 10%);
+
+  /* Element Plus follows the same palette */
+  --el-color-primary: var(--sr-primary);
+  --el-color-primary-dark-2: var(--sr-primary-dark);
+  --el-color-primary-light-3: #6284c2;
+  --el-color-primary-light-5: #8fa7d4;
+  --el-color-primary-light-7: #bccbe5;
+  --el-color-primary-light-8: #d2dcee;
+  --el-color-primary-light-9: #e9eef6;
+  --el-color-warning: var(--isep-orange);
+  --el-color-warning-dark-2: #c27500;
+  --el-color-warning-light-3: #f7b34d;
+  --el-color-warning-light-5: #f9c980;
+  --el-color-warning-light-7: #fbdeb3;
+  --el-color-warning-light-8: #fde9cc;
+  --el-color-warning-light-9: #fef4e6;
+  --el-text-color-primary: var(--sr-text);
+  --el-text-color-regular: var(--sr-text-secondary);
+  --el-text-color-secondary: var(--sr-text-muted);
+  --el-border-color: var(--sr-border-strong);
+  --el-border-color-light: var(--sr-border);
+  --el-border-color-lighter: var(--sr-border);
+  --el-fill-color-light: var(--sr-surface-tint);
+  --el-fill-color-lighter: var(--sr-surface-tint);
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+
   font-family: Inter, "Segoe UI", Arial, sans-serif;
-  color: #20354e;
-  background: #f3f8fe;
+  color: var(--sr-text);
+  background: var(--sr-page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --el-color-primary: #176bdf;
-  --el-border-radius-base: 6px;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
+body { margin: 0; min-width: 320px; background: var(--sr-page); }
 button, input { font: inherit; }
-.el-button:focus-visible, .el-checkbox:focus-within { outline: 2px solid #176bdf; outline-offset: 3px; }
+::selection { background: var(--sr-accent-100); color: var(--sr-ink); }
+
+.el-button:focus-visible, .el-checkbox:focus-within { outline: 2px solid var(--sr-accent); outline-offset: 3px; }
+
+/* Buttons: softer corners, clearer primary action */
+.el-button { font-weight: 600; transition: background-color .15s, border-color .15s, box-shadow .15s; }
+.el-button--primary:not(.is-plain):not(.is-link):not(.is-text) { box-shadow: 0 2px 6px rgb(31 79 168 / 22%); }
+.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):hover { box-shadow: 0 4px 12px rgb(31 79 168 / 28%); }
+
+/* Inputs */
+.el-input__wrapper.is-focus, .el-select__wrapper.is-focused { box-shadow: 0 0 0 1px var(--sr-primary) inset, 0 0 0 3px rgb(31 79 168 / 12%) !important; }
+
+/* Cards, tables, dialogs */
+.el-card { border-color: var(--sr-border); border-radius: var(--sr-radius); box-shadow: var(--sr-shadow-sm); }
+.el-table { --el-table-header-bg-color: var(--sr-surface-tint); --el-table-header-text-color: var(--sr-text-secondary); --el-table-row-hover-bg-color: var(--sr-primary-50); --el-table-border-color: var(--sr-border); }
+.el-table th.el-table__cell { font-weight: 600; }
+.el-dialog { border-radius: var(--sr-radius-lg); }
+
+/* Status colours keep their meaning; warnings use ISEP orange */
+.el-tag { font-weight: 600; }
+.el-tag--warning { --el-tag-text-color: var(--sr-accent-strong); }
+.el-alert--warning.is-light { color: var(--sr-accent-strong); }
+
+/* Brand touches on shared Element Plus widgets */
+.el-progress-bar__inner { background: linear-gradient(90deg, var(--sr-primary), var(--sr-primary-light)); }
+.el-tabs__active-bar { background-color: var(--sr-accent); height: 3px; border-radius: 3px; }
+.el-tabs__item.is-active { color: var(--sr-ink); font-weight: 650; }
+
+/* Thin ISEP stripe at the top of every workspace header */
+.sr-header-accent { height: 4px; background: var(--sr-brand-gradient); }
+
+/* Informational notes (demo notices etc.): light ISEP blue with an orange marker */
+.el-alert--info.is-light { background: var(--sr-primary-50); color: var(--sr-text-secondary); border-left: 4px solid var(--sr-accent); }
+.el-alert--info.is-light .el-alert__description, .el-alert--info.is-light .el-alert__title { color: var(--sr-text-secondary); }

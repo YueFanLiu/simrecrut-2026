@@ -55,6 +55,10 @@
     "zh": "记住我",
     "fr": "Se souvenir de moi"
   },
+  "Remember me (username only)": {
+    "zh": "记住我（仅用户名）",
+    "fr": "Se souvenir de moi (nom d’utilisateur uniquement)"
+  },
   "Username only": {
     "zh": "仅记住用户名",
     "fr": "Nom d’utilisateur uniquement"
@@ -7822,5 +7826,273 @@
   "Choose Portrait": {
     "zh": "选择头像",
     "fr": "Choisir un portrait"
+  },
+  "CV name (optional)": {
+    "zh": "简历名称（可选）",
+    "fr": "Nom du CV (facultatif)"
+  },
+  "For example: CV for IT, CV for product manager": {
+    "zh": "例如：IT 岗位简历、产品经理简历",
+    "fr": "Par exemple : CV pour l’informatique, CV pour chef de produit"
+  },
+  "Give each CV a name to find it in your library. Leave empty to use the file name.": {
+    "zh": "为每份简历命名，方便在简历库中查找。留空则使用文件名。",
+    "fr": "Donnez un nom à chaque CV pour le retrouver dans votre bibliothèque. Laissez vide pour utiliser le nom du fichier."
+  },
+  "Unconfirmed CVs expire after 24 hours. Confirmed CVs expire after 30 days. Your original PDF is deleted as soon as you confirm the extracted facts.": {
+    "zh": "未确认的简历在 24 小时后过期，已确认的简历在 30 天后过期。确认提取的信息后，原始 PDF 会立即删除。",
+    "fr": "Les CV non confirmés expirent après 24 heures, les CV confirmés après 30 jours. Votre PDF d’origine est supprimé dès que vous confirmez les informations extraites."
+  },
+  "CV name": {
+    "zh": "简历名称",
+    "fr": "Nom du CV"
+  },
+  "Rename": {
+    "zh": "重命名",
+    "fr": "Renommer"
+  },
+  "File": {
+    "zh": "文件",
+    "fr": "Fichier"
+  },
+  "PDF deleted": {
+    "zh": "PDF 已删除",
+    "fr": "PDF supprimé"
+  },
+  "The CV name was not saved. Please retry.": {
+    "zh": "简历名称未保存，请重试。",
+    "fr": "Le nom du CV n’a pas été enregistré. Veuillez réessayer."
+  },
+  "Delete \"{name}\"? Its extracted facts are removed and this cannot be undone.": {
+    "zh": "删除“{name}”？其提取的信息将被移除，且无法撤销。",
+    "fr": "Supprimer « {name} » ? Ses informations extraites seront supprimées et cette action est irréversible."
+  },
+  "Personal information": {
+    "zh": "个人信息",
+    "fr": "Informations personnelles"
+  },
+  "Other information": {
+    "zh": "其他信息",
+    "fr": "Autres informations"
+  },
+  "Check your name, contact details and photo. Recruiters see these reviewed values instead of your PDF.": {
+    "zh": "请核对姓名、联系方式和照片。招聘方看到的是这些经你审核的信息，而不是你的 PDF。",
+    "fr": "Vérifiez votre nom, vos coordonnées et votre photo. Les recruteurs voient ces valeurs vérifiées à la place de votre PDF."
+  },
+  "Interests, volunteering, certifications, awards and anything else from your CV.": {
+    "zh": "兴趣爱好、志愿/社团经历、证书、奖项以及简历中的其他内容。",
+    "fr": "Centres d’intérêt, bénévolat, certifications, prix et toute autre information de votre CV."
+  },
+  "Facts confirmed. Your original PDF has been deleted.": {
+    "zh": "信息已确认，你的原始 PDF 已删除。",
+    "fr": "Informations confirmées. Votre PDF d’origine a été supprimé."
+  },
+  "File:": {
+    "zh": "文件：",
+    "fr": "Fichier :"
+  },
+  "Your original PDF was deleted after confirmation. Only the reviewed facts are kept.": {
+    "zh": "确认后你的原始 PDF 已被删除，仅保留经你审核的信息。",
+    "fr": "Votre PDF d’origine a été supprimé après la confirmation. Seules les informations vérifiées sont conservées."
+  },
+  "Your original PDF is deleted as soon as you confirm.": {
+    "zh": "确认后，你的原始 PDF 会立即删除。",
+    "fr": "Votre PDF d’origine est supprimé dès votre confirmation."
+  },
+  "Field": {
+    "zh": "字段",
+    "fr": "Champ"
+  },
+  "Value": {
+    "zh": "值",
+    "fr": "Valeur"
+  },
+  "Full name": {
+    "zh": "全名",
+    "fr": "Nom complet"
+  },
+  "First name": {
+    "zh": "名",
+    "fr": "Prénom"
+  },
+  "Last name": {
+    "zh": "姓",
+    "fr": "Nom de famille"
+  },
+  "Photo": {
+    "zh": "照片",
+    "fr": "Photo"
+  },
+  "Phone": {
+    "zh": "电话",
+    "fr": "Téléphone"
+  },
+  "Address": {
+    "zh": "地址",
+    "fr": "Adresse"
+  },
+  "City": {
+    "zh": "城市",
+    "fr": "Ville"
+  },
+  "Country": {
+    "zh": "国家",
+    "fr": "Pays"
+  },
+  "LinkedIn": {
+    "zh": "LinkedIn",
+    "fr": "LinkedIn"
+  },
+  "GitHub": {
+    "zh": "GitHub",
+    "fr": "GitHub"
+  },
+  "Website": {
+    "zh": "个人网站",
+    "fr": "Site web"
+  },
+  "Nationality": {
+    "zh": "国籍",
+    "fr": "Nationalité"
+  },
+  "Date of birth": {
+    "zh": "出生日期",
+    "fr": "Date de naissance"
+  },
+  "Other": {
+    "zh": "其他",
+    "fr": "Autre"
+  },
+  "Interests and hobbies": {
+    "zh": "兴趣爱好",
+    "fr": "Centres d’intérêt et loisirs"
+  },
+  "Volunteering and associations": {
+    "zh": "志愿与社团经历",
+    "fr": "Bénévolat et engagement associatif"
+  },
+  "Certification": {
+    "zh": "证书",
+    "fr": "Certification"
+  },
+  "Award": {
+    "zh": "奖项",
+    "fr": "Prix"
+  },
+  "Activity": {
+    "zh": "活动",
+    "fr": "Activité"
+  },
+  "Publication": {
+    "zh": "出版物",
+    "fr": "Publication"
+  },
+  "Reference": {
+    "zh": "推荐人",
+    "fr": "Référence"
+  },
+  "Photo on the CV": {
+    "zh": "简历中有照片",
+    "fr": "Photo sur le CV"
+  },
+  "No photo": {
+    "zh": "无照片",
+    "fr": "Pas de photo"
+  },
+  "Photo extracted from the CV": {
+    "zh": "从简历中提取的照片",
+    "fr": "Photo extraite du CV"
+  },
+  "Remove photo": {
+    "zh": "移除照片",
+    "fr": "Retirer la photo"
+  },
+  "Use a CV from your library": {
+    "zh": "使用简历库中的简历",
+    "fr": "Utiliser un CV de votre bibliothèque"
+  },
+  "Reuse the facts you already reviewed. No new upload is needed.": {
+    "zh": "复用你已审核的信息，无需重新上传。",
+    "fr": "Réutilisez les informations déjà vérifiées. Aucun nouvel envoi n’est nécessaire."
+  },
+  "Choose a confirmed CV": {
+    "zh": "选择一份已确认的简历",
+    "fr": "Choisissez un CV confirmé"
+  },
+  "Use this CV": {
+    "zh": "使用此简历",
+    "fr": "Utiliser ce CV"
+  },
+  "Or upload a new PDF": {
+    "zh": "或上传新的 PDF",
+    "fr": "Ou envoyez un nouveau PDF"
+  },
+  "This CV could not be used. Upload a PDF instead.": {
+    "zh": "无法使用此简历，请改为上传 PDF。",
+    "fr": "Ce CV n’a pas pu être utilisé. Envoyez plutôt un PDF."
+  },
+  "Original PDF": {
+    "zh": "原始 PDF",
+    "fr": "PDF d’origine"
+  },
+  "Deleted after confirmation": {
+    "zh": "已在确认后删除",
+    "fr": "Supprimé après la confirmation"
+  },
+  "Being deleted after confirmation": {
+    "zh": "确认后正在删除",
+    "fr": "Suppression en cours après la confirmation"
+  },
+  "Work location (country, city or remote)": {
+    "zh": "工作地点（国家、城市或远程）",
+    "fr": "Lieu de travail (pays, ville ou télétravail)"
+  },
+  "Choose a confirmed CV from your library.": {
+    "zh": "请从简历库中选择一份已确认的简历。",
+    "fr": "Choisissez un CV confirmé dans votre bibliothèque."
+  },
+  "These facts come from your CV library. Check them against this job before confirming.": {
+    "zh": "这些信息来自你的简历库。确认前请对照该岗位进行核对。",
+    "fr": "Ces informations proviennent de votre bibliothèque de CV. Vérifiez-les au regard de ce poste avant de confirmer."
+  },
+  "Only the photo field can contain an image.": {
+    "zh": "只有照片字段可以包含图片。",
+    "fr": "Seul le champ photo peut contenir une image."
+  },
+  "Invalid photo.": {
+    "zh": "照片无效。",
+    "fr": "Photo non valide."
+  },
+  "Invalid fieldCode.": {
+    "zh": "个人信息字段无效。",
+    "fr": "Champ d’information personnelle non valide."
+  },
+  "Invalid categoryCode.": {
+    "zh": "其他信息类别无效。",
+    "fr": "Catégorie d’information non valide."
+  },
+  "Invalid value.": {
+    "zh": "值无效。",
+    "fr": "Valeur non valide."
+  },
+  "CV extraction is temporarily unavailable. Retry the extraction if available.": {
+    "zh": "简历提取暂时不可用。如有重试选项，请重试。",
+    "fr": "L’extraction du CV est temporairement indisponible. Réessayez si l’option est disponible."
+  },
+  "The professional sections could not be read. Start a new case with a clear, concise PDF.": {
+    "zh": "无法读取职业相关章节。请使用清晰、简洁的 PDF 创建新案例。",
+    "fr": "Les rubriques professionnelles n’ont pas pu être lues. Créez un nouveau dossier avec un PDF clair et concis."
+  },
+  "The extracted facts could not be verified. Start a new case with a clearer PDF.": {
+    "zh": "提取的信息无法验证。请使用更清晰的 PDF 创建新案例。",
+    "fr": "Les informations extraites n’ont pas pu être vérifiées. Créez un nouveau dossier avec un PDF plus clair."
+  },
+  "The PDF gives conflicting language levels. Review and enter the correct level.": {
+    "zh": "PDF 中的语言等级互相冲突。请核对后填写正确的等级。",
+    "fr": "Le PDF indique des niveaux de langue contradictoires. Vérifiez et saisissez le niveau correct."
+  },
+  "Local OCR was used on a page. Verify the extracted evidence.": {
+    "zh": "其中一页使用了本地文字识别。请核对提取的引文。",
+    "fr": "Une page a été lue par reconnaissance de texte locale. Vérifiez les extraits."
   }
 }

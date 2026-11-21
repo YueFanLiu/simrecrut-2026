@@ -19,12 +19,12 @@ defineProps({
 </template>
 
 <style scoped>
-.scale-panel { padding: 22px; background: white; border: 1px solid #e1eaf5; border-radius: 12px; }
-h3 { margin: 0; color: #132941; font-size: 16px; line-height: 1.7; }
-.scale-label, .note, .endpoints { color: #586b83; font-size: 12px; line-height: 1.8; }
+.scale-panel { padding: 22px; background: white; border: 1px solid var(--sr-border); border-radius: 12px; }
+h3 { margin: 0; color: var(--sr-ink); font-size: 16px; line-height: 1.7; }
+.scale-label, .note, .endpoints { color: var(--sr-text-muted); font-size: 12px; line-height: 1.8; }
 .scale-row { margin: 20px 0; }
 .row-label, .endpoints { display: flex; justify-content: space-between; gap: 12px; }
-.row-label { color: #132941; font-size: 13px; line-height: 1.8; }
+.row-label { color: var(--sr-ink); font-size: 13px; line-height: 1.8; }
 meter { width: 100%; height: 22px; }
 .note { margin: 14px 0 0; }
 </style>

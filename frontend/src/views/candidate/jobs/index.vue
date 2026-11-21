@@ -127,22 +127,22 @@ onMounted(loadJobs)
 </template>
 
 <style scoped>
-h1 { margin: 0; color: #132941; font-size: 28px; letter-spacing: -0.7px; }
-.page-heading p { margin: 10px 0 22px; color: #586b83; font-size: 14px; line-height: 1.7; }
+h1 { margin: 0; color: var(--sr-ink); font-size: 28px; letter-spacing: -0.7px; }
+.page-heading p { margin: 10px 0 22px; color: var(--sr-text-muted); font-size: 14px; line-height: 1.7; }
 .demo-notice { margin-bottom: 22px; }
 .job-filters { display: grid; grid-template-columns: 2fr repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
 .job-filters > div { min-width: 0; }
-.job-filters label { display: block; margin-bottom: 7px; font-size: 12px; color: #425269; font-weight: 600; }
+.job-filters label { display: block; margin-bottom: 7px; font-size: 12px; color: var(--sr-text-secondary); font-weight: 600; }
 .job-filters .el-select { width: 100%; }
 .results-bar { display: flex; justify-content: space-between; align-items: center; min-height: 32px; margin-bottom: 12px; }
-.results-bar p { margin: 0; color: #68798c; font-size: 12px; }
+.results-bar p { margin: 0; color: var(--sr-text-muted); font-size: 12px; }
 .job-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .job-pagination { display: flex; justify-content: center; margin-top: 28px; }
-.loading-state, .state-panel { padding: 40px 24px; border: 1px solid #e1eaf5; border-radius: 10px; background: white; }
-.loading-state p { margin: 0 0 24px; color: #586b83; font-size: 14px; }
+.loading-state, .state-panel { padding: 40px 24px; border: 1px solid var(--sr-border); border-radius: 10px; background: white; }
+.loading-state p { margin: 0 0 24px; color: var(--sr-text-muted); font-size: 14px; }
 .state-panel { text-align: center; }
-.state-panel h2 { font-size: 20px; color: #20354e; }
-.state-panel p { color: #586b83; font-size: 14px; line-height: 1.7; }
+.state-panel h2 { font-size: 20px; color: var(--sr-text); }
+.state-panel p { color: var(--sr-text-muted); font-size: 14px; line-height: 1.7; }
 .state-panel :deep(.el-empty) { padding: 0 0 12px; }
 @media (max-width: 1000px) {
   .job-filters { grid-template-columns: repeat(4, 1fr); }

@@ -22,6 +22,9 @@ export function uploadCaseCv(value, file, key) {
   data.append('file', file)
   return pageRequest(`${candidateCase(value)}/cv`, 'post', data, false, key)
 }
+// Reuse the confirmed facts of a library CV instead of uploading the same PDF again.
+export const useLibraryResume = (value, resumeId, key) =>
+  pageRequest(`${candidateCase(value)}/resume`, 'post', { resumeId }, false, key)
 export const caseAction = (value, action, data = {}, key) => pageRequest(`${candidateCase(value)}/${action}`, 'post', data, false, key)
 export const deleteCase = (value, key) => pageRequest(candidateCase(value), 'delete', undefined, false, key)
 
@@ -38,7 +41,9 @@ const label = value => value?.replaceAll('_', ' ').toLowerCase().replace(/(^| )\
 
 export function professionalSummary(professional) {
   return Object.fromEntries(Object.entries(professional).map(([group, facts]) => [
-    group, facts.map(({ evidence, ...fact }) => Object.entries(fact)
+    // Personal and other information read as "Email: …"; a photo is shown as an image, never as text.
+    group, facts.map(({ evidence, imageBase64, ...fact }) => fact.fieldCode || fact.categoryCode
+      ? `${label(fact.fieldCode || fact.categoryCode)}: ${fact.value || '—'}` : Object.entries(fact)
       .filter(([, value]) => value != null && value !== false && value !== '' && (!Array.isArray(value) || value.length))
       .map(([field, value]) => `${field.replace(/([A-Z])/g, ' $1')}: ${value}`).join(', ')).join(' · ') || 'None recorded',
   ]))
@@ -61,6 +66,7 @@ export async function hrCase(value) {
   return {
     caseId: row.caseId, jobTitle: job.title, version: job.version, accessLabel: 'Authorised', resultsVisible: true,
     professional: Object.entries(professionalSummary(professional)).map(([group, value]) => ({ category: label(group), value })),
+    photo: professional?.personal?.find(item => item.fieldCode === 'PHOTO' && item.imageBase64)?.imageBase64 || '',
     versions: { ...versions, matching: versions.matchingRuleVersion, protocol: versions.protocolVersion,
       neutral: versions.neutralModelVersion, biased: versions.biasedModelVersion },
     matching: Array.isArray(matching?.values) && Array.isArray(contributions) ? {

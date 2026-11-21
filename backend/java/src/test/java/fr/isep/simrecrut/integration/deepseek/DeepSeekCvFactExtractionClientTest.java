@@ -126,6 +126,17 @@ class DeepSeekCvFactExtractionClientTest {
         assertEquals(2, calls.get());
     }
 
+    @Test
+    void providerCannotReturnPersonalOrOtherInformation() {
+        ObjectNode draft = validDraft();
+        draft.withObject("/professional").withArray("personal").addObject().put("fieldCode", "FULL_NAME").put("value", "Avery Quill");
+        var calls = new AtomicInteger();
+        var client = client(body -> { calls.incrementAndGet(); return response(draft); });
+        CaseException error = assertThrows(CaseException.class, () -> client.extract(PAGES, CATALOGS));
+        assertEquals(DeepSeekCvFactExtractionClient.INVALID_DRAFT, error.code());
+        assertEquals(2, calls.get());
+    }
+
     private static DeepSeekCvFactExtractionClient client(DeepSeekCvFactExtractionClient.Exchange exchange) {
         return new DeepSeekCvFactExtractionClient(JSON, new LocalResumeCleaner(), "deepseek", "deepseek-flash", exchange);
     }

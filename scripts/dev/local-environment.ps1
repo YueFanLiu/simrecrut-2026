@@ -37,7 +37,9 @@ function Test-LocalStackReady([string]$FrontendUrl, [string]$BackendUrl) {
     try {
         $frontend = Invoke-WebRequest -Uri "$FrontendUrl/login" -UseBasicParsing -TimeoutSec 3
         $backend = Invoke-WebRequest -Uri "$BackendUrl/actuator/health/readiness" -UseBasicParsing -TimeoutSec 3
-        $health = $backend.Content | ConvertFrom-Json
+        # Windows PowerShell 5.1 returns the actuator media type as bytes, not text.
+        $content = if ($backend.Content -is [byte[]]) { [Text.Encoding]::UTF8.GetString($backend.Content) } else { $backend.Content }
+        $health = $content | ConvertFrom-Json
         return $frontend.StatusCode -eq 200 -and $backend.StatusCode -eq 200 -and $health.status -eq 'UP'
     } catch { return $false }
 }

@@ -103,6 +103,7 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
           <section class="panel"><h2>{{ $t("Simulation Parameters") }}</h2><dl>
             <div><dt>{{ $t("Case ID") }}</dt><dd>{{ entry.caseId }}</dd></div><div v-if="entry.jobTitle"><dt>{{ $t("Job") }}</dt><dd>{{ entry.jobTitle }}</dd></div>
             <div v-if="entry.jobVersionId"><dt>{{ $t("Job version") }}</dt><dd>{{ entry.jobVersionId }}</dd></div><div><dt>{{ $t("Professional facts") }}</dt><dd>{{ $t("Confirmed and locked") }}</dd></div>
+            <div v-if="!demoMode"><dt>{{ $t("Original PDF") }}</dt><dd>{{ $t(entry.cleanupStatus === 'COMPLETE' ? 'Deleted after confirmation' : 'Being deleted after confirmation') }}</dd></div>
             <div><dt>{{ $t("Assessment methods") }}</dt><dd>{{ assessmentMethods }}</dd></div><div v-if="demoMode"><dt>{{ $t("Configuration") }}</dt><dd>{{ $t("Fixed frontend mock stages") }}</dd></div>
           </dl></section>
           <section class="panel"><h2>{{ $t("Progress Summary") }}</h2><dl><div><dt>{{ $t("Current stage") }}</dt><dd>{{ $t(entry.stage === 'Ready for review' || ready ? 'Ready to run' : entry.stage) }}</dd></div>
@@ -117,29 +118,29 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
 </template>
 
 <style scoped>
-h1 { margin: 0; color: #132941; font-size: 28px; letter-spacing: -0.7px; }
-h2 { margin: 0 0 16px; font-size: 18px; color: #132941; }
-h3 { margin: 0 0 14px; font-size: 15px; color: #132941; }
-p { color: #586b83; font-size: 14px; line-height: 1.8; }
+h1 { margin: 0; color: var(--sr-ink); font-size: 28px; letter-spacing: -0.7px; }
+h2 { margin: 0 0 16px; font-size: 18px; color: var(--sr-ink); }
+h3 { margin: 0 0 14px; font-size: 15px; color: var(--sr-ink); }
+p { color: var(--sr-text-muted); font-size: 14px; line-height: 1.8; }
 .subtitle { margin: 10px 0 20px; }
-.breadcrumb { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; font-size: 13px; color: #586b83; overflow-wrap: anywhere; }
-.breadcrumb a { color: #176bdf; text-decoration: none; }
+.breadcrumb { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; font-size: 13px; color: var(--sr-text-muted); overflow-wrap: anywhere; }
+.breadcrumb a { color: var(--sr-primary); text-decoration: none; }
 .breadcrumb a:hover { text-decoration: underline; }
 .progress-grid { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr); gap: 22px; }
 .main-column, .side-column { min-width: 0; display: flex; flex-direction: column; gap: 20px; }
-.panel { padding: 24px; border: 1px solid #e1eaf5; background: white; border-radius: 12px; overflow-wrap: anywhere; }
-.panel-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #e1eaf5; }
+.panel { padding: 24px; border: 1px solid var(--sr-border); background: white; border-radius: 12px; overflow-wrap: anywhere; }
+.panel-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--sr-border); }
 .panel-heading h2 { margin: 0; }
 .method-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 24px 0; }
-.method-card { padding: 18px 14px; background: #f6f9fd; border: 1px solid #e1eaf5; border-radius: 8px; }
+.method-card { padding: 18px 14px; background: var(--sr-surface-tint); border: 1px solid var(--sr-border); border-radius: 8px; }
 .method-card p, .muted { font-size: 12px; }
 .error { color: #b42336; }
 .log-panel ol { list-style: none; padding: 0; margin: 0; }
-.log-panel li { display: flex; gap: 20px; padding: 14px 0; border-bottom: 1px solid #edf1f7; color: #586b83; font-size: 13px; line-height: 1.7; }
-time { flex-shrink: 0; color: #176bdf; font-variant-numeric: tabular-nums; }
+.log-panel li { display: flex; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--sr-surface-sunken); color: var(--sr-text-muted); font-size: 13px; line-height: 1.7; }
+time { flex-shrink: 0; color: var(--sr-primary); font-variant-numeric: tabular-nums; }
 dl { margin: 0; font-size: 13px; line-height: 1.7; }
-dl div { display: grid; grid-template-columns: 1fr 1.2fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid #edf1f7; }
-dt { color: #586b83; } dd { margin: 0; color: #132941; }
+dl div { display: grid; grid-template-columns: 1fr 1.2fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--sr-surface-sunken); }
+dt { color: var(--sr-text-muted); } dd { margin: 0; color: var(--sr-ink); }
 .side-column > .el-button { margin: 0; }
 .unavailable { text-align: center; padding: 50px 24px; }
 .panel-heading .el-tag { max-width: 100%; white-space: normal; height: auto; min-height: 24px; }

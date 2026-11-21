@@ -41,8 +41,10 @@ async function logout() {
 
 <style scoped>
 .demo-dashboard { max-width: 800px; padding: 48px 24px; margin: auto; }
-section { margin-top: 32px; padding: 28px; background: white; border: 1px solid #e1eaf5; border-radius: 12px; }
-h1 { font-size: 26px; }
-p { color: #586b83; line-height: 1.7; }
+section { position: relative; overflow: hidden; margin-top: 32px; padding: 36px 32px 32px; background: var(--sr-surface); border: 1px solid var(--sr-border); border-radius: var(--sr-radius-lg); box-shadow: var(--sr-shadow); }
+section::before { content: ''; position: absolute; inset: 0 0 auto; height: 5px; background: var(--sr-brand-gradient); }
+h1 { font-size: 28px; color: var(--sr-ink); letter-spacing: -0.5px; }
+p { color: var(--sr-text-muted); line-height: 1.7; }
 .el-button { margin-top: 12px; }
+:deep(.brand-mark) { justify-content: center; }
 </style>

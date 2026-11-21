@@ -57,18 +57,18 @@ function editField(item, field, value) {
 </template>
 
 <style scoped>
-.fact-group { padding: 24px; border: 1px solid #e1eaf5; border-radius: 10px; background: white; }
+.fact-group { padding: 24px; border: 1px solid var(--sr-border); border-radius: 10px; background: white; }
 .group-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-h2 { margin: 0; color: #20354e; font-size: 17px; }
-.group-heading span, .empty-message { color: #68798c; font-size: 12px; line-height: 1.7; }
-.fact-item { margin-top: 18px; padding: 18px; border: 1px solid #edf1f7; border-radius: 8px; background: #fbfdff; }
+h2 { margin: 0; color: var(--sr-text); font-size: 17px; }
+.group-heading span, .empty-message { color: var(--sr-text-muted); font-size: 12px; line-height: 1.7; }
+.fact-item { margin-top: 18px; padding: 18px; border: 1px solid var(--sr-surface-sunken); border-radius: 8px; background: var(--sr-surface-tint); }
 .item-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-h3 { margin: 0; color: #425269; font-size: 14px; }
+h3 { margin: 0; color: var(--sr-text-secondary); font-size: 14px; }
 .fact-field + .fact-field { margin-top: 16px; }
-label { display: block; margin-bottom: 7px; color: #425269; font-size: 13px; font-weight: 600; }
+label { display: block; margin-bottom: 7px; color: var(--sr-text-secondary); font-size: 13px; font-weight: 600; }
 .el-select { width: 100%; }
 .field-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 5px; }
-.field-actions span { font-size: 10px; color: #68798c; }
+.field-actions span { font-size: 10px; color: var(--sr-text-muted); }
 .field-actions .el-button { font-size: 12px; margin: 0; padding: 4px 0; height: auto; }
 .field-error { margin: 7px 0; color: #b42318; font-size: 12px; line-height: 1.7; }
 .add-button { display: block; margin-top: 18px; }

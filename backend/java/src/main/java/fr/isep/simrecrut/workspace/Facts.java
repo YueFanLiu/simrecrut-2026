@@ -22,6 +22,15 @@ public final class Facts {
           "projects",
           List.of("projectId"));
 
+  /** Optional CV-wide groups: never matching or model inputs, and never confirmed absent. */
+  public static final List<String> PROFILE_GROUPS = List.of("personal", "other");
+  public static final Set<String> PERSONAL_FIELDS = Set.of(
+      "FULL_NAME", "FIRST_NAME", "LAST_NAME", "GENDER", "PHOTO", "EMAIL", "PHONE", "ADDRESS", "CITY",
+      "COUNTRY", "LINKEDIN", "GITHUB", "WEBSITE", "NATIONALITY", "DATE_OF_BIRTH", "OTHER");
+  public static final Set<String> OTHER_CATEGORIES = Set.of(
+      "INTEREST", "VOLUNTEERING", "CERTIFICATION", "AWARD", "ACTIVITY", "PUBLICATION", "REFERENCE", "OTHER");
+  static final int MAX_PHOTO_BASE64 = 400_000;
+
   public static ObjectNode empty() {
     ObjectNode d = JSON.createObjectNode(), p = d.putObject("professional");
     GROUPS.forEach(p::putArray);
@@ -62,7 +71,9 @@ public final class Facts {
     keys(source, Set.of("professional", "warnings"));
     ObjectNode d = source.deepCopy();
     JsonNode p = d.get("professional");
-    keys(p, new HashSet<>(GROUPS));
+    Set<String> allowedGroups = new HashSet<>(GROUPS);
+    allowedGroups.addAll(PROFILE_GROUPS);
+    keys(p, allowedGroups);
     if (!d.has("warnings")) d.putArray("warnings");
     array(d.get("warnings"), "warnings");
     for (JsonNode w : d.get("warnings")) text(w, 1000, false, "warning");
@@ -136,10 +147,54 @@ public final class Facts {
         }
       }
     }
+    for (String group : PROFILE_GROUPS) if (p.has(group)) profile(p.get(group), group);
+    // Contact details belong only in the personal group, never in matched professional facts.
+    ObjectNode matched = d.deepCopy();
+    PROFILE_GROUPS.forEach(((ObjectNode) matched.get("professional"))::remove);
     require(
-        !d.toString().matches("(?s).*([\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|https?://).*"),
+        !matched.toString().matches("(?s).*([\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|https?://).*"),
         "Remove email addresses or URLs from the structured data before saving.");
     return d;
+  }
+
+  private static void profile(JsonNode facts, String group) {
+    array(facts, group);
+    boolean personal = group.equals("personal");
+    String code = personal ? "fieldCode" : "categoryCode";
+    for (JsonNode raw : facts) {
+      require(raw.isObject(), "Each fact must be an object.");
+      ObjectNode item = (ObjectNode) raw;
+      keys(item, personal ? Set.of(code, "value", "imageBase64", "evidence") : Set.of(code, "value", "evidence"));
+      text(item.get(code), 100, true, code);
+      require((personal ? PERSONAL_FIELDS : OTHER_CATEGORIES).contains(item.get(code).asText()), "Invalid " + code + ".");
+      if (!item.has("value")) item.put("value", "");
+      text(item.get("value"), 2000, false, "value");
+      if (item.has("imageBase64") && !item.get("imageBase64").isNull()) {
+        require(item.get(code).asText().equals("PHOTO"), "Only the photo field can contain an image.");
+        text(item.get("imageBase64"), MAX_PHOTO_BASE64, true, "photo");
+        require(item.get("imageBase64").asText().matches("[A-Za-z0-9+/]+={0,2}"), "Invalid photo.");
+      }
+      if (!item.has("evidence")) {
+        ObjectNode e = item.putObject("evidence");
+        e.put("text", "");
+        e.putNull("page");
+        e.put("source", "EXTRACTED");
+      }
+      keys(item.get("evidence"), Set.of("text", "page", "source"));
+      ObjectNode e = (ObjectNode) item.get("evidence");
+      if (!e.has("text")) e.put("text", "");
+      text(e.get("text"), 300, false, "evidence");
+      if (!e.has("page")) e.putNull("page");
+      require(
+          e.get("page").isNull()
+              || (e.get("page").isIntegralNumber() && e.get("page").asInt() >= 1 && e.get("page").asInt() <= 20),
+          "Evidence page must be 1–20.");
+      if (!e.has("source")) e.put("source", "EXTRACTED");
+      require(
+          e.get("source").isTextual()
+              && Set.of("EXTRACTED", "USER_SUPPLIED").contains(e.get("source").asText()),
+          "Invalid evidence source.");
+    }
   }
 
   public static boolean hasFacts(JsonNode d) {

@@ -297,6 +297,7 @@ public class ApiDocumentationConfig {
             case "run" -> "Freeze model versions and queue assessment";
             case "retry" -> "Resume a stored retryable failure";
             case "results" -> "Read five permitted result slots";
+            case "fromResume" -> "Use a confirmed library CV instead of a new upload";
             default -> "Revoke access and queue complete case deletion";
         };
         if (controller.equals("AdminUserController")) return switch (method) {
@@ -328,6 +329,7 @@ public class ApiDocumentationConfig {
             case "confirm" -> "Confirm and lock reviewed professional facts";
             case "cleanup" -> "Retry temporary original cleanup";
             case "delete" -> "Delete an owned resume";
+            case "rename" -> "Rename an owned resume in the library";
             case "extract" -> "Start job requirement extraction";
             case "extraction" -> "Read job extraction progress";
             case "validate" -> "Validate the saved job draft";

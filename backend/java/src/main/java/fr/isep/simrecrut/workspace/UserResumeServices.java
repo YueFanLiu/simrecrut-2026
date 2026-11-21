@@ -46,6 +46,18 @@ public class UserResumeServices {
             }
         };
     }
+    /** Read the reviewed facts of an owned, confirmed library CV so a simulation can reuse them. */
+    public com.fasterxml.jackson.databind.JsonNode confirmedProfessional(long userId, String resumeId) throws Exception {
+        ResumeService store = forUser(userId);
+        synchronized (store) {
+            var row = store.row(resumeId);
+            if (row.path("confirmed").asInt() != 1) {
+                throw new ResumeException(ResumeException.Reason.CONFLICT, "Choose a confirmed CV from your library.");
+            }
+            return Facts.validate(Facts.JSON.readTree(row.path("draft").asText())).get("professional");
+        }
+    }
+
     @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 60000, initialDelay = 10000)
     public synchronized void cleanupExpired() throws Exception {
         if (!Files.isDirectory(root)) return;

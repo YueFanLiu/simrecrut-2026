@@ -32,9 +32,9 @@ const visible = ref(false)
   padding: 4px;
   border: 0;
   background: transparent;
-  color: #68798c;
+  color: var(--sr-text-muted);
   cursor: pointer;
 }
-.password-toggle:focus-visible { outline: 2px solid #176bdf; border-radius: 3px; }
+.password-toggle:focus-visible { outline: 2px solid var(--sr-primary); border-radius: 3px; }
 .password-toggle:disabled { cursor: default; }
 </style>

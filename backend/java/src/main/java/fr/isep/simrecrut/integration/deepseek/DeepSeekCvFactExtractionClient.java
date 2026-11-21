@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import fr.isep.simrecrut.integration.pdf.CvProfileExtractor;
 import fr.isep.simrecrut.integration.pdf.LocalResumeCleaner;
 import fr.isep.simrecrut.service.assessment.CaseException;
 import fr.isep.simrecrut.workspace.Facts;
@@ -65,6 +66,9 @@ public final class DeepSeekCvFactExtractionClient {
             For projects, use sequential IDs and one item per project or activity. Put all its supported codes
             on that item. Quote the project or action itself; a technology name alone does not prove an activity.
             Do not return identifiers, demographic attributes, scores or decisions.
+            Do not return personal or other arrays: the server extracts the personal header (name, contact
+            details, photo) and other sections (interests, volunteering, certifications, awards) locally, so
+            they are never sent to you. Return only the five professional arrays.
             """;
 
     private final ObjectMapper json;
@@ -98,13 +102,18 @@ public final class DeepSeekCvFactExtractionClient {
 
     public ObjectNode extract(byte[] pdf, Supplier<JsonNode> catalogs) throws IOException {
         if (local) {
-            ObjectNode draft = reader.clean("original.pdf", pdf);
+            ObjectNode draft = reader.cleanWithProfile("original.pdf", pdf);
             String version = draft.path("cleanerVersion").asText();
             draft.remove(List.of("schemaVersion", "cleanerVersion", "status"));
             return Facts.validate(draft).put("extractionVersion", version);
         }
         if (exchange == null) throw unavailable();
-        return extract(reader.readPdf(pdf), catalogs.get());
+        List<LocalResumeCleaner.PdfPage> pages = reader.readPdf(pdf);
+        ObjectNode draft = extract(pages, catalogs.get());
+        // The complete CV is reviewed by the candidate: add the locally extracted personal and other groups.
+        ((ObjectNode) draft.get("professional")).setAll(new CvProfileExtractor().extract(pages, pdf));
+        return Facts.validate(draft.deepCopy().without("extractionVersion")).put("extractionVersion",
+                draft.path("extractionVersion").asText());
     }
 
     ObjectNode extract(List<LocalResumeCleaner.PdfPage> pages, JsonNode catalogs) {

@@ -44,6 +44,9 @@ public class CandidateCaseService {
     private fr.isep.simrecrut.integration.ml.CaseModelInputs modelInputs;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     public void setModelInputs(fr.isep.simrecrut.integration.ml.CaseModelInputs inputs) { this.modelInputs = inputs; }
+    private fr.isep.simrecrut.workspace.UserResumeServices resumes;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setResumes(fr.isep.simrecrut.workspace.UserResumeServices value) { this.resumes = value; }
     @Value("${simrecrut.cases.objective-only:false}")
     private boolean objectiveOnly;
 
@@ -116,6 +119,35 @@ public class CandidateCaseService {
         } finally {
             if (!retained[0]) files.discard(staged);
         }
+    }
+
+    /** Reuse the confirmed facts of a library CV instead of uploading the PDF again; no file is stored. */
+    @PreAuthorize("hasRole('CANDIDATE') and hasAuthority('simrecrut:case:upload')")
+    public OperationResult<JsonNode> fromResume(AccountPrincipal actor, String id, String key, ResumeSourceRequest body) {
+        if (resumes == null) throw CaseException.dependency();
+        validId(id);
+        JsonNode professional;
+        try { professional = resumes.confirmedProfessional(actor.userId(), body.resumeId()); }
+        catch (fr.isep.simrecrut.service.resume.ResumeException error) {
+            throw new CaseException(409, "RESUME_UNAVAILABLE", "Choose a confirmed CV from your library.");
+        } catch (RuntimeException error) { throw error; }
+        catch (Exception error) { throw CaseException.dependency(); }
+        return mutation(actor, key, id, "FROM_RESUME", body, row -> {
+            state(row, "AWAITING_UPLOAD");
+            ObjectNode draft = json.createObjectNode();
+            draft.set("professional", professional.deepCopy());
+            draft.putArray("warnings").add("These facts come from your CV library. Check them against this job before confirming.");
+            draft = fr.isep.simrecrut.workspace.Facts.validate(draft);
+            draft.put("extractionVersion", "library-cv");
+            draft.putArray("confirmedAbsent");
+            if (bundle(row).protocol().dimensionCount() == 39) {
+                if (modelInputs == null) throw CaseException.dependency();
+                modelInputs.prepared(row, modelInputs.prepareWithoutPdf(draft.path("professional")));
+            }
+            row.draftJson = draft.toString(); row.processingStatus = "REVIEW_REQUIRED"; row.stage = "REVIEW";
+            row.uploadedAt = now(); save(row);
+            return new Applied(row, 200, action(row));
+        });
     }
 
     @PreAuthorize("hasRole('CANDIDATE') and hasAuthority('simrecrut:case:edit')")
@@ -309,6 +341,7 @@ public class CandidateCaseService {
 
     private void authorize(AccountPrincipal actor, String action) {
         String permission = switch (action) { case "ATTRIBUTES", "EDIT", "MODEL_INPUTS" -> "edit"; case "RETRY" -> "run";
+            case "FROM_RESUME" -> "upload";
             default -> action.toLowerCase(Locale.ROOT); };
         if (actor == null || db.lockActor(actor.userId(), actor.securityVersion()) == null
                 || roles.findByUserId(actor.userId()).stream().noneMatch(r -> r.getRoleCode() == AccountRole.CANDIDATE)

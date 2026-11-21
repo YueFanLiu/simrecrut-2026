@@ -31,22 +31,25 @@ async function signOut() { await auth.logout(); router.replace({ name: 'Login' }
 
 <style scoped>
 .admin-layout { min-height: 100svh; display: flex; flex-direction: column; }
-header { background: white; border-bottom: 1px solid #e1eaf5; }
+header { position: sticky; top: 0; z-index: 20; background: var(--sr-surface); border-bottom: 1px solid var(--sr-border); box-shadow: var(--sr-shadow-sm); }
 .header-content { max-width: 1440px; margin: auto; padding: 18px 32px; display: flex; align-items: center; gap: 28px; }
-:deep(.brand-mark span) { font-size: 25px; } :deep(.brand-mark svg) { width: 32px; height: 32px; }
-.workspace-label, .user-name { color: #586b83; font-size: 13px; }
+:deep(.brand-mark .brand-name) { font-size: 25px; } :deep(.brand-mark svg) { width: 32px; height: 32px; }
+.workspace-label, .user-name { color: var(--sr-text-muted); font-size: 13px; }
+.workspace-label { padding: 4px 12px; border-radius: 999px; background: var(--sr-accent-50); color: var(--sr-accent-strong); font-weight: 650; border: 1px solid var(--sr-accent-100); }
 .session-controls { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .session-controls .el-button { margin: 0; }
 .workspace { flex: 1; width: min(1440px, 100%); margin: auto; display: grid; grid-template-columns: 210px minmax(0, 1fr); }
-.sidebar { padding: 28px 18px; border-right: 1px solid #e1eaf5; background: #f8fbff; }
-nav { display: flex; flex-direction: column; gap: 12px; }
-nav a, nav button { border: 0; padding: 12px; text-align: left; border-radius: 6px; font-size: 13px; text-decoration: none; }
-nav a { color: #586b83; background: transparent; }
-nav a[aria-current="page"] { color: #176bdf; background: #e7f0ff; font-weight: 600; }
-nav button { color: #8491a3; background: transparent; }
-.sidebar p { color: #8491a3; font-size: 12px; line-height: 1.8; padding: 12px; }
-main { padding: 32px; min-width: 0; }
-footer { text-align: center; color: #586b83; padding: 20px; font-size: 12px; }
+.sidebar { padding: 28px 16px; border-right: 1px solid var(--sr-border); background: var(--sr-surface); }
+nav { display: flex; flex-direction: column; gap: 4px; }
+nav a, nav button { position: relative; border: 0; padding: 11px 14px; text-align: left; border-radius: 8px; font-size: 13.5px; text-decoration: none; transition: background-color .15s, color .15s; }
+nav a { color: var(--sr-text-secondary); background: transparent; font-weight: 500; }
+nav a:hover { color: var(--sr-ink); background: var(--sr-surface-tint); }
+nav a[aria-current="page"] { color: var(--sr-ink); background: var(--sr-primary-50); font-weight: 650; }
+nav a[aria-current="page"]::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: var(--sr-accent); }
+nav button { color: var(--sr-text-subtle); background: transparent; }
+.sidebar p { color: var(--sr-text-subtle); font-size: 12px; line-height: 1.8; padding: 12px; }
+main { padding: 32px 36px; min-width: 0; }
+footer { text-align: center; color: var(--sr-text-muted); padding: 20px; font-size: 12px; border-top: 1px solid var(--sr-border); background: var(--sr-surface); }
 @media (max-width: 1000px) { .workspace-label, .user-name { display: none; } .workspace { grid-template-columns: 180px minmax(0, 1fr); } main { padding: 24px; } }
-@media (max-width: 760px) { .workspace { grid-template-columns: minmax(0, 1fr); } .sidebar { border-right: 0; border-bottom: 1px solid #e1eaf5; padding: 14px 16px; } nav { flex-direction: row; flex-wrap: wrap; gap: 6px; } .sidebar p { display: none; } main { padding: 24px 16px; } .header-content { flex-wrap: wrap; gap: 14px; padding: 16px; } .session-controls { gap: 6px; } .session-controls .el-button { padding: 8px 10px; font-size: 12px; } }
+@media (max-width: 760px) { .workspace { grid-template-columns: minmax(0, 1fr); } .sidebar { border-right: 0; border-bottom: 1px solid var(--sr-border); padding: 14px 16px; } nav { flex-direction: row; flex-wrap: wrap; gap: 6px; } .sidebar p { display: none; } main { padding: 24px 16px; } .header-content { flex-wrap: wrap; gap: 14px; padding: 16px; } .session-controls { gap: 6px; } .session-controls .el-button { padding: 8px 10px; font-size: 12px; } }
 </style>

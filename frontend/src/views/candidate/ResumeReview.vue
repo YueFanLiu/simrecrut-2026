@@ -1,4 +1,4 @@
-<!-- C04: Review five professional fact groups without editing identity fields. -->
+<!-- C04: Review every CV section: personal information, five professional groups and other information. -->
 <script setup>
 import { t, dateLocale } from '../../i18n/index.js'
 
@@ -18,11 +18,16 @@ const loading = ref(false)
 const loadError = ref('')
 const actionError = ref('')
 let deletionKey
-const groups = ["skills", "experience", "education", "languages", "projects"];
+// Recruiters never see the PDF, so every CV section is extracted and reviewed here.
+const professionalGroups = ["skills", "experience", "education", "languages", "projects"];
+const groups = ["personal", ...professionalGroups, "other"];
 const editors = ref({});
-const hasFacts = computed(() => groups.some(group => editors.value[group]?.length));
-const activeGroup = ref("skills");
-const groupLabels = { skills: "Skills", experience: "Experience", education: "Education", languages: "Languages", projects: "Projects" };
+const hasFacts = computed(() => professionalGroups.some(group => editors.value[group]?.length));
+const activeGroup = ref("personal");
+const groupLabels = { personal: "Personal information", skills: "Skills", experience: "Experience", education: "Education",
+  languages: "Languages", projects: "Projects", other: "Other information" };
+const groupHints = { personal: "Check your name, contact details and photo. Recruiters see these reviewed values instead of your PDF.",
+  other: "Interests, volunteering, certifications, awards and anything else from your CV." };
 const router = useRouter();
 const pendingActions = new Map();
 async function performAction(id, action, data = {}) {
@@ -98,12 +103,14 @@ async function publish() {
     const professional = Object.fromEntries(
       groups.map((group) => [group, editors.value[group] || []]),
     );
-    if (!record.value.confirmed) await performAction(id, "confirm", {
+    let originalRemoved = false;
+    if (!record.value.confirmed) originalRemoved = Boolean((await performAction(id, "confirm", {
       draft: { professional, warnings: record.value.draft?.warnings || [] },
       confirmed: true,
       expectedRevision: record.value.revision,
-    });
+    })).data?.originalRemoved);
     factsLocked = true;
+    if (originalRemoved) ElMessage.success(t("Facts confirmed. Your original PDF has been deleted."));
     if (stopped || route.params.id !== id) return;
     await refresh();
     if (!record.value || stopped || route.params.id !== id) return;
@@ -158,7 +165,8 @@ watch(editors, () => { confirmed.value = false }, { deep: true });
   <CandidateLayout>
     <el-button text :disabled="busy" @click="router.push('/candidate/resumes')">{{ $t("Back to my CVs") }}</el-button>
     <section class="review-panel" :aria-busy="loading || busy">
-      <h1>{{ $t(record?.filename || 'Review professional facts') }}</h1>
+      <h1>{{ record?.display_name || record?.filename || $t('Review professional facts') }}</h1>
+      <p v-if="record?.display_name && record.display_name !== record.filename" class="expiry">{{ $t("File:") }} {{ record.filename }}</p>
       <p>{{ $t("Review and correct your professional facts before confirming. Confirmed facts are locked.") }}</p>
       <p v-if="record?.expires_at" class="expiry">{{ $t("Expires:") }} {{ $t(new Date(record.expires_at).toLocaleString(dateLocale)) }}</p>
       <p v-if="loading" role="status">{{ $t("Loading CV...") }}</p>
@@ -167,6 +175,8 @@ watch(editors, () => { confirmed.value = false }, { deep: true });
       <p v-if="!record && !loading && !loadError">{{ $t("No connected CV is loaded.") }}</p>
       <template v-if="record">
         <el-button :disabled="busy || loading" @click="refresh">{{ $t("Reload saved facts") }}</el-button>
+        <el-alert v-if="record.confirmed && !record.originalAvailable" type="success" show-icon :closable="false"
+          :title="$t(&quot;Your original PDF was deleted after confirmation. Only the reviewed facts are kept.&quot;)" />
         <el-alert v-if="record.status === 'EXTRACTING'" :title="$t(&quot;Extracting professional facts…&quot;)"
           type="info" :closable="false" />
         <el-alert v-if="record.error" :title="$t(uiMessage(record.error, 'Extraction failed. Please retry or upload another CV.'))"
@@ -176,7 +186,7 @@ watch(editors, () => { confirmed.value = false }, { deep: true });
         </p>
         <el-tabs v-if="record.status !== 'EXTRACTING'" v-model="activeGroup">
           <el-tab-pane v-for="group in groups" :key="group" :label="$t(groupLabels[group])" :name="group">
-            <p>{{ $t("Check each fact against its supporting excerpt. Add missing information or correct any mistakes.") }}</p>
+            <p>{{ $t(groupHints[group] || "Check each fact against its supporting excerpt. Add missing information or correct any mistakes.") }}</p>
             <ResumeFactsTable v-model="editors[group]" :group="group"
               :locked="!!record.confirmed || busy || loading" />
           </el-tab-pane>
@@ -196,6 +206,7 @@ watch(editors, () => { confirmed.value = false }, { deep: true });
           <p v-if="!record.confirmed && !hasFacts && record.status !== 'EXTRACTING'">{{ $t("Add a professional fact before confirming this CV.") }}</p>
           <el-checkbox v-if="!record.confirmed" v-model="confirmed"
             :disabled="busy || loading || !hasFacts || record.status === 'EXTRACTING'"> {{ $t("I have reviewed these professional facts.") }}</el-checkbox>
+          <p v-if="!record.confirmed" class="expiry">{{ $t("Your original PDF is deleted as soon as you confirm.") }}</p>
           <el-button v-hasPermi="['simrecrut:resume:confirm']" type="primary" :loading="busy"
             :disabled="busy || loading || (!record.confirmed && (!confirmed || !hasFacts)) || record.status === 'EXTRACTING' || record.cloud_revision === record.revision"
             @click="publish">{{ $t(record.confirmed
@@ -208,15 +219,15 @@ watch(editors, () => { confirmed.value = false }, { deep: true });
 </template>
 
 <style scoped>
-.review-panel { background: white; border: 1px solid #e1eaf5; border-radius: 12px; padding: 28px; margin-top: 14px; }
-h1 { margin: 0; color: #132941; font-size: 26px; overflow-wrap: anywhere; }
-p { color: #586b83; font-size: 14px; line-height: 1.7; }
+.review-panel { background: white; border: 1px solid var(--sr-border); border-radius: 12px; padding: 28px; margin-top: 14px; }
+h1 { margin: 0; color: var(--sr-ink); font-size: 26px; overflow-wrap: anywhere; }
+p { color: var(--sr-text-muted); font-size: 14px; line-height: 1.7; }
 .expiry { font-size: 12px; }
 .el-tabs { margin-top: 20px; }
 .el-alert { margin: 16px 0; }
 .review-actions, .confirmation { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 24px; }
 .review-actions .el-button, .confirmation .el-button { margin: 0; }
-.confirmation { padding-top: 20px; border-top: 1px solid #e1eaf5; justify-content: space-between; }
+.confirmation { padding-top: 20px; border-top: 1px solid var(--sr-border); justify-content: space-between; }
 :deep(.el-checkbox) { white-space: normal; height: auto; }
 :deep(.el-checkbox__label) { line-height: 1.7; }
 @media (max-width: 600px) {

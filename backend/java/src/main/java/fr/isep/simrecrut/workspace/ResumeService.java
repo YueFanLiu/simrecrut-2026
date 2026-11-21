@@ -68,7 +68,7 @@ public class ResumeService {
       try (ResultSet columns = s.executeQuery("PRAGMA table_info(resumes)")) {
         while (columns.next()) names.add(columns.getString("name"));
       }
-      for (String column : List.of("expires_at", "confirmed_at", "deletion_reason"))
+      for (String column : List.of("expires_at", "confirmed_at", "deletion_reason", "display_name"))
         if (!names.contains(column)) s.execute("ALTER TABLE resumes ADD COLUMN " + column + " TEXT");
       if (!names.contains("publication_attempted")) s.execute("ALTER TABLE resumes ADD COLUMN publication_attempted INTEGER NOT NULL DEFAULT 0");
       s.execute("CREATE TABLE IF NOT EXISTS deletion_receipts(id TEXT PRIMARY KEY,reason TEXT NOT NULL,deleted_at TEXT NOT NULL)");
@@ -124,7 +124,7 @@ public class ResumeService {
   List<ObjectNode> list() throws SQLException {
     List<ObjectNode> rows = query(
         "SELECT"
-            + " id,filename,extension,bytes,pages,status,confirmed,revision,cloud_revision,created_at,updated_at,error,temporary_original,expires_at,confirmed_at"
+            + " id,filename,display_name,extension,bytes,pages,status,confirmed,revision,cloud_revision,created_at,updated_at,error,temporary_original,expires_at,confirmed_at"
             + " FROM resumes WHERE status<>'PURGING' AND (expires_at IS NULL OR expires_at>?) ORDER BY created_at DESC", now());
     for (ObjectNode item : rows) item.put("originalAvailable", originalAvailable(item));
     return rows;
@@ -353,6 +353,7 @@ public class ResumeService {
     } else throw new IllegalArgumentException("Supported formats: PDF, images, DOCX, and TXT.");
     Facts.require(VISUAL.contains(ext) || !text.isBlank(), "The file contains no readable text.");
     Facts.require(text.length() <= 60000, "Resume text exceeds 60,000 characters.");
+    String displayName = displayName(body.path("displayName").asText(""), name);
     String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
     List<ObjectNode> exists = query("SELECT id FROM resumes WHERE sha256=?", hash);
     if (!exists.isEmpty()) {
@@ -379,12 +380,30 @@ public class ResumeService {
           Facts.empty().toString(),
           now(),
           now());
-      patch(id, fields("temporary_original", 1, "expires_at", clock.instant().plus(Duration.ofHours(24)).toString()));
+      patch(id, fields("temporary_original", 1, "display_name", displayName,
+          "expires_at", clock.instant().plus(Duration.ofHours(24)).toString()));
     } catch (Exception e) {
       Files.deleteIfExists(file);
       throw e;
     }
     return Map.of("id", id, "duplicate", false);
+  }
+
+  /** A candidate-chosen library label; the stored file name is never changed. */
+  static String displayName(String requested, String filename) {
+    String value = requested == null ? "" : requested.replaceAll("[\\p{Cntrl}\\s]+", " ").strip();
+    if (value.isEmpty()) value = filename.replaceFirst("(?i)\\.pdf$", "").strip();
+    if (value.isEmpty()) value = filename;
+    return value.length() > 120 ? value.substring(0, 120).strip() : value;
+  }
+
+  synchronized Object rename(String id, JsonNode body) throws Exception {
+    Facts.keys(body, Set.of("displayName"));
+    ObjectNode r = row(id);
+    String value = displayName(body.path("displayName").asText(""), r.path("filename").asText());
+    // Renaming changes only the library label, not the reviewed facts or their revision.
+    execute("UPDATE resumes SET display_name=? WHERE id=?", value, id);
+    return Map.of("id", id, "displayName", value);
   }
 
   List<byte[]> images(ObjectNode r, Integer only) throws Exception {
@@ -471,6 +490,7 @@ public class ResumeService {
             "expires_at", confirm ? clock.instant().plus(Duration.ofDays(30)).toString() : r.path("expires_at").asText(null),
             "reference_month",
             confirm ? YearMonth.now(ZoneOffset.UTC).toString() : null));
+    if (confirm) return Map.of("saved", true, "originalRemoved", removeConfirmedOriginal(id));
     return Map.of("saved", true);
   }
 
@@ -484,7 +504,7 @@ public class ResumeService {
     processing.add(id);
     FutureTask<Void> task = new FutureTask<>(()->{
       try {
-        ObjectNode draft = new fr.isep.simrecrut.integration.pdf.LocalResumeCleaner().clean(
+        ObjectNode draft = new fr.isep.simrecrut.integration.pdf.LocalResumeCleaner().cleanWithProfile(
             row.path("filename").asText(), Files.readAllBytes(originalPath(row)));
         draft.remove(List.of("schemaVersion", "cleanerVersion", "status"));
         draft = Facts.validate(draft);
@@ -538,7 +558,7 @@ public class ResumeService {
           SCHEMA,
           PROMPT,
           r.path("model_name").asText(),
-          d.get("professional").toString(),
+          publishedProfessional(d).toString(),
           d.get("warnings").toString(),
           r.path("reference_month").asText(),
           Timestamp.from(Instant.parse(r.path("confirmed_at").asText(r.path("updated_at").asText()))),
@@ -556,6 +576,13 @@ public class ResumeService {
         "table", "sim_cv_cleaned", "originalRemoved", removed);
 
   }
+  /** The research table receives reviewed professional facts, never the personal header or photo. */
+  static JsonNode publishedProfessional(ObjectNode draft) {
+    ObjectNode professional = draft.get("professional").deepCopy();
+    professional.remove("personal");
+    return professional;
+  }
+
   Path originalPath(ObjectNode row) {
     return data.resolve("originals").resolve(row.path("id").asText() + row.path("extension").asText());
   }
@@ -577,6 +604,19 @@ public class ResumeService {
     } catch (IOException ex) {
       patch(id, fields("error", "Cloud upload succeeded. Temporary-file cleanup pending; retry cleanup."));
       return false;
+    }
+  }
+
+  /** The reviewed facts replace the PDF: delete the temporary original as soon as they are confirmed. */
+  synchronized boolean removeConfirmedOriginal(String id) throws Exception {
+    ObjectNode row = row(id);
+    if (row.path("temporary_original").asInt() != 1 || row.path("confirmed").asInt() != 1) return false;
+    try {
+      Files.deleteIfExists(originalPath(row));
+      patch(id, fields("original_text", "", "redacted_text", ""));
+      return true;
+    } catch (IOException ex) {
+      return false; // The scheduled sweep retries the deletion.
     }
   }
 
@@ -626,6 +666,7 @@ public class ResumeService {
         cancel(id);
         purge(id);
       } else if (record.path("confirmed").asInt() == 1 && record.path("cloud_revision").asInt(-1) == record.path("revision").asInt()) cleanupOriginal(id);
+      else if (record.path("confirmed").asInt() == 1 && originalAvailable(record)) removeConfirmedOriginal(id);
     }
   }
 

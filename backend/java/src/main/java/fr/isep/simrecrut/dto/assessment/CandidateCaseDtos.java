@@ -27,6 +27,8 @@ public final class CandidateCaseDtos {
             @NotNull @Positive Long revision) implements StrictRequest { }
     public record ConfirmRequest(@NotNull @Positive Long revision, @NotNull @AssertTrue Boolean confirmed)
             implements StrictRequest { }
+    public record ResumeSourceRequest(@NotBlank @Pattern(regexp = "[a-f0-9]{32}") String resumeId)
+            implements StrictRequest { }
     public record EmptyRequest() implements StrictRequest { }
     public record CaseAction(String caseId, String processingStatus, long revision, LocalDateTime expiresAt) { }
     public record CaseStatus(String caseId, String processingStatus, String stage, boolean retryable,

@@ -120,6 +120,35 @@ class CandidateCaseWorkflowTest {
         assertFalse(java.nio.file.Files.exists(temporary.resolve(id)));
     }
 
+    @Test void confirmedLibraryCvReplacesUploadAndOpensReviewWithoutExtraction() throws Exception {
+        var library = mock(fr.isep.simrecrut.workspace.UserResumeServices.class);
+        String resumeId = "a".repeat(32), missing = "b".repeat(32);
+        JsonNode professional = f.json.readTree("{\"personal\":[{\"fieldCode\":\"EMAIL\",\"value\":\"person@example.test\"}],"
+                + "\"skills\":[{\"skillCode\":\"Java\",\"evidence\":{\"text\":\"Java\",\"page\":1,\"source\":\"EXTRACTED\"}}],"
+                + "\"experience\":[],\"education\":[],\"languages\":[],\"projects\":[],"
+                + "\"other\":[{\"categoryCode\":\"INTEREST\",\"value\":\"Chess\"}]}");
+        when(library.confirmedProfessional(1L, resumeId)).thenReturn(professional);
+        when(library.confirmedProfessional(1L, missing)).thenThrow(new fr.isep.simrecrut.service.resume.ResumeException(
+                fr.isep.simrecrut.service.resume.ResumeException.Reason.CONFLICT, "Choose a confirmed CV from your library."));
+        f.service.setResumes(library);
+        String id = create(), key = key();
+        var body = new ResumeSourceRequest(resumeId);
+        assertEquals(200, f.service.fromResume(f.actor, id, key, body).status());
+        assertEquals(200, f.service.fromResume(f.actor, id, key, body).status());
+        assertTrue(f.tasks.isEmpty());
+        assertEquals("REVIEW_REQUIRED", f.service.status(f.actor, id).processingStatus());
+        var draft = f.service.draft(f.actor, id);
+        assertEquals("Java", draft.professional().path("skills").get(0).path("skillCode").asText());
+        assertEquals("EXTRACTED", draft.professional().path("skills").get(0).path("evidence").path("source").asText());
+        assertEquals("person@example.test", draft.professional().path("personal").get(0).path("value").asText());
+        assertEquals("Chess", draft.professional().path("other").get(0).path("value").asText());
+        assertEquals(409, assertThrows(CaseException.class, () -> f.service.fromResume(f.actor, id, key(), body)).status());
+        String other = create();
+        assertEquals(409, assertThrows(CaseException.class,
+                () -> f.service.fromResume(f.actor, other, key(), new ResumeSourceRequest(missing))).status());
+        assertEquals("AWAITING_UPLOAD", f.cases.get(other).processingStatus);
+    }
+
     @Test void missingModelTransportBlocksRunWithoutDiscardingConfirmedFacts() throws Exception {
         String id = confirmed(); when(f.predictions.available()).thenReturn(false);
         assertEquals(503, assertThrows(CaseException.class, () -> f.service.run(f.actor, id, key())).status());

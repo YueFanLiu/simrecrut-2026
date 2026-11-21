@@ -45,18 +45,19 @@ async function signOut() {
 
 <style scoped>
 .candidate-layout { min-height: 100svh; display: flex; flex-direction: column; }
-header { background: white; border-bottom: 1px solid #e1eaf5; }
+header { position: sticky; top: 0; z-index: 20; background: var(--sr-surface); border-bottom: 1px solid var(--sr-border); box-shadow: var(--sr-shadow-sm); }
 .header-content { display: flex; align-items: center; gap: 32px; max-width: 1240px; margin: auto; padding: 18px 32px; }
-:deep(.brand-mark span) { font-size: 25px; letter-spacing: -0.8px; }
+:deep(.brand-mark .brand-name) { font-size: 25px; letter-spacing: -0.8px; }
 :deep(.brand-mark svg) { width: 32px; height: 32px; }
 nav { display: flex; align-self: stretch; align-items: center; gap: 24px; }
-.jobs-link { color: #586b83; font-size: 14px; font-weight: 600; text-decoration: none; padding: 10px 2px; border-bottom: 2px solid transparent; }
-.current-link { color: #176bdf; border-bottom-color: #176bdf; }
+.jobs-link { color: var(--sr-text-secondary); font-size: 14px; font-weight: 600; text-decoration: none; padding: 10px 2px; border-bottom: 3px solid transparent; transition: color .15s, border-color .15s; }
+.jobs-link:hover { color: var(--sr-ink); }
+.current-link { color: var(--sr-ink); border-bottom-color: var(--sr-accent); }
 .session-controls { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .session-controls .el-button { margin: 0; }
-.user-name { max-width: 160px; overflow-wrap: anywhere; margin-right: 6px; color: #586b83; font-size: 13px; }
+.user-name { max-width: 160px; overflow-wrap: anywhere; margin-right: 6px; color: var(--sr-text-muted); font-size: 13px; }
 main { flex: 1; width: min(1240px, 100%); margin: auto; padding: 32px; }
-footer { padding: 16px 24px 24px; color: #60728a; text-align: center; font-size: 12px; line-height: 1.7; }
+footer { border-top: 1px solid var(--sr-border); background: var(--sr-surface); padding: 16px 24px 24px; color: var(--sr-text-muted); text-align: center; font-size: 12px; line-height: 1.7; }
 footer span { margin: 0 8px; }
 @media (max-width: 1000px) {
   .header-content { gap: 20px; }
@@ -65,7 +66,7 @@ footer span { margin: 0 8px; }
 @media (max-width: 700px) {
   .header-content { flex-wrap: wrap; gap: 14px; padding: 16px; }
   :deep(.brand-mark) { gap: 8px; }
-  :deep(.brand-mark span) { font-size: 22px; }
+  :deep(.brand-mark .brand-name) { font-size: 22px; }
   :deep(.brand-mark svg) { width: 28px; height: 28px; }
   .session-controls { gap: 6px; }
   .session-controls .el-button { padding: 8px 10px; font-size: 12px; }

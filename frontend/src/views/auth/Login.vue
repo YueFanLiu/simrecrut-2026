@@ -98,14 +98,14 @@ async function submit() {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: #f3f6fb;
+  background: var(--sr-surface-tint);
   padding: 24px;
 }
 .login-card {
   width: min(420px, 100%);
 }
 .login-card h1 {
-  color: #2456a6;
+  color: var(--sr-primary-dark);
 }
 .login-card img {
   max-height: 60px;
@@ -117,7 +117,7 @@ async function submit() {
   margin-top: 16px;
 }
 .muted {
-  color: #64748b;
+  color: var(--sr-text-muted);
   font-size: 13px;
 }
 </style>

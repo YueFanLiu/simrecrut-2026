@@ -16,7 +16,15 @@ public final class ResumeDtos {
 
     public record ImportRequest(
             @NotBlank @Size(max = 255) @Pattern(regexp = "(?i).+\\.pdf") String filename,
-            @NotBlank @Size(max = 13_981_016) String content) {
+            @NotBlank @Size(max = 13_981_016) String content,
+            @Size(max = 120) String displayName) {
+
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public ImportRequest { }
+
+        public ImportRequest(String filename, String content) {
+            this(filename, content, null);
+        }
 
         @JsonAnySetter
         public void rejectUnknown(String name, JsonNode value) {
@@ -42,6 +50,14 @@ public final class ResumeDtos {
         @Override
         public String toString() {
             return "EditRequest[redacted]";
+        }
+    }
+
+    public record RenameRequest(@NotNull @Size(max = 120) String displayName) {
+
+        @JsonAnySetter
+        public void rejectUnknown(String name, JsonNode value) {
+            throw new IllegalArgumentException("Unsupported request field.");
         }
     }
 

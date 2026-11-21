@@ -5,13 +5,16 @@ import { demoMode } from '../../../config/runtime.js'
 import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElAlert, ElButton, ElDialog, ElEmpty } from 'element-plus'
+import { ElAlert, ElButton, ElDialog, ElEmpty, ElOption, ElSelect } from 'element-plus'
 import CandidateLayout from '../../../layouts/CandidateLayout.vue'
 import CvUploadCard from '../../../components/simrecrut/CvUploadCard.vue'
 import CaseProgressStepper from '../../../components/simrecrut/CaseProgressStepper.vue'
 import { isCaseProcessing, useCasesStore } from '../../../store/modules/cases.js'
 import { extractionScenario } from '../../../config/demo.js'
 import { formatCvSize } from '../../../utils/cv-validation.js'
+import { listResumes } from '../../../api/resumes.js'
+import { useLibraryResume } from '../../../api/cases.js'
+import useUserStore from '../../../store/modules/user.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -29,6 +32,37 @@ const canChooseFile = computed(() => entry.value && !entry.value.confirmedAt && 
 const expiresAt = computed(() => entry.value?.expiresAt ? new Intl.DateTimeFormat(dateLocale.value, {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris',
 }).format(new Date(entry.value.expiresAt)) : '—')
+
+// A confirmed library CV can replace a new upload: its reviewed facts open directly in the review step.
+const user = useUserStore()
+const library = ref([])
+const libraryChoice = ref('')
+const usingLibrary = ref(false)
+let libraryKey
+const canUseLibrary = computed(() => !demoMode && canChooseFile.value
+  && user.permissions.includes('simrecrut:resume:list'))
+async function loadLibrary() {
+  if (!canUseLibrary.value) return
+  try {
+    const rows = (await listResumes()).data || []
+    if (connectedActive) library.value = rows.filter(row => row.confirmed)
+  } catch { if (connectedActive) library.value = [] }
+}
+async function useLibrary() {
+  if (!libraryChoice.value || usingLibrary.value || !canChooseFile.value) return
+  usingLibrary.value = true
+  const id = String(route.params.caseId)
+  libraryKey ||= crypto.randomUUID()
+  try {
+    await useLibraryResume(id, libraryChoice.value, libraryKey)
+    libraryKey = undefined
+    if (connectedActive && route.params.caseId === id) await router.push({ name: 'CvReview', params: { caseId: id } })
+  } catch (error) {
+    if (error.status >= 400 && error.status < 500) libraryKey = undefined
+    ElMessage.error(t(error.message || 'This CV could not be used. Upload a PDF instead.'))
+  } finally { usingLibrary.value = false }
+}
+watch(canUseLibrary, value => { if (value && !library.value.length) loadLibrary() }, { immediate: true })
 
 async function upload() {
   if (!selected.value || !canChooseFile.value || uploading.value) return
@@ -66,6 +100,14 @@ async function refreshConnectedCase() {
 }
 watch(() => route.params.caseId, refreshConnectedCase)
 refreshConnectedCase()
+// After an upload, open the review as soon as extraction finishes instead of waiting for another click.
+watch(ready, (value, previous) => {
+  if (!demoMode && value && previous === false && processingSeen && entry.value) {
+    router.push({ name: 'CvReview', params: { caseId: entry.value.caseId } })
+  }
+})
+let processingSeen = false
+watch(processing, value => { if (value) processingSeen = true }, { immediate: true })
 const connectedTimer = setInterval(() => { if (!demoMode && processing.value && !polling) refreshConnectedCase() }, 2000)
 onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterval(connectedTimer) })
 </script>
@@ -100,6 +142,15 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
       <CaseProgressStepper :ready-for-review="ready" />
       <div class="upload-grid">
         <div class="upload-column">
+          <section v-if="canUseLibrary && library.length" class="library-panel" aria-labelledby="library-choice-title">
+            <h2 id="library-choice-title">{{ $t("Use a CV from your library") }}</h2>
+            <p>{{ $t("Reuse the facts you already reviewed. No new upload is needed.") }}</p>
+            <ElSelect v-model="libraryChoice" :placeholder="$t('Choose a confirmed CV')" :aria-label="$t('Choose a confirmed CV')">
+              <ElOption v-for="row in library" :key="row.id" :value="row.id" :label="row.display_name || row.filename" />
+            </ElSelect>
+            <ElButton type="primary" :disabled="!libraryChoice" :loading="usingLibrary" @click="useLibrary">{{ $t("Use this CV") }}</ElButton>
+            <p class="divider">{{ $t("Or upload a new PDF") }}</p>
+          </section>
           <CvUploadCard v-if="canChooseFile" :selected="selected" @select="selected = $event" />
           <div v-if="entry.file" class="file-panel">
             <h2>{{ $t(ready ? 'PDF Accepted for the Demo' : 'Selected PDF') }}</h2>
@@ -166,37 +217,41 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
 </template>
 
 <style scoped>
-.breadcrumb { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; color: #586b83; font-size: 13px; line-height: 1.7; }
-.breadcrumb a { color: #176bdf; text-decoration: none; }
+.breadcrumb { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; color: var(--sr-text-muted); font-size: 13px; line-height: 1.7; }
+.breadcrumb a { color: var(--sr-primary); text-decoration: none; }
 .breadcrumb a:hover { text-decoration: underline; }
-.breadcrumb a:focus-visible { outline: 2px solid #176bdf; outline-offset: 3px; }
-h1 { margin: 0; color: #132941; font-size: 28px; line-height: 1.4; letter-spacing: -0.7px; }
-.subtitle { color: #586b83; font-size: 14px; line-height: 1.8; margin: 10px 0 16px; }
-.case-context { display: flex; flex-wrap: wrap; gap: 8px 22px; color: #586b83; font-size: 12px; line-height: 1.7; margin-bottom: 20px; overflow-wrap: anywhere; }
+.breadcrumb a:focus-visible { outline: 2px solid var(--sr-primary); outline-offset: 3px; }
+h1 { margin: 0; color: var(--sr-ink); font-size: 28px; line-height: 1.4; letter-spacing: -0.7px; }
+.subtitle { color: var(--sr-text-muted); font-size: 14px; line-height: 1.8; margin: 10px 0 16px; }
+.case-context { display: flex; flex-wrap: wrap; gap: 8px 22px; color: var(--sr-text-muted); font-size: 12px; line-height: 1.7; margin-bottom: 20px; overflow-wrap: anywhere; }
 .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 .upload-column { min-width: 0; }
-.extraction-panel, .file-panel { padding: 24px; background: white; border: 1px solid #e1eaf5; border-radius: 10px; min-width: 0; }
-h2 { margin: 0 0 16px; font-size: 17px; color: #20354e; }
-h3 { font-size: 18px; line-height: 1.5; color: #20354e; }
-.extraction-panel p, .file-panel p, .unavailable-panel p { color: #586b83; font-size: 13px; line-height: 1.8; }
+.extraction-panel, .file-panel { padding: 24px; background: white; border: 1px solid var(--sr-border); border-radius: 10px; min-width: 0; }
+h2 { margin: 0 0 16px; font-size: 17px; color: var(--sr-text); }
+h3 { font-size: 18px; line-height: 1.5; color: var(--sr-text); }
+.extraction-panel p, .file-panel p, .unavailable-panel p { color: var(--sr-text-muted); font-size: 13px; line-height: 1.8; }
 .file-panel { margin-top: 16px; }
 .file-panel strong { font-size: 14px; overflow-wrap: anywhere; }
-.tips-panel { margin-top: 16px; padding: 20px; border-radius: 8px; background: #eaf3ff; }
+.library-panel { padding: 20px; margin-bottom: 16px; background: white; border: 1px solid var(--sr-border); border-radius: 10px; }
+.library-panel p { color: var(--sr-text-muted); font-size: 13px; line-height: 1.7; }
+.library-panel .el-select { width: 100%; margin-bottom: 12px; }
+.library-panel .divider { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--sr-surface-sunken); text-align: center; }
+.tips-panel { margin-top: 16px; padding: 20px; border-radius: 8px; background: var(--sr-primary-50); }
 .tips-panel h2 { font-size: 14px; margin-bottom: 8px; }
-.tips-panel ul { margin: 0; padding-left: 18px; color: #586b83; font-size: 13px; line-height: 1.9; }
+.tips-panel ul { margin: 0; padding-left: 18px; color: var(--sr-text-muted); font-size: 13px; line-height: 1.9; }
 .upload-button { margin-top: 18px; width: 100%; }
 .processing-state, .empty-state { padding: 25px 0; text-align: center; }
-.spinner { display: inline-block; width: 40px; height: 40px; border: 4px solid #d6e8ff; border-top-color: #176bdf; border-radius: 50%; animation: spin 1s linear infinite; }
+.spinner { display: inline-block; width: 40px; height: 40px; border: 4px solid var(--sr-primary-100); border-top-color: var(--sr-primary); border-radius: 50%; animation: spin 1s linear infinite; }
 .failure-state { padding: 18px; border-radius: 8px; background: #fff3f3; }
 .failure-state h3 { margin-top: 0; color: #b42318; }
 .ready-state h3 { color: #218458; }
 dl { font-size: 13px; line-height: 1.8; }
-dl > div { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 10px 0; border-bottom: 1px solid #edf1f7; }
-dt { color: #68798c; }
-dd { margin: 0; color: #425269; }
+dl > div { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--sr-surface-sunken); }
+dt { color: var(--sr-text-muted); }
+dd { margin: 0; color: var(--sr-text-secondary); }
 .page-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 26px; }
 .page-actions .el-button { margin: 0; }
-.unavailable-panel { padding: 32px 20px; text-align: center; border: 1px solid #e1eaf5; border-radius: 10px; background: white; }
+.unavailable-panel { padding: 32px 20px; text-align: center; border: 1px solid var(--sr-border); border-radius: 10px; background: white; }
 .unavailable-panel :deep(.el-empty__description) { display: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }

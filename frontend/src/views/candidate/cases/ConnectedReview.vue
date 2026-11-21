@@ -11,7 +11,10 @@ import { getCaseDestination } from '../../../utils/case-history.js'
 const route = useRoute()
 const router = useRouter()
 const cases = useCasesStore()
-const groups = ['Skills', 'Experience', 'Education', 'Languages', 'Projects']
+// Personal and Other information complete the CV record; only the five professional groups are matched.
+const groups = ['Personal', 'Skills', 'Experience', 'Education', 'Languages', 'Projects', 'Other']
+const profileGroups = ['Personal', 'Other']
+const groupLabels = { Personal: 'Personal information', Other: 'Other information' }
 const legacyFamilies = { SCHOOL_CATEGORY: 'School category', REFERRAL: 'Referral', GENDER: 'Gender', ETHNICITY: 'Ethnicity' }
 const families = computed(() => options.value?.NAME_CUE
   ? { ...legacyFamilies, NAME_CUE: 'Name cue' } : legacyFamilies)
@@ -34,7 +37,7 @@ const loading = ref(true)
 const busy = ref(false)
 const error = ref('')
 const feedback = ref('')
-const tab = ref('Skills')
+const tab = ref('Personal')
 let pending
 let loadSequence = 0
 let savedDraft = ''
@@ -216,9 +219,11 @@ onBeforeUnmount(() => { loadSequence++; pending = undefined })
       <ElAlert v-if="draft.unresolvedRequiredFields.length" type="warning" :closable="false"
         :title="$t('Unresolved requirements from the last saved draft:') + ' ' + draft.unresolvedRequiredFields.map(field => $t(field)).join(', ')" />
       <ElTabs v-model="tab">
-        <ElTabPane v-for="group in groups" :key="group" :label="$t(group)" :name="group">
+        <ElTabPane v-for="group in groups" :key="group" :label="$t(groupLabels[group] || group)" :name="group">
+          <p v-if="group === 'Personal'">{{ $t("Check your name, contact details and photo. Recruiters see these reviewed values instead of your PDF.") }}</p>
+          <p v-if="group === 'Other'">{{ $t("Interests, volunteering, certifications, awards and anything else from your CV.") }}</p>
           <ResumeFactsTable v-model="draft.professional[group.toLowerCase()]" :group="group.toLowerCase()" :locked="busy" />
-          <ElCheckbox v-if="!draft.professional[group.toLowerCase()].length" v-model="draft.confirmedAbsent"
+          <ElCheckbox v-if="!profileGroups.includes(group) && !draft.professional[group.toLowerCase()].length" v-model="draft.confirmedAbsent"
             :value="group.toUpperCase()" :disabled="busy">{{ $t("I confirm there are no facts to report in this group.") }}</ElCheckbox>
         </ElTabPane>
       </ElTabs>
@@ -273,6 +278,7 @@ onBeforeUnmount(() => { loadSequence++; pending = undefined })
       </section>
 
       <h2>{{ $t("Confirm Facts") }}</h2>
+      <p>{{ $t("Your original PDF is deleted as soon as you confirm.") }}</p>
       <ElCheckbox v-model="reviewed" :disabled="busy">{{ $t("I have reviewed the professional facts.") }}</ElCheckbox>
       <ElButton type="primary" :disabled="busy || !reviewed" @click="perform('confirm')">{{ $t("Confirm and Continue") }}</ElButton>
     </template>

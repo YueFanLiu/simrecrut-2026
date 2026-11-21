@@ -161,6 +161,12 @@ final class CvSourceEvidence {
 
     ObjectNode validate(JsonNode raw) {
         if (raw.has("warnings")) throw new IllegalArgumentException("The response must contain professional facts only.");
+        // Personal and other information are extracted locally; the provider never sees or returns them.
+        for (String group : Facts.PROFILE_GROUPS) {
+            if (raw.path("professional").has(group)) {
+                throw new IllegalArgumentException("The response must contain professional facts only.");
+            }
+        }
         ObjectNode draft = Facts.validate(raw);
         JsonNode professional = draft.path("professional");
         for (String group : List.of("skills", "experience", "education", "languages", "projects")) {

@@ -97,6 +97,7 @@ public class JobService {
             row.createdBy = actor.userId();
             row.title = body.title().trim();
             row.description = body.description().trim();
+            row.workLocation = location(body.workLocation());
             row.versionNo = 1;
             row.revisionNo = 1L;
             row.status = "DRAFT";
@@ -126,6 +127,7 @@ public class JobService {
             }
             row.title = body.title().trim();
             row.description = body.description().trim();
+            row.workLocation = location(body.workLocation());
             save(row);
             return detail(row);
         });
@@ -430,6 +432,7 @@ public class JobService {
                 .put("jobVersionId", row.publicId).put("title", row.title)
                 .put("version", row.versionNo).put("currentVersion", row.versionNo)
                 .put("summary", row.description.substring(0, Math.min(300, row.description.length())));
+        result.set("workLocation", json.valueToTree(row.workLocation));
         result.set("publishedAt", json.valueToTree(utc(row.publishedAt)));
         if (!candidate) {
             result.put("status", row.status).put("revision", row.revisionNo);
@@ -456,6 +459,11 @@ public class JobService {
         result.set("message", json.valueToTree(row.extractionError == null ? null : "Extraction did not finish. Retry or review manually."));
         result.set("updatedAt", json.valueToTree(utc(row.updatedAt)));
         return result;
+    }
+
+    private static String location(String value) {
+        if (value == null || value.isBlank()) return null;
+        return value.replaceAll("[\\p{Cntrl}\\s]+", " ").strip();
     }
 
     private String utc(LocalDateTime value) { return value == null ? null : value.atOffset(ZoneOffset.UTC).toString(); }

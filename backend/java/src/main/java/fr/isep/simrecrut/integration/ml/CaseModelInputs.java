@@ -80,6 +80,20 @@ public class CaseModelInputs {
         return value;
     }
 
+    /** A library CV has no PDF left to render: offer its reviewed photo, if any, as the only portrait candidate. */
+    public ObjectNode prepareWithoutPdf(JsonNode professional) {
+        ObjectNode value = json.createObjectNode().put("biography", biography(professional)).put("name", "")
+                .put("useText", false).put("usePortrait", false).put("portraitIndex", -1);
+        ArrayNode candidates = value.putArray("candidates");
+        for (JsonNode item : professional.path("personal")) {
+            String photo = item.path("imageBase64").asText("");
+            if (!"PHOTO".equals(item.path("fieldCode").asText()) || photo.isBlank()) continue;
+            try { candidates.add(crop(photo)); } catch (RuntimeException ignored) { /* Manual upload remains available. */ }
+        }
+        if (candidates.isEmpty()) value.put("portraitNotice", "Automatic portrait detection is unavailable. Select a local portrait or omit it.");
+        return value;
+    }
+
     /** Persist immutable payloads before committing their digest pointer; rollback leaves no readable revision. */
     public void prepared(AssessmentCase row, ObjectNode value) {
         store(row, value, false);

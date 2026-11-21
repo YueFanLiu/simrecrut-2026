@@ -36,6 +36,10 @@ public class CandidateCaseController {
         if (file.getSize() > 10 * 1024 * 1024 || file.isEmpty()) throw new IllegalArgumentException("Invalid PDF size.");
         return result(service.upload(actor, caseId, key, file.getOriginalFilename(), file.getBytes()));
     }
+    @PostMapping("/{caseId}/resume")
+    public ResponseEntity<ApiResponse<JsonNode>> fromResume(@AuthenticationPrincipal AccountPrincipal actor,
+            @PathVariable String caseId, @RequestHeader("Idempotency-Key") String key,
+            @Valid @RequestBody ResumeSourceRequest body) { return result(service.fromResume(actor, caseId, key, body)); }
     @GetMapping("/{caseId}/status")
     public ResponseEntity<ApiResponse<CaseStatus>> status(@AuthenticationPrincipal AccountPrincipal actor,
             @PathVariable String caseId) { return ok(service.status(actor, caseId)); }

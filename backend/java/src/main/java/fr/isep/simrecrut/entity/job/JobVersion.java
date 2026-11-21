@@ -15,6 +15,7 @@ public class JobVersion {
     public String publicId;
     public String title;
     public String description;
+    public String workLocation;
     public String status;
     public Integer versionNo;
     public Long revisionNo;

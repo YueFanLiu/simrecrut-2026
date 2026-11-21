@@ -23,13 +23,13 @@ defineProps({
 </template>
 
 <style scoped>
-.result-card { min-width: 0; padding: 22px; background: white; border: 1px solid #e1eaf5; border-radius: 12px; overflow-wrap: anywhere; }
+.result-card { min-width: 0; padding: 22px; background: white; border: 1px solid var(--sr-border); border-radius: 12px; overflow-wrap: anywhere; }
 .card-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
-h3 { margin: 0; color: #132941; font-size: 16px; line-height: 1.6; }
+h3 { margin: 0; color: var(--sr-ink); font-size: 16px; line-height: 1.6; }
 .decision, .pending { margin: 20px 0 16px; font-size: 22px; font-weight: 700; }
-.accept { color: #218458; } .reject { color: #b42336; } .pending { color: #586b83; font-size: 18px; }
+.accept { color: #218458; } .reject { color: #b42336; } .pending { color: var(--sr-text-muted); font-size: 18px; }
 .score { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; }
-.score strong { font-size: 28px; color: #132941; }
-.score span, .note { color: #586b83; font-size: 12px; line-height: 1.8; }
+.score strong { font-size: 28px; color: var(--sr-ink); }
+.score span, .note { color: var(--sr-text-muted); font-size: 12px; line-height: 1.8; }
 .note { margin: 14px 0 0; }
 </style>

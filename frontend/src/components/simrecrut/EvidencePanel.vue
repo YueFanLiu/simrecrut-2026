@@ -22,10 +22,10 @@ defineEmits(['back'])
 </template>
 
 <style scoped>
-.evidence-panel { padding: 24px; border: 1px solid #e1eaf5; border-radius: 10px; background: white; }
-h2 { margin: 0 0 16px; color: #20354e; font-size: 17px; }
-h3 { margin: 24px 0 12px; font-size: 15px; color: #20354e; }
-p { font-size: 13px; line-height: 1.8; color: #586b83; }
-.mock-note { padding: 12px; border-radius: 6px; background: #edf5ff; margin-bottom: 22px; }
-blockquote { margin: 18px 0; padding: 16px; border-left: 3px solid #176bdf; background: #f8fbff; color: #425269; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.evidence-panel { padding: 24px; border: 1px solid var(--sr-border); border-radius: 10px; background: white; }
+h2 { margin: 0 0 16px; color: var(--sr-text); font-size: 17px; }
+h3 { margin: 24px 0 12px; font-size: 15px; color: var(--sr-text); }
+p { font-size: 13px; line-height: 1.8; color: var(--sr-text-muted); }
+.mock-note { padding: 12px; border-radius: 6px; background: var(--sr-primary-50); margin-bottom: 22px; }
+blockquote { margin: 18px 0; padding: 16px; border-left: 3px solid var(--sr-primary); background: var(--sr-surface-tint); color: var(--sr-text-secondary); font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
 </style>

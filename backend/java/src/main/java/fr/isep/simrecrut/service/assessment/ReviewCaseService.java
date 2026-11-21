@@ -87,7 +87,7 @@ public class ReviewCaseService {
                 human.add(new HumanSummary(condition, review == null ? "NOT_ASSIGNED" : review.status,
                         submitted ? review.decision : null, submitted ? review.reason : null));
             }
-            HrCaseDetail result = new HrCaseDetail(id, professional(row), publicJob(job), matching,
+            HrCaseDetail result = new HrCaseDetail(id, professional(row, true), publicJob(job), matching,
                     json.valueToTree(List.of(job.weightSkills, job.weightExperience, job.weightEducation,
                             job.weightLanguages, job.weightProjects)), matches.path("mw"),
                     project(professionalResult, "score", "displayScore", "decision", "strengths", "gaps"),
@@ -130,7 +130,7 @@ public class ReviewCaseService {
             versions.set("protocolVersion", frozen.path("protocolVersion"));
             versions.set("featureSchemaVersion", frozen.path("featureSchemaVersion"));
             return new TaskDetail(id, row.publicId, review.status, review.conditionType, review.purpose,
-                    professional(row), publicJob(job), frozen.path("rubric"),
+                    professional(row, false), publicJob(job), frozen.path("rubric"),
                     biased ? frozen.path("scenario") : json.nullNode(), biased ? review.instruction : null,
                     versions, visible, visible ? review.decision : null, visible ? review.reason : null,
                     visible ? review.submittedAt : null);
@@ -264,11 +264,14 @@ public class ReviewCaseService {
     private JobVersion job(AssessmentCase row) {
         JobVersion job = cases.job(row.jobVersionId); if (job == null) throw CaseException.dependency(); return job;
     }
-    private JsonNode professional(AssessmentCase row) {
+    /** Human-review study tasks stay limited to professional facts; HR case detail shows the full CV record. */
+    private JsonNode professional(AssessmentCase row, boolean profile) {
         JsonNode snapshot = read(cases.snapshot(row.id));
         if (!snapshot.isObject()) throw CaseException.dependency();
         ObjectNode result = json.createObjectNode();
-        for (String group : List.of("skills", "experience", "education", "languages", "projects")) {
+        // Recruiters never see the PDF, so the reviewed personal and other groups are part of the CV record.
+        for (String group : List.of("personal", "skills", "experience", "education", "languages", "projects", "other")) {
+            if ((group.equals("personal") || group.equals("other")) && (!profile || !snapshot.has(group))) continue;
             ArrayNode facts = result.putArray(group);
             for (JsonNode raw : snapshot.path(group)) {
                 ObjectNode fact = raw.deepCopy();

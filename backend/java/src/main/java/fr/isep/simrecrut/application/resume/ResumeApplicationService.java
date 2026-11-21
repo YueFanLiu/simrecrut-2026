@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.isep.simrecrut.dto.resume.ResumeDtos.EditRequest;
 import fr.isep.simrecrut.dto.resume.ResumeDtos.ImportRequest;
+import fr.isep.simrecrut.dto.resume.ResumeDtos.RenameRequest;
 import fr.isep.simrecrut.gateway.resume.ResumeGateway;
 import fr.isep.simrecrut.gateway.resume.ResumeGateway.Action;
 import java.util.List;
@@ -69,6 +70,11 @@ public class ResumeApplicationService {
     @PreAuthorize("hasRole('CANDIDATE') and hasAuthority('simrecrut:resume:confirm')")
     public JsonNode cleanup(long userId, String id, String key) throws Exception {
         return perform(userId, Action.CLEANUP, id, key, null);
+    }
+
+    @PreAuthorize("hasRole('CANDIDATE') and hasAuthority('simrecrut:resume:edit')")
+    public JsonNode rename(long userId, String id, String key, RenameRequest body) throws Exception {
+        return perform(userId, Action.RENAME, id, key, json.valueToTree(body));
     }
 
     @PreAuthorize("hasRole('CANDIDATE') and hasAuthority('simrecrut:resume:delete')")

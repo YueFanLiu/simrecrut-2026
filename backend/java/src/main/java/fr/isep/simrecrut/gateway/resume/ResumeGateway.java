@@ -7,7 +7,7 @@ import java.util.List;
 public interface ResumeGateway {
 
     enum Action {
-        IMPORT, CLEAN, SAVE, CONFIRM, UPLOAD, CLEANUP, DELETE
+        IMPORT, CLEAN, SAVE, CONFIRM, UPLOAD, CLEANUP, DELETE, RENAME
     }
 
     List<JsonNode> list(long userId) throws Exception;

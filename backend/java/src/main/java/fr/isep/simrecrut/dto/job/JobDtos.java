@@ -21,12 +21,26 @@ public final class JobDtos {
 
     public record CreateRequest(
             @NotBlank @Size(max = 255) String title,
-            @NotBlank @Size(max = 20000) String description) implements StrictRequest { }
+            @NotBlank @Size(max = 20000) String description,
+            @Size(max = 200) String workLocation) implements StrictRequest {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public CreateRequest { }
+
+        public CreateRequest(String title, String description) { this(title, description, null); }
+    }
 
     public record UpdateRequest(
             @NotBlank @Size(max = 255) String title,
             @NotBlank @Size(max = 20000) String description,
-            @NotNull @Positive Long revision) implements StrictRequest { }
+            @NotNull @Positive Long revision,
+            @Size(max = 200) String workLocation) implements StrictRequest {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public UpdateRequest { }
+
+        public UpdateRequest(String title, String description, Long revision) {
+            this(title, description, revision, null);
+        }
+    }
 
     public record Requirement(
             @NotNull Criterion criterionType,

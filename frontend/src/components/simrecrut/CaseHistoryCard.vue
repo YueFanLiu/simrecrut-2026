@@ -27,14 +27,14 @@ const formatDate = (value) => value ? new Intl.DateTimeFormat(dateLocale.value, 
 </template>
 
 <style scoped>
-.history-card { padding: 20px; background: white; border: 1px solid #e1eaf5; border-radius: 12px; overflow-wrap: anywhere; }
+.history-card { padding: 20px; background: white; border: 1px solid var(--sr-border); border-radius: 12px; overflow-wrap: anywhere; }
 .card-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; }
-.case-id { color: #176bdf; font-size: 12px; }
-h2 { margin: 8px 0 0; color: #132941; font-size: 17px; line-height: 1.6; }
-.metadata { font-size: 12px; color: #586b83; line-height: 1.8; }
+.case-id { color: var(--sr-primary); font-size: 12px; }
+h2 { margin: 8px 0 0; color: var(--sr-ink); font-size: 17px; line-height: 1.6; }
+.metadata { font-size: 12px; color: var(--sr-text-muted); line-height: 1.8; }
 dl { margin: 16px 0; font-size: 13px; line-height: 1.8; }
-dl div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid #edf1f7; }
-dt { color: #586b83; } dd { margin: 0; color: #132941; text-align: right; }
+dl div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--sr-surface-sunken); }
+dt { color: var(--sr-text-muted); } dd { margin: 0; color: var(--sr-ink); text-align: right; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .card-actions .el-button { margin: 0; }
 </style>

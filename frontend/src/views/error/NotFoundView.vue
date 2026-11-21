@@ -68,14 +68,14 @@ function goBack() {
 }
 .not-found-illustration { width: 100%; display: block; }
 .not-found-message { min-width: 0; }
-.status-code { margin: 0 0 4px; font-size: 80px; font-weight: 750; line-height: 1.05; color: #102b50; }
-h1 { margin: 0; font-size: 34px; letter-spacing: -0.8px; color: #132941; }
-.description { margin: 16px 0 26px; color: #425269; line-height: 1.7; font-size: 15px; }
+.status-code { margin: 0 0 4px; font-size: 80px; font-weight: 750; line-height: 1.05; color: var(--sr-ink); }
+h1 { margin: 0; font-size: 34px; letter-spacing: -0.8px; color: var(--sr-ink); }
+.description { margin: 16px 0 26px; color: var(--sr-text-secondary); line-height: 1.7; font-size: 15px; }
 .navigation-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .navigation-actions .el-button { margin: 0; min-width: 145px; font-weight: 600; }
-.workspace-note, .sign-in-note { margin: 24px 0 0; color: #586b83; font-size: 12px; line-height: 1.7; }
+.workspace-note, .sign-in-note { margin: 24px 0 0; color: var(--sr-text-muted); font-size: 12px; line-height: 1.7; }
 .workspace-note > span { margin-right: 12px; }
-.workspace-note strong { color: #31557f; font-size: 13px; }
+.workspace-note strong { color: var(--sr-text-secondary); font-size: 13px; }
 @media (max-width: 900px) {
   .not-found-content { gap: 24px; }
   .status-code { font-size: 68px; }

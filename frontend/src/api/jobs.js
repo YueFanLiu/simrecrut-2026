@@ -1,16 +1,20 @@
 // Page contracts for published jobs and the HR version workflow.
 import { pageItems, pageRequest, resourceId as id } from './page-request.js'
 import { criteria, validateWeights, weightUnits } from '../mock/hr-job-wizard.js'
-export const publishedJobs = () => pageItems('/api/v1/candidate/jobs')
-export const jobDetail = job => pageRequest(`/api/v1/candidate/jobs/${id(job)}`)
+// The optional work location is shown on job cards and details as `location`.
+const withLocation = row => ({ ...row, location: row.workLocation || '' })
+export const publishedJobs = async () => (await pageItems('/api/v1/candidate/jobs')).map(withLocation)
+export const jobDetail = async job => withLocation(await pageRequest(`/api/v1/candidate/jobs/${id(job)}`))
 const hrJob = job => `/api/v1/hr/jobs/${id(job)}`
 const status = row => row.status === 'DRAFT' ? 'Draft' : 'Published'
-const description = form => ({ title: form.title.trim(), description: form.description.trim() })
+const workLocation = value => String(value.location ?? value.workLocation ?? '').trim()
+const description = form => ({ title: form.title.trim(), description: form.description.trim(),
+  ...(workLocation(form) ? { workLocation: workLocation(form) } : {}) })
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right)
 
 function draftForm(row) {
   return {
-    title: row.title, description: row.description,
+    title: row.title, description: row.description, location: row.workLocation || '',
     requirements: row.requirements.map(({ criterionType, requirementCode, payload, ...requirement }) => ({
       ...requirement, id: requirementCode, category: criteria.find(category => category.toUpperCase() === criterionType),
       text: requirement.evidenceExcerpt || requirementCode, payloadText: JSON.stringify(payload, null, 2),

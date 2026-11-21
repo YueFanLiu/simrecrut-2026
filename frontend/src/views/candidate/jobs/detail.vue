@@ -1,5 +1,6 @@
 <script setup>
 import { demoMode } from '../../../config/runtime.js'
+import { t } from '../../../i18n/index.js'
 import { publicRequirementLabel } from '../../../api/jobs.js'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -21,7 +22,8 @@ const loadError = ref('')
 let loadSequence = 0
 let pageActive = true
 
-const keyInformation = computed(() => job.value ? (!demoMode ? [['Published Version', job.value.version]] : [
+const keyInformation = computed(() => job.value ? (!demoMode ? [
+  ['Location', job.value.location || t('Not specified')], ['Published Version', job.value.version]] : [
   ['Employment Type', job.value.employmentType], ['Location', job.value.location],
   ['Category', job.value.category], ['Required Experience', job.value.requirements.experience],
   ['Education Level', job.value.requirements.education],
@@ -152,35 +154,35 @@ async function startSimulation() {
 </template>
 
 <style scoped>
-.breadcrumb { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; color: #586b83; font-size: 13px; line-height: 1.7; }
-.breadcrumb a { color: #176bdf; text-decoration: none; }
+.breadcrumb { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; color: var(--sr-text-muted); font-size: 13px; line-height: 1.7; }
+.breadcrumb a { color: var(--sr-primary); text-decoration: none; }
 .breadcrumb a:hover { text-decoration: underline; }
 .detail-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 22px; }
 .detail-heading > div { min-width: 0; }
-h1 { margin: 0; color: #132941; font-size: 28px; line-height: 1.4; letter-spacing: -0.7px; overflow-wrap: anywhere; }
-.job-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; margin-top: 16px; color: #586b83; font-size: 13px; line-height: 1.7; }
+h1 { margin: 0; color: var(--sr-ink); font-size: 28px; line-height: 1.4; letter-spacing: -0.7px; overflow-wrap: anywhere; }
+.job-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; margin-top: 16px; color: var(--sr-text-muted); font-size: 13px; line-height: 1.7; }
 .demo-notice { margin-bottom: 22px; }
 .detail-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; }
 .panel-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-.detail-panel, .state-panel { padding: 24px; border: 1px solid #e1eaf5; border-radius: 10px; background: white; }
-h2 { margin: 0 0 16px; color: #20354e; font-size: 17px; }
-h3 { margin: 22px 0 10px; color: #425269; font-size: 14px; }
-.detail-panel p, .detail-panel li { color: #586b83; font-size: 14px; line-height: 1.9; }
+.detail-panel, .state-panel { padding: 24px; border: 1px solid var(--sr-border); border-radius: 10px; background: white; }
+h2 { margin: 0 0 16px; color: var(--sr-text); font-size: 17px; }
+h3 { margin: 22px 0 10px; color: var(--sr-text-secondary); font-size: 14px; }
+.detail-panel p, .detail-panel li { color: var(--sr-text-muted); font-size: 14px; line-height: 1.9; }
 .detail-panel p { margin: 0; }
 ul { margin: 0; padding-left: 20px; }
 li + li { margin-top: 6px; }
 dl { margin: 0; font-size: 13px; line-height: 1.7; }
-dl > div { display: grid; grid-template-columns: 1fr 1.1fr; gap: 16px; padding: 9px 0; border-bottom: 1px solid #edf1f7; }
+dl > div { display: grid; grid-template-columns: 1fr 1.1fr; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--sr-surface-sunken); }
 dl > div:last-child { border-bottom: 0; padding-bottom: 0; }
-dt { color: #68798c; }
-dd { margin: 0; color: #425269; overflow-wrap: anywhere; }
-.back-link { display: inline-block; padding: 10px 16px; color: #176bdf; border: 1px solid #b9d3f5; border-radius: 6px; text-decoration: none; font-size: 14px; line-height: 1.5; background: white; }
-.back-link:hover { background: #edf5ff; }
-.back-link:focus-visible, .breadcrumb a:focus-visible { outline: 2px solid #176bdf; outline-offset: 3px; }
+dt { color: var(--sr-text-muted); }
+dd { margin: 0; color: var(--sr-text-secondary); overflow-wrap: anywhere; }
+.back-link { display: inline-block; padding: 10px 16px; color: var(--sr-primary); border: 1px solid var(--sr-primary-200); border-radius: 6px; text-decoration: none; font-size: 14px; line-height: 1.5; background: white; }
+.back-link:hover { background: var(--sr-primary-50); }
+.back-link:focus-visible, .breadcrumb a:focus-visible { outline: 2px solid var(--sr-primary); outline-offset: 3px; }
 .bottom-back { margin-top: 24px; }
 .state-panel { padding: 40px 24px; text-align: center; }
 .state-panel h1 { font-size: 24px; }
-.state-panel p { color: #586b83; font-size: 14px; line-height: 1.8; margin: 16px 0 24px; }
+.state-panel p { color: var(--sr-text-muted); font-size: 14px; line-height: 1.8; margin: 16px 0 24px; }
 .state-actions { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 12px; }
 .state-panel :deep(.el-empty) { padding: 0 0 16px; }
 .state-panel :deep(.el-empty__description) { display: none; }

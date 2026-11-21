@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 public class LocalResumeGateway implements ResumeGateway {
 
     private static final List<String> PUBLIC_FIELDS = List.of(
-            "id", "filename", "extension", "bytes", "pages", "status", "confirmed", "revision",
+            "id", "filename", "display_name", "extension", "bytes", "pages", "status", "confirmed", "revision",
             "cloud_revision", "created_at", "updated_at", "error", "temporary_original", "expires_at",
             "confirmed_at", "originalAvailable", "reference_month");
 
@@ -65,6 +65,7 @@ public class LocalResumeGateway implements ResumeGateway {
                     case UPLOAD -> current.upload(resumeId);
                     case CLEANUP -> current.cleanupOriginal(resumeId);
                     case DELETE -> current.delete(resumeId);
+                    case RENAME -> current.rename(resumeId, body);
                 });
         JsonNode response = Facts.JSON.valueToTree(result);
         if (response.isObject()) {

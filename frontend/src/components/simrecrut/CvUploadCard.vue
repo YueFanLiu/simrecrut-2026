@@ -57,13 +57,13 @@ onBeforeUnmount(() => { selection += 1 })
 </template>
 
 <style scoped>
-.drop-zone { padding: 30px 20px; border: 2px dashed #b9d3f5; border-radius: 10px; text-align: center; background: #f9fcff; }
+.drop-zone { padding: 30px 20px; border: 2px dashed var(--sr-primary-200); border-radius: 10px; text-align: center; background: var(--sr-surface-tint); }
 .upload-icon { width: 64px; height: 64px; margin-bottom: 14px; }
-h2 { margin: 0; color: #20354e; font-size: 17px; line-height: 1.5; }
-p { color: #586b83; font-size: 13px; line-height: 1.8; margin: 12px 0 18px; }
+h2 { margin: 0; color: var(--sr-text); font-size: 17px; line-height: 1.5; }
+p { color: var(--sr-text-muted); font-size: 13px; line-height: 1.8; margin: 12px 0 18px; }
 .file-input { display: none; }
 .file-error { margin-bottom: 0; padding: 12px; background: #fff3f3; border-radius: 6px; color: #b42318; }
-.selected-file { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; margin-top: 16px; background: white; border: 1px solid #e1eaf5; border-radius: 8px; font-size: 13px; color: #586b83; }
-.selected-file strong { color: #20354e; overflow-wrap: anywhere; max-width: 100%; }
+.selected-file { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; margin-top: 16px; background: white; border: 1px solid var(--sr-border); border-radius: 8px; font-size: 13px; color: var(--sr-text-muted); }
+.selected-file strong { color: var(--sr-text); overflow-wrap: anywhere; max-width: 100%; }
 .selected-file .el-button { padding: 0; }
 </style>

@@ -83,8 +83,7 @@ useLocalizedValidation(formRef)
       </el-form-item>
 
       <div class="remember-row">
-        <el-checkbox v-model="form.rememberMe">{{ $t("Remember Me") }}</el-checkbox>
-        <span>{{ $t("Username only") }}</span>
+        <el-checkbox v-model="form.rememberMe">{{ $t("Remember me (username only)") }}</el-checkbox>
       </div>
 
       <el-button class="sign-in-button" type="primary" size="large" native-type="submit"
@@ -113,27 +112,26 @@ useLocalizedValidation(formRef)
 </template>
 
 <style scoped>
-h1 { margin: 0; font-size: 28px; letter-spacing: -0.8px; color: #132941; }
-.login-subtitle { margin: 8px 0 26px; font-size: 14px; color: #627086; }
+h1 { margin: 0; font-size: 30px; letter-spacing: -0.8px; color: var(--sr-ink); }
+.login-subtitle { margin: 8px 0 26px; font-size: 14px; color: var(--sr-text-muted); }
 .feedback:has(.el-alert) { margin-bottom: 20px; }
 :deep(.el-form-item) { margin-bottom: 23px; }
-:deep(.el-form-item__label) { color: #22344b; font-weight: 600; padding-bottom: 7px; }
+:deep(.el-form-item__label) { color: var(--sr-text); font-weight: 600; padding-bottom: 7px; }
 :deep(.el-input__wrapper) { padding: 3px 12px; }
 :deep(.el-input__prefix-inner) { margin-right: 4px; }
-.remember-row { display: flex; align-items: center; justify-content: space-between; margin: -2px 0 20px; }
-.remember-row > span { color: #68798c; font-size: 12px; }
-:deep(.el-checkbox__label) { color: #425269; font-size: 13px; }
+.remember-row { display: flex; align-items: center; margin: -2px 0 20px; }
+:deep(.el-checkbox__label) { color: var(--sr-text-secondary); font-size: 13px; }
 .sign-in-button, .register-button { width: 100%; font-weight: 600; }
 .forgot-password { display: block; width: fit-content; margin: 12px auto 0; color: var(--el-color-primary); font-size: 14px; }
-.registration-divider { display: flex; align-items: center; gap: 14px; margin: 20px 0 16px; color: #8491a3; font-size: 13px; }
-.registration-divider::before, .registration-divider::after { content: ''; height: 1px; background: #e8edf4; flex: 1; }
-.registration-note { margin: 10px 0 0; text-align: center; font-size: 12px; color: #68798c; }
-.demo-note { margin-top: 24px; padding: 16px; border: 1px solid #deebfa; border-radius: 8px; background: #f5f9ff; font-size: 12px; color: #4a607b; }
-.demo-note strong { color: #31557f; font-size: 13px; }
+.registration-divider { display: flex; align-items: center; gap: 14px; margin: 20px 0 16px; color: var(--sr-text-subtle); font-size: 13px; }
+.registration-divider::before, .registration-divider::after { content: ''; height: 1px; background: var(--sr-border); flex: 1; }
+.registration-note { margin: 10px 0 0; text-align: center; font-size: 12px; color: var(--sr-text-muted); }
+.demo-note { margin-top: 24px; padding: 16px; border: 1px solid var(--sr-primary-100); border-radius: 8px; background: var(--sr-surface-tint); font-size: 12px; color: var(--sr-text-muted); }
+.demo-note strong { color: var(--sr-text-secondary); font-size: 13px; }
 .demo-note p { margin: 7px 0 0; line-height: 1.6; }
 .demo-note dl { margin: 12px 0 0; }
 .demo-note dl div { display: flex; gap: 12px; margin-top: 5px; }
 .demo-note dt { min-width: 65px; }
-.demo-note dd { margin: 0; color: #223f61; font-family: Consolas, monospace; overflow-wrap: anywhere; }
+.demo-note dd { margin: 0; color: var(--sr-text); font-family: Consolas, monospace; overflow-wrap: anywhere; }
 .demo-email { overflow-wrap: anywhere; }
 </style>

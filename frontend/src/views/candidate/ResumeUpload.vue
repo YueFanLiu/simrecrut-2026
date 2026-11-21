@@ -1,10 +1,12 @@
 <script setup>
 import { dateLocale } from '../../i18n/index.js'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { t } from '../../i18n/index.js'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import CandidateLayout from '../../layouts/CandidateLayout.vue'
 import CvUploadCard from '../../components/simrecrut/CvUploadCard.vue'
-import { listResumes, importResume, resumeAction, getResume } from '../../api/resumes.js'
+import { listResumes, importResume, resumeAction, getResume, deleteResume } from '../../api/resumes.js'
 import { demoMode } from '../../config/runtime.js'
 import useUserStore from '../../store/modules/user.js'
 
@@ -17,6 +19,15 @@ const busy = ref(false)
 const listError = ref('')
 const uploadError = ref('')
 const stage = ref('')
+const displayName = ref('')
+const editingId = ref('')
+const editingName = ref('')
+const rowBusy = ref('')
+const canEdit = computed(() => !demoMode && user.permissions.includes('simrecrut:resume:edit'))
+const canDelete = computed(() => !demoMode && user.permissions.includes('simrecrut:resume:delete'))
+// The library label defaults to the file name without its .pdf extension.
+const defaultName = computed(() => selected.value?.name?.replace(/\.pdf$/i, '') || '')
+const nameOf = row => row.display_name || row.filename
 const canUpload = computed(() => !demoMode && user.permissions.includes('simrecrut:resume:upload'))
 const controller = new AbortController()
 let active = true
@@ -36,6 +47,7 @@ async function refresh() {
     if (active) listError.value = error.message || 'Unable to load your CVs. Please retry.'
   } finally { loading.value = false }
 }
+watch(displayName, () => { importKey = undefined; importPayload = undefined })
 function selectFile(value) {
   selected.value = value
   importKey = undefined
@@ -56,7 +68,8 @@ async function upload() {
         reader.onerror = () => reject(new Error('Unable to read this PDF. Please select it again.'))
         reader.readAsDataURL(selected.value.file)
       })
-      importPayload = { filename: selected.value.name, content }
+      const label = displayName.value.trim()
+      importPayload = { filename: selected.value.name, content, ...(label ? { displayName: label } : {}) }
       importKey = crypto.randomUUID()
     }
     if (!active) return
@@ -77,6 +90,39 @@ async function upload() {
     uploadError.value = error.message || 'Upload could not finish. Please retry.'
     await refresh()
   } finally { busy.value = false; stage.value = '' }
+}
+function startRename(row) {
+  editingId.value = row.id
+  editingName.value = nameOf(row)
+}
+async function saveRename(row) {
+  if (rowBusy.value) return
+  rowBusy.value = row.id
+  try {
+    await resumeAction(row.id, 'rename', { displayName: editingName.value.trim() }, { signal: controller.signal, silent: true })
+    if (!active) return
+    editingId.value = ''
+    await refresh()
+  } catch (error) {
+    if (active) ElMessage.error(t(error.message || 'The CV name was not saved. Please retry.'))
+  } finally { rowBusy.value = '' }
+}
+async function removeRow(row) {
+  if (rowBusy.value) return
+  try {
+    await ElMessageBox.confirm(t('Delete "{name}"? Its extracted facts are removed and this cannot be undone.', { name: nameOf(row) }),
+      t('Delete CV'), { type: 'warning', confirmButtonText: t('Delete CV'), cancelButtonText: t('Cancel'),
+        confirmButtonClass: 'el-button--danger' })
+  } catch { return }
+  rowBusy.value = row.id
+  try {
+    const result = await deleteResume(row.id)
+    if (!active) return
+    ElMessage.success(t(result.data.deleted ? 'CV deleted.' : 'Access blocked. Deletion will retry automatically.'))
+    await refresh()
+  } catch (error) {
+    if (active) ElMessage.error(t(error.message || 'Deletion could not finish. Reload its current status before retrying.'))
+  } finally { rowBusy.value = '' }
 }
 onMounted(refresh)
 onUnmounted(() => {
@@ -99,6 +145,11 @@ onUnmounted(() => {
       <h2 id="upload-title">{{ $t("Upload your CV") }}</h2>
       <p>{{ $t("Your original PDF stays temporary. Review the extracted facts before confirming them.") }}</p>
       <CvUploadCard :selected="selected" :disabled="busy || !canUpload" @select="selectFile" />
+      <label class="name-field"><span>{{ $t("CV name (optional)") }}</span>
+        <el-input v-model="displayName" maxlength="120" show-word-limit :disabled="busy || !canUpload"
+          :placeholder="defaultName || $t('For example: CV for IT, CV for product manager')" />
+        <small>{{ $t("Give each CV a name to find it in your library. Leave empty to use the file name.") }}</small>
+      </label>
       <el-alert v-if="uploadError" :title="$t(uploadError)" type="error" show-icon :closable="false" />
       <div class="upload-actions">
         <el-button type="primary" size="large" :loading="busy"
@@ -107,7 +158,7 @@ onUnmounted(() => {
         </el-button>
         <span role="status" aria-live="polite">{{ $t(busy ? 'Keep this page open while your PDF uploads.' : 'PDF only · Up to 10 MB · 1–20 pages') }}</span>
       </div>
-      <p class="retention">{{ $t("Unconfirmed CVs expire after 24 hours. Confirmed CVs expire after 30 days. The temporary original is removed after successful publication of your confirmed facts.") }}</p>
+      <p class="retention">{{ $t("Unconfirmed CVs expire after 24 hours. Confirmed CVs expire after 30 days. Your original PDF is deleted as soon as you confirm the extracted facts.") }}</p>
     </section>
     <section class="library" aria-labelledby="library-title" :aria-busy="loading">
       <div class="library-heading"><h2 id="library-title">{{ $t("Your CV library") }}</h2>
@@ -117,18 +168,34 @@ onUnmounted(() => {
       <p v-if="loading" role="status">{{ $t("Loading your CVs...") }}</p>
       <el-empty v-else-if="!records.length && !listError" :description="$t(&quot;No CVs yet. Upload your first PDF above.&quot;)" />
       <el-table v-if="records.length" :data="records" class="cv-table">
-        <el-table-column prop="filename" :label="$t(&quot;CV&quot;)" min-width="180" />
+        <el-table-column :label="$t(&quot;Name&quot;)" min-width="220"><template #default="{ row }">
+          <div v-if="editingId === row.id" class="rename">
+            <el-input v-model="editingName" size="small" maxlength="120" :aria-label="$t('CV name')"
+              @keyup.enter="saveRename(row)" @keyup.esc="editingId = ''" />
+            <el-button size="small" type="primary" :loading="rowBusy === row.id" @click="saveRename(row)">{{ $t("Save") }}</el-button>
+            <el-button size="small" :disabled="rowBusy === row.id" @click="editingId = ''">{{ $t("Cancel") }}</el-button>
+          </div>
+          <div v-else class="cv-name"><strong>{{ nameOf(row) }}</strong>
+            <el-button v-if="canEdit" link type="primary" size="small" :disabled="busy || !!rowBusy" @click="startRename(row)">{{ $t("Rename") }}</el-button>
+          </div>
+        </template></el-table-column>
+        <el-table-column prop="filename" :label="$t(&quot;File&quot;)" min-width="180" />
         <el-table-column :label="$t(&quot;Status&quot;)" min-width="160"><template #default="{ row }">
           <el-tag :type="row.status === 'FAILED' ? 'danger' : row.confirmed ? 'success' : 'info'">
             {{ $t(row.cloud_revision === row.revision ? 'Published' : statusLabels[row.status] || row.status) }}
           </el-tag>
+          <small v-if="row.confirmed && !row.originalAvailable" class="pdf-note">{{ $t("PDF deleted") }}</small>
         </template></el-table-column>
         <el-table-column :label="$t(&quot;Expires&quot;)" min-width="160"><template #default="{ row }">
           {{ $t(row.expires_at ? new Date(row.expires_at).toLocaleString(dateLocale) : '—') }}
         </template></el-table-column>
-        <el-table-column :label="$t(&quot;Action&quot;)" width="140"><template #default="{ row }">
-          <el-button :disabled="busy" @click="router.push({ name: 'ConnectedResumeReview', params: { id: row.id } })">
-            {{ $t(row.confirmed ? 'View facts' : 'Review facts') }}</el-button>
+        <el-table-column :label="$t(&quot;Action&quot;)" width="230"><template #default="{ row }">
+          <div class="row-actions">
+            <el-button size="small" :disabled="busy" @click="router.push({ name: 'ConnectedResumeReview', params: { id: row.id } })">
+              {{ $t(row.confirmed ? 'View facts' : 'Review facts') }}</el-button>
+            <el-button v-if="canDelete" size="small" type="danger" plain :loading="rowBusy === row.id"
+              :disabled="busy || (!!rowBusy && rowBusy !== row.id)" @click="removeRow(row)">{{ $t("Delete") }}</el-button>
+          </div>
         </template></el-table-column>
       </el-table>
     </section>
@@ -136,19 +203,26 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-h1 { margin: 0; font-size: 30px; color: #132941; letter-spacing: -0.7px; }
-h2 { margin: 0 0 12px; font-size: 20px; color: #20354e; }
-p { color: #586b83; line-height: 1.7; font-size: 14px; }
-.eyebrow { color: #176bdf; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; }
+h1 { margin: 0; font-size: 30px; color: var(--sr-ink); letter-spacing: -0.7px; }
+h2 { margin: 0 0 12px; font-size: 20px; color: var(--sr-text); }
+p { color: var(--sr-text-muted); line-height: 1.7; font-size: 14px; }
+.eyebrow { color: var(--sr-primary); font-size: 11px; font-weight: 700; letter-spacing: 1.4px; }
 .page-heading { margin-bottom: 26px; }
 .upload-section, .library { padding: 28px; margin-top: 24px; background: white;
-  border: 1px solid #e1eaf5; border-radius: 12px; min-width: 0; }
+  border: 1px solid var(--sr-border); border-radius: 12px; min-width: 0; }
 .upload-actions, .library-heading { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .upload-actions { margin-top: 20px; }
-.upload-actions span, .retention { font-size: 12px; color: #60728a; }
+.upload-actions span, .retention { font-size: 12px; color: var(--sr-text-muted); }
 .library-heading { justify-content: space-between; margin-bottom: 18px; }
 .library-heading h2 { margin: 0; }
 .el-alert { margin-top: 18px; }
+.name-field { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; max-width: 520px; color: var(--sr-text-secondary); font-size: 14px; }
+.name-field small, .pdf-note { color: var(--sr-text-muted); font-size: 12px; }
+.pdf-note { display: block; margin-top: 4px; }
+.cv-name, .rename, .row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cv-name strong { color: var(--sr-ink); overflow-wrap: anywhere; }
+.rename .el-input { flex: 1 1 140px; }
+.row-actions .el-button { margin: 0; }
 @media (max-width: 600px) {
   .upload-section, .library { padding: 18px; }
   .upload-actions .el-button { width: 100%; font-size: 13px; }

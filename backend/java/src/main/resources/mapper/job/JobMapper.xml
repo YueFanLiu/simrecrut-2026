@@ -36,10 +36,10 @@
     </insert>
     <insert id="insertVersion" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sim_job_version (job_id, matching_rule_version_id, created_by, public_id,
-        version_no, description, public_requirements_json, title_snapshot, active_criteria_json,
+        version_no, description, work_location, public_requirements_json, title_snapshot, active_criteria_json,
         weight_skills, weight_experience, weight_education, weight_languages, weight_projects, revision_no)
         VALUES (#{jobId}, #{matchingRuleVersionId}, #{createdBy}, #{publicId}, #{versionNo},
-        #{description}, #{publicRequirementsJson}, #{title}, #{activeCriteriaJson}, #{weightSkills},
+        #{description}, #{workLocation}, #{publicRequirementsJson}, #{title}, #{activeCriteriaJson}, #{weightSkills},
         #{weightExperience}, #{weightEducation}, #{weightLanguages}, #{weightProjects}, 1)
     </insert>
     <select id="nextVersion" resultType="int">
@@ -89,7 +89,7 @@
     </select>
     <update id="updateDraft">
         UPDATE sim_job_version SET title_snapshot = #{title}, description = #{description},
-        active_criteria_json = #{activeCriteriaJson}, public_requirements_json = #{publicRequirementsJson},
+        work_location = #{workLocation}, active_criteria_json = #{activeCriteriaJson}, public_requirements_json = #{publicRequirementsJson},
         weight_skills = #{weightSkills}, weight_experience = #{weightExperience},
         weight_education = #{weightEducation}, weight_languages = #{weightLanguages},
         weight_projects = #{weightProjects}, status = #{status}, published_by = #{publishedBy},

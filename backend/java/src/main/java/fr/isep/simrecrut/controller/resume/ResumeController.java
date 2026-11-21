@@ -6,6 +6,7 @@ import fr.isep.simrecrut.dto.identity.RegistrationDtos.ApiResponse;
 import fr.isep.simrecrut.dto.resume.ResumeDtos.EditRequest;
 import fr.isep.simrecrut.dto.resume.ResumeDtos.EmptyRequest;
 import fr.isep.simrecrut.dto.resume.ResumeDtos.ImportRequest;
+import fr.isep.simrecrut.dto.resume.ResumeDtos.RenameRequest;
 import fr.isep.simrecrut.security.currentuser.AccountPrincipal;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -85,6 +86,13 @@ public class ResumeController {
             @PathVariable String id, @RequestHeader("Idempotency-Key") String key,
             @Valid @RequestBody(required = false) EmptyRequest body) throws Exception {
         return response(200, resumes.cleanup(account.userId(), id, key));
+    }
+
+    @PostMapping("/{id}/rename")
+    public ResponseEntity<ApiResponse<JsonNode>> rename(@AuthenticationPrincipal AccountPrincipal account,
+            @PathVariable String id, @RequestHeader("Idempotency-Key") String key,
+            @Valid @RequestBody RenameRequest body) throws Exception {
+        return response(200, resumes.rename(account.userId(), id, key, body));
     }
 
     @DeleteMapping("/{id}")
