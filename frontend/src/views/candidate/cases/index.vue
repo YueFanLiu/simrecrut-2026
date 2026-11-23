@@ -109,7 +109,7 @@ onBeforeUnmount(() => { pageActive = false; sequence += 1; selected.value = null
         <ElAlert v-if="actionError" class="feedback" type="error" :closable="false" :title="$t(actionError)" />
         <p v-if="feedback" class="feedback" role="status">{{ $t(feedback) }}</p>
         <p v-if="deleting" role="status">{{ $t("Requesting case deletion.") }}</p>
-        <div v-if="!rows.length" class="panel state-panel"><ElEmpty :description="$t(&quot;No simulation records yet&quot;)" />
+        <div v-if="!rows.length" class="panel state-panel"><ElEmpty :image-size="150"><template #description /></ElEmpty>
           <h2>{{ $t("No Simulation Records Yet") }}</h2><p>{{ $t("Start a case from a published job. Deleted and expired cases are not listed.") }}</p>
           <ElButton type="primary" :disabled="deleting" @click="router.push({ name: 'PublishedJobs' })">{{ $t("Browse Jobs") }}</ElButton></div>
         <template v-else>

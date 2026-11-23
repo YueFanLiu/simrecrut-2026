@@ -63,7 +63,7 @@ onBeforeUnmount(() => { active = false; sequence += 1; jobs.value = [] })
         <ElSelect v-model="filters.sort" :aria-label="$t(&quot;Sort jobs&quot;)" :disabled="loading"><ElOption :label="$t(&quot;Newest First&quot;)" value="latest" /><ElOption :label="$t(&quot;Oldest First&quot;)" value="oldest" /></ElSelect></div>
       <div v-if="loading" class="panel state-panel" role="status"><p>{{ $t("Loading managed jobs...") }}</p><ElSkeleton :rows="6" animated /></div>
       <div v-else-if="error" class="panel state-panel" role="alert"><h2>{{ $t("Jobs Could Not Be Loaded") }}</h2><p>{{ $t(error) }}</p><ElButton type="primary" @click="loadJobs">{{ $t("Try Again") }}</ElButton></div>
-      <div v-else-if="!jobs.length" class="panel state-panel"><ElEmpty :description="$t(&quot;No managed jobs yet&quot;)" /><h2>{{ $t("No Managed Jobs Yet") }}</h2><p>{{ $t("There are no job drafts or published jobs in this demo list.") }}</p></div>
+      <div v-else-if="!jobs.length" class="panel state-panel"><ElEmpty :image-size="150"><template #description /></ElEmpty><h2>{{ $t("No Managed Jobs Yet") }}</h2><p>{{ $t("There are no job drafts or published jobs in this demo list.") }}</p></div>
       <div v-else-if="!filtered.length" class="panel state-panel"><ElEmpty :description="$t(&quot;No jobs match your filters&quot;)" /><ElButton @click="resetFilters">{{ $t("Reset Filters") }}</ElButton></div>
       <template v-else>
         <div class="panel desktop-list"><div class="table-scroll" role="region" tabindex="0" :aria-label="$t(&quot;Managed jobs table&quot;)"><table><caption>{{ filtered.length }} {{ $t("managed jobs · Published history cannot be edited directly") }}</caption>

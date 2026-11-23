@@ -115,6 +115,12 @@ button, input { font: inherit; }
 .el-progress-bar__inner { background: linear-gradient(90deg, var(--sr-primary), var(--sr-primary-light)); }
 .el-tabs__active-bar { background-color: var(--sr-accent); height: 3px; border-radius: 3px; }
 .el-tabs__item.is-active { color: var(--sr-ink); font-weight: 650; }
+/* Empty states use the ISEP illustration instead of the grey default box */
+.el-empty__image { background: url('./empty-state-illustration.svg') center / contain no-repeat; }
+.el-empty__image > svg { visibility: hidden; }
+.el-empty__description p { color: var(--sr-text-muted); font-size: 14px; }
+.el-empty:has(.el-empty__description:empty) { padding-bottom: 8px; }
+.el-empty__description:empty { display: none; }
 
 /* Thin ISEP stripe at the top of every workspace header */
 .sr-header-accent { height: 4px; background: var(--sr-brand-gradient); }
