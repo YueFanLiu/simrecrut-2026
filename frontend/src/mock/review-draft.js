@@ -19,6 +19,29 @@ export const factGroups = [
   ] },
 ]
 
+// Profile groups hold identity and other CV content for recruiters; they stay outside the professional block.
+export const profileGroups = [
+  { key: 'personal', label: 'Personal information', singular: 'Personal detail',
+    hint: 'Check your name, contact details and photo. Recruiters see these reviewed values instead of your PDF.', fields: [
+    { key: 'photo', label: 'Photo', type: 'image' },
+    { key: 'fullName', label: 'Full name', max: 120 },
+    { key: 'gender', label: 'Gender', options: ['Woman', 'Man', 'Not stated'] },
+    { key: 'email', label: 'Email', max: 160 },
+    { key: 'phone', label: 'Phone', max: 40 },
+    { key: 'city', label: 'City', max: 100 },
+  ] },
+  { key: 'other', label: 'Other information', singular: 'Other item',
+    hint: 'Interests, volunteering, certifications, awards and anything else from your CV.', fields: [
+    { key: 'category', label: 'Category', options: ['Interests', 'Volunteering', 'Certifications', 'Awards', 'Other'] },
+    { key: 'summary', label: 'Details', max: 300 },
+  ] },
+]
+
+// Neutral sample portrait drawn inline; no real person is shown.
+const samplePhoto = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">'
+  + '<rect width="96" height="96" rx="14" fill="#dde6f6"/><circle cx="48" cy="38" r="17" fill="#4a78c9"/>'
+  + '<path d="M18 88a30 30 0 0 1 60 0z" fill="#1f4fa8"/></svg>')
+
 export const researchFields = [
   { key: 'schoolPrestige', label: 'School Category' }, { key: 'referral', label: 'Referral' },
   { key: 'gender', label: 'Gender' }, { key: 'ethnicity', label: 'Ethnicity' },
@@ -57,9 +80,23 @@ export function createReviewDraft(scenario = 'normal') {
         summary: observed('Built a Vue interface for recruitment workflows.', 'Recruitment Portal: built a Vue interface for recruitment workflows.'),
       }] },
     },
+    profile: {
+      personal: { confirmedAbsent: false, items: [{ id: 'personal-1',
+        photo: observed(samplePhoto, 'Portrait in the CV header.'),
+        fullName: observed('Alex Martin', 'Alex Martin, Software Engineer'),
+        gender: { value: 'Not stated', status: 'UNKNOWN', evidenceExcerpt: '', evidenceLocation: '' },
+        email: observed('alex.martin@example.test', 'alex.martin@example.test · +33 6 00 00 00 00'),
+        phone: observed('+33 6 00 00 00 00', 'alex.martin@example.test · +33 6 00 00 00 00'),
+        city: observed('Paris, France', 'Based in Paris, France'),
+      }] },
+      other: { confirmedAbsent: false, items: [
+        { id: 'other-1', category: observed('Interests', 'Interests: chess, running.', 2), summary: observed('Chess, running', 'Interests: chess, running.', 2) },
+        { id: 'other-2', category: observed('Volunteering', 'Volunteer tutor at a student association.', 2), summary: observed('Volunteer tutor at a student association', 'Volunteer tutor at a student association.', 2) },
+      ] },
+    },
   }
   if (scenario === 'empty') {
-    for (const group of Object.values(draft.professional)) group.items = []
+    for (const group of [...Object.values(draft.professional), ...Object.values(draft.profile)]) group.items = []
   }
   if (scenario === 'missing') {
     const field = draft.professional.education.items[0].subject

@@ -12,13 +12,13 @@ const drawer = ref(false), selected = ref(null), selectedVersion = ref(''), page
 const filters = reactive({ keyword: '', type: '', status: '' })
 const filtered = computed(() => filterFrozenProtocols(rows.value, filters))
 const visible = computed(() => filtered.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value))
-const configuration = computed(() => selected.value ? JSON.stringify({
-  protocolVersion: selected.value.version, featureSchema: selected.value.schema,
-  preprocessingVersion: selected.value.preprocessing, mlCutoff: selected.value.cutoff,
-  modelTypes: selected.value.modelTypes, matchingSummary: selected.value.matching,
-  labelConfiguration: null, featureOrdering: null, categoryMappings: null,
-  preprocessingParameters: null, objectiveRuleThreshold: null,
-}, null, 2) : '')
+// Null means the fixture has no value; it is shown as Unavailable and never as zero.
+const configuration = computed(() => selected.value ? [
+  ['Protocol Version', selected.value.version], ['Feature Schema', selected.value.schema],
+  ['Preprocessing Version', selected.value.preprocessing], ['ML Cutoff', selected.value.cutoff],
+  ['Model Type', selected.value.modelTypes.join(' / ')], ['Label configuration', null], ['Feature ordering', null],
+  ['Category mappings', null], ['Preprocessing parameters', null], ['Objective rule threshold', null],
+] : [])
 let active = true, listRequest = 0, detailRequest = 0
 const delay = () => new Promise(resolve => setTimeout(resolve, 400))
 watch(filters, () => { page.value = 1 })
@@ -86,7 +86,9 @@ load()
         <h3>{{ $t("Frozen Label Configuration") }}</h3><p>{{ $t(selected.labels) }}</p>
         <h3>{{ $t("Feature Schema & Preprocessing") }}</h3><p>{{ selected.inputs }}</p><p>{{ selected.encoding }}</p>
         <h3>{{ $t("Cutoff Context") }}</h3><p>{{ selected.threshold }}</p>
-        <h3>{{ $t("Configuration Summary") }}</h3><p>{{ $t("Read-only JSON. Null means configuration is unavailable; it is never interpreted as zero.") }}</p><pre tabindex="0" :aria-label="$t(&quot;Read-only protocol configuration&quot;)">{{ configuration }}</pre>
+        <h3>{{ $t("Configuration Summary") }}</h3><p>{{ $t("Read only. Unavailable means the configuration is missing; it is never interpreted as zero.") }}</p>
+        <ul class="config-list" :aria-label="$t(&quot;Read-only protocol configuration&quot;)"><li v-for="[name, value] in configuration" :key="name"><span>{{ $t(name) }}</span>
+          <ElTag v-if="value === null" type="info" size="small">{{ $t("Unavailable") }}</ElTag><strong v-else>{{ $t(String(value)) }}</strong></li></ul>
       </div>
     </ElDrawer>
   </AdminLayout>
@@ -108,7 +110,9 @@ table { border-collapse: collapse; width: 100%; font-size: 13px; } th { text-ali
 .el-pagination { margin-top: 20px; justify-content: end; }
 .protocol-cards { display: none; }
 dl { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 13px; } dt { font-weight: 600; color: var(--sr-text-secondary); } dd { margin: 0; overflow-wrap: anywhere; }
-.details { overflow-wrap: anywhere; }.details h3 { margin-top: 26px; } pre { background: var(--sr-surface-tint); border-radius: 6px; padding: 16px; font-size: 12px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }.retry { margin-top: 16px; }
+.details { overflow-wrap: anywhere; }.details h3 { margin-top: 26px; } .config-list { list-style: none; margin: 0; padding: 4px 16px; background: var(--sr-surface-tint); border: 1px solid var(--sr-border); border-radius: var(--sr-radius); }
+.config-list li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 0; font-size: 13px; border-bottom: 1px solid var(--sr-border); }
+.config-list li:last-child { border-bottom: 0; } .config-list span { color: var(--sr-text-muted); } .config-list strong { color: var(--sr-ink); font-weight: 600; text-align: right; }.retry { margin-top: 16px; }
 @media (max-width: 1100px) { .filters { grid-template-columns: 1fr 1fr; } .filters .el-button { justify-self: start; } }
 @media (max-width: 760px) { .heading { align-items: start; flex-wrap: wrap; } h1 { font-size: 24px; }.protocol-table { display: none; }.protocol-cards { display: grid; gap: 16px; }.protocol-cards article { border-bottom: 1px solid var(--sr-border); padding-bottom: 18px; } .list-heading { flex-wrap: wrap; } .panel { padding: 16px; } }
 @media (max-width: 480px) { .filters { grid-template-columns: minmax(0, 1fr); } dl { grid-template-columns: minmax(0, 1fr); gap: 6px; } dd { margin-bottom: 8px; }.details h2 { font-size: 20px; } }

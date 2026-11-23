@@ -10,7 +10,9 @@ import { loadJobDetail } from '../../../mock/job-details.js'
 import { formatPublishedDate } from '../../../utils/job-list.js'
 import { caseCreationScenario, jobDetailScenario } from '../../../config/demo.js'
 import { useCasesStore } from '../../../store/modules/cases.js'
+import { useAuthStore } from '../../../store/modules/auth.js'
 
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const cases = useCasesStore()
@@ -60,6 +62,9 @@ onBeforeUnmount(() => { loadSequence += 1; pageActive = false })
 
 async function startSimulation() {
   if (creatingCase.value || !job.value) return
+  // Visitors can read the job; a simulation needs a Candidate account and returns here after sign-in.
+  if (!auth.isDemoSignedIn) { await router.push({ name: 'Login', query: { redirect: route.fullPath } }); return }
+  if (!auth.hasDemoRole('Candidate')) { creationError.value = 'Only Candidate accounts can start a simulation.'; return }
   creatingCase.value = true
   creationError.value = ''
   const displayedJob = job.value
@@ -116,7 +121,7 @@ async function startSimulation() {
             </div>
           </div>
           <ElButton type="primary" size="large" :loading="creatingCase" :disabled="creatingCase"
-            :aria-describedby="demoMode ? 'simulation-notice' : undefined" @click="startSimulation">{{ $t(creatingCase ? 'Creating Case...' : 'Start Simulation') }}</ElButton>
+            :aria-describedby="demoMode ? 'simulation-notice' : undefined" @click="startSimulation">{{ $t(creatingCase ? 'Creating Case...' : auth.isDemoSignedIn ? 'Start Simulation' : 'Sign in to start a simulation') }}</ElButton>
         </div>
         <ElAlert v-if="demoMode" id="simulation-notice" class="demo-notice" type="info" :closable="false"
           :title="$t(&quot;Frontend demo: Start Simulation creates a temporary case in memory and opens the PDF upload demo. No backend case or real assessment is created.&quot;)" />

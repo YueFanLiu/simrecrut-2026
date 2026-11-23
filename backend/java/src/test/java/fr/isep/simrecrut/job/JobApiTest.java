@@ -68,6 +68,13 @@ class JobApiTest {
                 .andExpect(jsonPath("data.page").value(2)).andExpect(jsonPath("data.items").isArray());
     }
 
+    @Test void visitorsCanBrowsePublishedJobsWithoutSigningIn() throws Exception {
+        when(jobs.list(any(), eq(true), eq(1), eq(20), eq(""))).thenReturn(new Page<>(List.of(), 0, 1, 20));
+        when(jobs.detail(any(), eq(ID), eq(true))).thenReturn(json.readTree("{\"jobId\":\"" + ID + "\"}"));
+        mvc.perform(get("/api/v1/candidate/jobs")).andExpect(status().isOk()).andExpect(jsonPath("code").value(0));
+        mvc.perform(get("/api/v1/candidate/jobs/" + ID)).andExpect(status().isOk());
+    }
+
     @Test void documentDraftReadAndUpdateAreMapped() throws Exception {
         when(jobs.detail(any(), eq(ID), eq(false))).thenReturn(json.readTree("{\"revision\":1}"));
         mvc.perform(get("/api/v1/hr/jobs/" + ID).with(hr())).andExpect(status().isOk());

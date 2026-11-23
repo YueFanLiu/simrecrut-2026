@@ -86,8 +86,9 @@ public class SecurityConfig {
                 .hasAnyRole("HR", "RESEARCHER")
                 .requestMatchers("/api/v1/research/cases/**")
                 .hasRole("RESEARCHER")
+                // Published jobs are public: visitors may browse them before signing in.
                 .requestMatchers(HttpMethod.GET, "/api/v1/candidate/jobs", "/api/v1/candidate/jobs/**")
-                .hasRole("CANDIDATE")
+                .permitAll()
                 .requestMatchers("/api/v1/admin/users", "/api/v1/admin/users/**",
                     "/api/v1/admin/roles", "/api/v1/admin/roles/**", "/api/v1/admin/permissions")
                 .hasRole("ADMIN")

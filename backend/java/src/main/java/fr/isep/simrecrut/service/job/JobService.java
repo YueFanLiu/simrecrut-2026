@@ -46,8 +46,9 @@ public class JobService {
         this.ruleCode = ruleCode;
     }
 
+    /** Candidate reads return only published public projections, so visitors need no account. */
     public Page<JsonNode> list(AccountPrincipal actor, boolean candidate, int page, int size, String keyword) {
-        access(candidate ? "CANDIDATE" : "HR", candidate ? "browse" : "list");
+        if (!candidate) access("HR", "list");
         if (page < 1 || size < 1 || size > 100 || page > 100000 || keyword.length() > 100) {
             throw new IllegalArgumentException("Invalid pagination or search.");
         }
@@ -57,7 +58,7 @@ public class JobService {
     }
 
     public JsonNode detail(AccountPrincipal actor, String jobId, boolean candidate) {
-        access(candidate ? "CANDIDATE" : "HR", candidate ? "browse" : "list");
+        if (!candidate) access("HR", "list");
         id(jobId);
         return tx.execute(status -> {
             JobVersion row = candidate ? db.published(jobId) : ownedDraft(actor, jobId);

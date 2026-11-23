@@ -24,17 +24,22 @@ async function signOut() {
           <RouterLink class="jobs-link" :to="{ name: 'PublishedJobs' }"
             :class="{ 'current-link': ['PublishedJobs', 'JobDetail'].includes(route.name) }"
             :aria-current="['PublishedJobs', 'JobDetail'].includes(route.name) ? 'page' : undefined">{{ $t("Jobs") }}</RouterLink>
-          <RouterLink class="jobs-link" :to="{ name: 'MySimulations' }"
+          <RouterLink v-if="auth.isDemoSignedIn" class="jobs-link" :to="{ name: 'MySimulations' }"
             :class="{ 'current-link': ['MySimulations', 'CvUpload', 'CvReview', 'SimulationProgress', 'SimulationResults'].includes(route.name) }"
             :aria-current="['MySimulations', 'CvUpload', 'CvReview', 'SimulationProgress', 'SimulationResults'].includes(route.name) ? 'page' : undefined">{{ $t("My simulations") }}</RouterLink>
-          <RouterLink v-if="!demoMode" class="jobs-link" :to="{ name: 'ConnectedResumes' }"
+          <RouterLink v-if="!demoMode && auth.isDemoSignedIn" class="jobs-link" :to="{ name: 'ConnectedResumes' }"
             :class="{ 'current-link': route.meta.connected }"
             :aria-current="route.meta.connected ? 'page' : undefined">{{ $t("My CVs") }}</RouterLink>
         </nav>
-        <div class="session-controls">
+        <div v-if="auth.isDemoSignedIn" class="session-controls">
           <span class="user-name">{{ auth.demoUser?.displayName }}</span>
           <ElButton @click="router.push({ name: 'DemoDashboard' })">{{ $t("Dashboard") }}</ElButton>
           <ElButton @click="signOut">{{ $t("Sign out") }}</ElButton>
+        </div>
+        <div v-else class="session-controls">
+          <span class="user-name">{{ $t("Visitor") }}</span>
+          <ElButton @click="router.push({ name: 'Login', query: { redirect: route.fullPath } })">{{ $t("Sign in") }}</ElButton>
+          <ElButton type="primary" @click="router.push({ name: 'Register' })">{{ $t("Create an account") }}</ElButton>
         </div>
       </div>
     </header>

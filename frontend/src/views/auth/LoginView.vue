@@ -1,7 +1,7 @@
 <script setup>
 import { useLocalizedValidation, t } from '../../i18n/index.js'
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElCheckbox, ElForm, ElFormItem, ElInput, ElMessage } from 'element-plus'
 import AuthLayout from '../../layouts/AuthLayout.vue'
 import FieldIcon from '../../components/simrecrut/FieldIcon.vue'
@@ -14,6 +14,7 @@ import { readRememberedIdentifier, saveRememberedIdentifier } from '../../utils/
 import { validateIdentifier, validatePassword } from '../../utils/login-validation.js'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 const formRef = ref()
 const rememberedIdentifier = readRememberedIdentifier()
@@ -47,7 +48,9 @@ async function submitLogin() {
       if (auth.hasDemoRole('Admin')) destination = 'AdminUsers'
       else if (auth.hasDemoRole('Candidate')) destination = 'ConnectedResumes'
     }
-    await router.replace({ name: destination })
+    // A visitor who chose an action on a public page returns there; only same-site paths are followed.
+    const redirect = typeof route.query.redirect === 'string' && /^\/(?!\/)/.test(route.query.redirect) ? route.query.redirect : ''
+    await router.replace(redirect || { name: destination })
   } catch (error) {
     loginError.value = error.message || 'Unable to sign in. Please try again.'
   } finally {
@@ -98,6 +101,7 @@ useLocalizedValidation(formRef)
     <el-button class="register-button" size="large" :disabled="loading || !canRegister"
       @click="router.push({ name: 'Register' })">{{ $t("Create a new account") }}</el-button>
     <p v-if="!canRegister" class="registration-note">{{ $t("Registration is not currently available.") }}</p>
+    <RouterLink class="guest-link" :to="{ name: 'PublishedJobs' }">{{ $t("Browse jobs without signing in") }} →</RouterLink>
 
     <aside v-if="demoMode" class="demo-note" :aria-label="$t(&quot;Demo account&quot;)">
       <strong>{{ $t("Frontend demo only") }}</strong>
@@ -125,6 +129,8 @@ h1 { margin: 0; font-size: 30px; letter-spacing: -0.8px; color: var(--sr-ink); }
 .forgot-password { display: block; width: fit-content; margin: 12px auto 0; color: var(--el-color-primary); font-size: 14px; }
 .registration-divider { display: flex; align-items: center; gap: 14px; margin: 20px 0 16px; color: var(--sr-text-subtle); font-size: 13px; }
 .registration-divider::before, .registration-divider::after { content: ''; height: 1px; background: var(--sr-border); flex: 1; }
+.guest-link { display: block; width: fit-content; margin: 16px auto 0; color: var(--sr-primary); font-size: 14px; font-weight: 600; text-decoration: none; }
+.guest-link:hover { text-decoration: underline; }
 .registration-note { margin: 10px 0 0; text-align: center; font-size: 12px; color: var(--sr-text-muted); }
 .demo-note { margin-top: 24px; padding: 16px; border: 1px solid var(--sr-primary-100); border-radius: 8px; background: var(--sr-surface-tint); font-size: 12px; color: var(--sr-text-muted); }
 .demo-note strong { color: var(--sr-text-secondary); font-size: 13px; }

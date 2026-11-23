@@ -8186,5 +8186,157 @@
   "Operation metadata without content.": {
     "zh": "不含内容的操作元数据。",
     "fr": "Métadonnées des opérations, sans contenu."
+  },
+  "Assessed skills": {
+    "zh": "评估的技能",
+    "fr": "Compétences évaluées"
+  },
+  "Choose or type codes": {
+    "zh": "选择或输入代码",
+    "fr": "Choisissez ou saisissez des codes"
+  },
+  "Target years": {
+    "zh": "目标年限",
+    "fr": "Années visées"
+  },
+  "Minimum years (optional)": {
+    "zh": "最低年限（选填）",
+    "fr": "Années minimales (facultatif)"
+  },
+  "Relevant role families": {
+    "zh": "相关岗位类别",
+    "fr": "Familles de postes pertinentes"
+  },
+  "Minimum degree": {
+    "zh": "最低学历",
+    "fr": "Diplôme minimum"
+  },
+  "Choose a degree level": {
+    "zh": "选择学历等级",
+    "fr": "Choisissez un niveau de diplôme"
+  },
+  "Any subject is accepted": {
+    "zh": "不限专业",
+    "fr": "Toutes les disciplines sont acceptées"
+  },
+  "Accepted subjects": {
+    "zh": "接受的专业",
+    "fr": "Disciplines acceptées"
+  },
+  "Required languages": {
+    "zh": "语言要求",
+    "fr": "Langues exigées"
+  },
+  "Minimum level": {
+    "zh": "最低等级",
+    "fr": "Niveau minimum"
+  },
+  "Add language": {
+    "zh": "添加语言",
+    "fr": "Ajouter une langue"
+  },
+  "Assessed project conditions": {
+    "zh": "评估的项目条件",
+    "fr": "Conditions de projet évaluées"
+  },
+  "Pick codes from the configured matching rule, or type a new one.": {
+    "zh": "从当前匹配规则中选择代码，也可以输入新代码。",
+    "fr": "Choisissez des codes de la règle de correspondance configurée, ou saisissez-en un nouveau."
+  },
+  "Read only. Unavailable means the configuration is missing; it is never interpreted as zero.": {
+    "zh": "只读。“不可用”表示缺少该配置，不会被当作零。",
+    "fr": "Lecture seule. Indisponible signifie que la configuration manque ; elle n’est jamais interprétée comme zéro."
+  },
+  "Label configuration": {
+    "zh": "标签配置",
+    "fr": "Configuration des étiquettes"
+  },
+  "Feature ordering": {
+    "zh": "特征顺序",
+    "fr": "Ordre des caractéristiques"
+  },
+  "Category mappings": {
+    "zh": "类别映射",
+    "fr": "Correspondances de catégories"
+  },
+  "Preprocessing parameters": {
+    "zh": "预处理参数",
+    "fr": "Paramètres de prétraitement"
+  },
+  "Objective rule threshold": {
+    "zh": "客观规则阈值",
+    "fr": "Seuil de la règle objective"
+  },
+  "Delete this CV, its original and its confirmed facts? This cannot be undone.": {
+    "zh": "删除此简历、原件及已确认的信息？此操作无法撤销。",
+    "fr": "Supprimer ce CV, son original et ses informations confirmées ? Cette action est irréversible."
+  },
+  "Confirmed facts saved. Temporary original removed.": {
+    "zh": "已保存确认的信息，临时原件已删除。",
+    "fr": "Informations confirmées enregistrées. Original temporaire supprimé."
+  },
+  "Facts saved. Temporary-file cleanup is pending; retry cleanup.": {
+    "zh": "信息已保存，临时文件尚未清理，请重试清理。",
+    "fr": "Informations enregistrées. Nettoyage du fichier temporaire en attente ; réessayez."
+  },
+  "Confirm your professional facts before saving them.": {
+    "zh": "保存前请确认你的职业信息。",
+    "fr": "Confirmez vos informations professionnelles avant de les enregistrer."
+  },
+  "Browse jobs without signing in": {
+    "zh": "不登录，先看看岗位",
+    "fr": "Parcourir les offres sans se connecter"
+  },
+  "Visitor": {
+    "zh": "访客",
+    "fr": "Visiteur"
+  },
+  "Only Candidate accounts can start a simulation.": {
+    "zh": "只有候选人账号可以开始模拟。",
+    "fr": "Seuls les comptes Candidat peuvent lancer une simulation."
+  },
+  "Sign in to start a simulation": {
+    "zh": "登录后开始模拟",
+    "fr": "Se connecter pour lancer une simulation"
+  },
+  "Personal detail": {
+    "zh": "个人信息",
+    "fr": "Informations personnelles"
+  },
+  "Woman": {
+    "zh": "女",
+    "fr": "Femme"
+  },
+  "Man": {
+    "zh": "男",
+    "fr": "Homme"
+  },
+  "Not stated": {
+    "zh": "未注明",
+    "fr": "Non indiqué"
+  },
+  "Other item": {
+    "zh": "其他条目",
+    "fr": "Autre élément"
+  },
+  "Interests": {
+    "zh": "兴趣爱好",
+    "fr": "Centres d’intérêt"
+  },
+  "Volunteering": {
+    "zh": "志愿经历",
+    "fr": "Bénévolat"
+  },
+  "Certifications": {
+    "zh": "证书",
+    "fr": "Certifications"
+  },
+  "Awards": {
+    "zh": "奖项",
+    "fr": "Distinctions"
+  },
+  "No photo in this CV": {
+    "zh": "简历中没有照片",
+    "fr": "Pas de photo dans ce CV"
   }
 }

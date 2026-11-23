@@ -43,7 +43,7 @@ async function removeResume() {
   if (busy.value || loading.value) return;
   const id = route.params.id;
   try {
-    await ElMessageBox.confirm(t("Delete this CV, its original and published JSON? This cannot be undone."), t("Delete CV"), { type: "warning", confirmButtonText: t("Delete CV"), cancelButtonText: t("Cancel") });
+    await ElMessageBox.confirm(t("Delete this CV, its original and its confirmed facts? This cannot be undone."), t("Delete CV"), { type: "warning", confirmButtonText: t("Delete CV"), cancelButtonText: t("Cancel") });
     if (stopped || route.params.id !== id) return;
     busy.value = true; actionError.value = "";
     deletionKey ||= crypto.randomUUID();
@@ -119,9 +119,9 @@ async function publish() {
     await refresh();
     // Cloud commit and temporary-file deletion can succeed independently.
     if (result.data.originalRemoved)
-      ElMessage.success(t("Confirmed JSON published. Temporary original removed."));
+      ElMessage.success(t("Confirmed facts saved. Temporary original removed."));
     else
-      ElMessage.warning(t("JSON published. Temporary-file cleanup is pending; retry cleanup."));
+      ElMessage.warning(t("Facts saved. Temporary-file cleanup is pending; retry cleanup."));
   } catch (error) {
     if (stopped || route.params.id !== id) return;
     if (factsLocked) await refresh();

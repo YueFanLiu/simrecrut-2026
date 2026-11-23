@@ -103,13 +103,14 @@ const router = createRouter({
       path: '/candidate/jobs',
       name: 'PublishedJobs',
       component: () => import('../views/candidate/jobs/index.vue'),
-      meta: { title: 'Published jobs', requiresDemoSession: true, demoRole: 'Candidate' },
+      // Visitors may browse published jobs; starting a simulation asks them to sign in.
+      meta: { title: 'Published jobs', public: true },
     },
     {
       path: '/candidate/jobs/:jobId',
       name: 'JobDetail',
       component: () => import('../views/candidate/jobs/detail.vue'),
-      meta: { title: 'Job details', requiresDemoSession: true, demoRole: 'Candidate' },
+      meta: { title: 'Job details', public: true },
     },
     {
       path: '/candidate/cases',

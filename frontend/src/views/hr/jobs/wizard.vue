@@ -7,6 +7,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElCheckbox, ElInput, ElInputNumber, ElMessageBox, ElOption, ElSelect, ElSkeleton, ElTag } from 'element-plus'
 import HrLayout from '../../../layouts/HrLayout.vue'
+import RequirementPayloadEditor from '../../../components/simrecrut/RequirementPayloadEditor.vue'
 import { useAuthStore } from '../../../store/modules/auth.js'
 import { useHrJobsStore } from '../../../store/modules/hr-jobs.js'
 import { createJobForm, criteria, extractMockRequirements, validateDescription, validateJob, validateWeights, weightUnits } from '../../../mock/hr-job-wizard.js'
@@ -42,13 +43,6 @@ let sequence = 0
 let manualId = 0
 const extractionFailed = ref(false)
 const operationKeys = new Map()
-const payloadExamples = {
-  Skills: '{"assessedSkillCodes":["SKILL_CODE"]}',
-  Experience: '{"targetYears":3,"relevantRoleFamilyCodes":["ROLE_CODE"],"minimumYears":1}',
-  Education: '{"minimumDegreeLevelCode":"DEGREE_CODE","unrestrictedSubject":true}',
-  Languages: '{"requiredLanguages":[{"languageCode":"LANGUAGE_CODE","minimumLevelCode":"LEVEL_CODE"}]}',
-  Projects: '{"assessedConditionCodes":["CONDITION_CODE"]}',
-}
 function operationKey(action, body) {
   const signature = JSON.stringify([action, jobId.value, body])
   if (!operationKeys.has(signature)) operationKeys.set(signature, crypto.randomUUID())
@@ -264,11 +258,8 @@ onBeforeUnmount(() => { active = false; sequence += 1 })
                   <label>{{ $t("Category") }}<ElSelect v-model="row.category" :aria-label="row.id + ' ' + $t('Category')" @update:model-value="row.reviewed = false"><ElOption v-for="option in criteria" :key="option" :label="$t(option)" :value="option" /></ElSelect></label>
                   <label v-if="demoMode">{{ $t("Accepted Equivalents (optional)") }}<ElInput v-model="row.equivalents" :aria-label="row.id + ' ' + $t('Accepted Equivalents (optional)')" maxlength="500" @update:model-value="row.reviewed = false" /></label>
                   <template v-if="!demoMode">
-                    <p>{{ $t("Requirement code:") }} {{ row.id }}</p>
-                    <label>{{ $t("Structured Requirement (JSON)") }} <ElInput v-model="row.payloadText" type="textarea" :rows="4"
-                        :aria-label="row.id + ' ' + $t('Structured Requirement (JSON)')" @update:model-value="row.reviewed = false" />
-                    </label>
-                    <p class="hint">{{ $t("Use codes from the configured matching rule. Example:") }} <code>{{ payloadExamples[row.category] }}</code></p>
+                    <RequirementPayloadEditor v-model="row.payloadText" :category="row.category" @update:model-value="row.reviewed = false" />
+                    <p class="hint">{{ $t("Pick codes from the configured matching rule, or type a new one.") }} {{ $t("Requirement code:") }} {{ row.id }}</p>
                     <ul v-if="row.warnings.length"><li v-for="warning in row.warnings" :key="warning">{{ $t(warning) }}</li></ul>
                   </template>
                   <details v-if="row.evidenceExcerpt"><summary>{{ $t("Source Evidence") }}</summary><p>{{ row.evidenceLocation }}</p><blockquote>{{ row.evidenceExcerpt }}</blockquote></details><p v-else class="hint">{{ $t("Manually added requirement. Check it against the job description.") }}</p>

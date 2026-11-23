@@ -7,7 +7,7 @@ import CandidateLayout from '../../../layouts/CandidateLayout.vue'
 import CaseProgressStepper from '../../../components/simrecrut/CaseProgressStepper.vue'
 import FactGroupEditor from '../../../components/simrecrut/FactGroupEditor.vue'
 import EvidencePanel from '../../../components/simrecrut/EvidencePanel.vue'
-import { factGroups, researchFields, createEmptyFactItem } from '../../../mock/review-draft.js'
+import { factGroups, profileGroups, researchFields, createEmptyFactItem } from '../../../mock/review-draft.js'
 import { emptyResearchAttributes, validateReviewDraft } from '../../../utils/review-validation.js'
 import { researchAttributesEnabled, reviewScenario } from '../../../config/demo.js'
 import { useCasesStore } from '../../../store/modules/cases.js'
@@ -75,14 +75,18 @@ function markChanged() {
   errors.value = {}
 }
 
+// Personal and other information come first, as on a CV; they are stored apart from the professional block.
+const groupData = group => draft.value.profile?.[group.key] ?? draft.value.professional[group.key]
+const visibleGroups = computed(() => draft.value ? [...profileGroups.filter(group => draft.value.profile?.[group.key]), ...factGroups] : [])
+
 function addItem(group) {
-  draft.value.professional[group.key].items.push(createEmptyFactItem(group))
-  draft.value.professional[group.key].confirmedAbsent = false
+  groupData(group).items.push(createEmptyFactItem(group))
+  groupData(group).confirmedAbsent = false
   markChanged()
 }
 
 function removeItem(group, itemId) {
-  const data = draft.value.professional[group.key]
+  const data = groupData(group)
   data.items = data.items.filter((item) => item.id !== itemId)
   data.confirmedAbsent = false
   if (evidence.value?.itemId === itemId) evidence.value = null
@@ -217,8 +221,8 @@ onBeforeUnmount(() => { loadSequence += 1; pageActive = false; clearInterval(exp
           :title="$t(&quot;Some sample facts are missing or conflicting. Resolve required facts before confirming.&quot;)" />
         <div class="review-grid">
           <div class="fact-column">
-            <FactGroupEditor v-for="group in factGroups" :key="group.key" :definition="group"
-              :group="draft.professional[group.key]" :required="draft.requiredGroups.includes(group.key)"
+            <FactGroupEditor v-for="group in visibleGroups" :key="group.key" :definition="group"
+              :group="groupData(group)" :required="draft.requiredGroups.includes(group.key)"
               :errors="errors" :disabled="Boolean(busy)" @change="markChanged" @add="addItem(group)"
               @remove="removeItem(group, $event)" @evidence="showEvidence" />
           </div>
