@@ -28,7 +28,8 @@ function editField(item, field, value) {
       <div class="item-heading"><h3>{{ $t(definition.singular) }} {{ index + 1 }}</h3>
         <ElButton text type="danger" :disabled="disabled" :aria-label="$t('Remove {item} {index}', { item: $t(definition.singular), index: index + 1 })"
           @click="emit('remove', item.id)">{{ $t("Remove") }}</ElButton></div>
-      <div v-for="field in definition.fields" :key="field.key" class="fact-field">
+      <div v-for="field in definition.fields" :key="field.key" class="fact-field"
+        :class="{ wide: field.type === 'image' || field.key === 'summary' || definition.fields.length === 1 }">
         <label :for="`fact-${item.id}-${field.key}`">{{ $t(field.label) }}</label>
         <div v-if="field.type === 'image'" :id="`fact-${item.id}-${field.key}`" class="photo-field" tabindex="-1">
           <img v-if="item[field.key].value" :src="item[field.key].value" :alt="$t(field.label)" />
@@ -69,9 +70,12 @@ h2 { margin: 0; color: var(--sr-text); font-size: 17px; }
 .group-hint { margin: 8px 0 0; color: var(--sr-text-muted); font-size: 13px; line-height: 1.6; }
 .group-heading span, .empty-message { color: var(--sr-text-muted); font-size: 12px; line-height: 1.7; }
 .fact-item { margin-top: 18px; padding: 18px; border: 1px solid var(--sr-surface-sunken); border-radius: 8px; background: var(--sr-surface-tint); }
-.item-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.item-heading { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 0; }
+/* Short fields sit side by side; photos and long text use the full width. */
+.fact-item { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
+.fact-field { min-width: 0; }
+.fact-field.wide { grid-column: 1 / -1; }
 h3 { margin: 0; color: var(--sr-text-secondary); font-size: 14px; }
-.fact-field + .fact-field { margin-top: 16px; }
 label { display: block; margin-bottom: 7px; color: var(--sr-text-secondary); font-size: 13px; font-weight: 600; }
 .el-select { width: 100%; }
 .photo-field { display: flex; align-items: center; gap: 16px; }
@@ -84,5 +88,5 @@ label { display: block; margin-bottom: 7px; color: var(--sr-text-secondary); fon
 .add-button { display: block; margin-top: 18px; }
 :deep(.el-checkbox) { height: auto; margin-top: 12px; }
 :deep(.el-checkbox__label) { white-space: normal; font-size: 12px; line-height: 1.7; }
-@media (max-width: 700px) { .fact-group { padding: 20px; } .fact-item { padding: 14px; } }
+@media (max-width: 700px) { .fact-group { padding: 20px; } .fact-item { padding: 14px; grid-template-columns: minmax(0, 1fr); } }
 </style>

@@ -77,7 +77,19 @@ function markChanged() {
 
 // Personal and other information come first, as on a CV; they are stored apart from the professional block.
 const groupData = group => draft.value.profile?.[group.key] ?? draft.value.professional[group.key]
-const visibleGroups = computed(() => draft.value ? [...profileGroups.filter(group => draft.value.profile?.[group.key]), ...factGroups] : [])
+const visibleGroups = computed(() => {
+  if (!draft.value) return []
+  const profile = profileGroups.filter(group => draft.value.profile?.[group.key])
+  return [...profile.filter(group => group.key === 'personal'), ...factGroups, ...profile.filter(group => group.key !== 'personal')]
+})
+const activeDefinition = computed(() => visibleGroups.value.find(group => group.key === activeGroup.value) || visibleGroups.value[0])
+// One tab per CV section keeps the page short; a tab with problems is marked and opened first.
+const activeGroup = ref('personal')
+const groupHasError = group => Object.keys(errors.value).some(key => key === group.key || key.startsWith(`${group.key}.`))
+watch(errors, () => {
+  const first = visibleGroups.value.find(groupHasError)
+  if (first) activeGroup.value = first.key
+})
 
 function addItem(group) {
   groupData(group).items.push(createEmptyFactItem(group))
@@ -219,12 +231,20 @@ onBeforeUnmount(() => { loadSequence += 1; pageActive = false; clearInterval(exp
           :title="$t(&quot;No professional facts were extracted in this demo scenario. Add facts manually or explicitly confirm that a group has no facts to report.&quot;)" />
         <ElAlert v-if="!noFacts && unresolvedFacts" class="review-notice" type="warning" :closable="false"
           :title="$t(&quot;Some sample facts are missing or conflicting. Resolve required facts before confirming.&quot;)" />
+        <div class="fact-tabs" role="tablist" :aria-label="$t('CV sections')">
+          <button v-for="group in visibleGroups" :key="group.key" type="button" role="tab" class="fact-tab"
+            :class="{ active: activeDefinition.key === group.key }" :aria-selected="activeDefinition.key === group.key"
+            @click="activeGroup = group.key">
+            {{ $t(group.label) }}<em>{{ groupData(group).items.length }}</em>
+            <i v-if="groupHasError(group)" class="tab-error" :aria-label="$t('Needs attention')" />
+          </button>
+        </div>
         <div class="review-grid">
-          <div class="fact-column">
-            <FactGroupEditor v-for="group in visibleGroups" :key="group.key" :definition="group"
-              :group="groupData(group)" :required="draft.requiredGroups.includes(group.key)"
-              :errors="errors" :disabled="Boolean(busy)" @change="markChanged" @add="addItem(group)"
-              @remove="removeItem(group, $event)" @evidence="showEvidence" />
+          <div class="fact-column" role="tabpanel">
+            <FactGroupEditor :key="activeDefinition.key" :definition="activeDefinition"
+              :group="groupData(activeDefinition)" :required="draft.requiredGroups.includes(activeDefinition.key)"
+              :errors="errors" :disabled="Boolean(busy)" @change="markChanged" @add="addItem(activeDefinition)"
+              @remove="removeItem(activeDefinition, $event)" @evidence="showEvidence" />
           </div>
           <aside class="evidence-column"><EvidencePanel :selection="evidence" @back="returnToFact" /></aside>
         </div>
@@ -272,7 +292,16 @@ h2 { font-size: 17px; color: var(--sr-text); }
 .review-notice { margin-bottom: 20px; }
 .review-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 22px; align-items: start; }
 .fact-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-.evidence-column { position: sticky; top: 20px; min-width: 0; }
+.evidence-column { position: sticky; top: 104px; min-width: 0; }
+.fact-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.fact-tab { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  color: var(--sr-text-secondary); background: var(--sr-surface); border: 1px solid var(--sr-border); border-radius: 999px; transition: border-color .15s, color .15s, background .15s; }
+.fact-tab:hover { border-color: var(--sr-primary-200); color: var(--sr-ink); }
+.fact-tab.active { color: #fff; background: var(--sr-primary); border-color: var(--sr-primary); }
+.fact-tab.active em { color: var(--sr-primary); background: #fff; }
+.fact-tab:focus-visible { outline: 2px solid var(--sr-accent); outline-offset: 2px; }
+.fact-tab em { min-width: 18px; padding: 0 6px; font-style: normal; font-size: 11px; line-height: 18px; text-align: center; color: var(--sr-primary); background: var(--sr-primary-50); border-radius: 999px; }
+.tab-error { width: 7px; height: 7px; border-radius: 50%; background: #d14343; }
 .state-panel, .research-panel, .confirmation-panel { padding: 24px; border: 1px solid var(--sr-border); border-radius: 10px; background: white; }
 .state-panel { text-align: center; }
 .state-panel p, .research-panel p, .confirmation-panel p { color: var(--sr-text-muted); font-size: 13px; line-height: 1.8; }

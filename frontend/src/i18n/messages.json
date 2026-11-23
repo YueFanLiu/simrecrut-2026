@@ -8338,5 +8338,13 @@
   "No photo in this CV": {
     "zh": "简历中没有照片",
     "fr": "Pas de photo dans ce CV"
+  },
+  "Needs attention": {
+    "zh": "需要处理",
+    "fr": "À vérifier"
+  },
+  "CV sections": {
+    "zh": "简历分组",
+    "fr": "Sections du CV"
   }
 }
