@@ -8094,5 +8094,97 @@
   "Local OCR was used on a page. Verify the extracted evidence.": {
     "zh": "其中一页使用了本地文字识别。请核对提取的引文。",
     "fr": "Une page a été lue par reconnaissance de texte locale. Vérifiez les extraits."
+  },
+  "Quick access": {
+    "zh": "快捷入口",
+    "fr": "Accès rapide"
+  },
+  "Demo shortcuts": {
+    "zh": "演示快捷方式",
+    "fr": "Raccourcis de démonstration"
+  },
+  "Explore published jobs, upload your CV and follow each simulation to its results.": {
+    "zh": "浏览已发布岗位、上传简历，并跟踪每次模拟直到出结果。",
+    "fr": "Explorez les offres publiées, déposez votre CV et suivez chaque simulation jusqu'aux résultats."
+  },
+  "Publish job versions, review authorised cases and complete assigned human reviews.": {
+    "zh": "发布岗位版本、查看授权案例，并完成分配给你的人工评审。",
+    "fr": "Publiez des versions d’offres, consultez les dossiers autorisés et réalisez les évaluations humaines qui vous sont attribuées."
+  },
+  "Design controlled experiments and compare methods on frozen configurations.": {
+    "zh": "设计对照实验，并在冻结的配置上比较各种评估方法。",
+    "fr": "Concevez des expériences contrôlées et comparez les méthodes sur des configurations figées."
+  },
+  "Manage accounts, roles, model releases and service health.": {
+    "zh": "管理账号、角色、模型发布和服务状态。",
+    "fr": "Gérez les comptes, les rôles, les versions de modèles et l’état des services."
+  },
+  "See open positions and start a simulation.": {
+    "zh": "查看开放岗位并开始模拟。",
+    "fr": "Consultez les postes ouverts et lancez une simulation."
+  },
+  "Track progress and read your five results.": {
+    "zh": "跟踪进度并查看五种评估结果。",
+    "fr": "Suivez l’avancement et consultez vos cinq résultats."
+  },
+  "Upload a PDF and confirm the extracted facts.": {
+    "zh": "上传 PDF 并确认提取出的信息。",
+    "fr": "Déposez un PDF et confirmez les informations extraites."
+  },
+  "Drafts, published versions and history.": {
+    "zh": "草稿、已发布版本和历史记录。",
+    "fr": "Brouillons, versions publiées et historique."
+  },
+  "Set requirements and criterion weights.": {
+    "zh": "设置岗位要求和各项权重。",
+    "fr": "Définissez les exigences et les pondérations des critères."
+  },
+  "Read-only results for your managed jobs.": {
+    "zh": "查看你所管理岗位的只读结果。",
+    "fr": "Résultats en lecture seule pour les offres que vous gérez."
+  },
+  "Blind human reviews assigned to you.": {
+    "zh": "分配给你的盲审任务。",
+    "fr": "Évaluations humaines à l’aveugle qui vous sont attribuées."
+  },
+  "Experiments and their frozen versions.": {
+    "zh": "实验及其冻结版本。",
+    "fr": "Expériences et leurs versions figées."
+  },
+  "Define settings and select subjects.": {
+    "zh": "设置参数并选择研究对象。",
+    "fr": "Définissez les paramètres et choisissez les sujets."
+  },
+  "Eligible profiles with research grants.": {
+    "zh": "已获研究授权的合格档案。",
+    "fr": "Profils éligibles disposant d’une autorisation de recherche."
+  },
+  "Neutral and Biased model packages.": {
+    "zh": "中立模型和偏见模型的版本包。",
+    "fr": "Paquets des modèles neutre et biaisé."
+  },
+  "Assign primary human reviews to reviewers.": {
+    "zh": "把主要人工评审分配给评审员。",
+    "fr": "Attribuez les évaluations humaines principales aux évaluateurs."
+  },
+  "Account status and role assignments.": {
+    "zh": "账号状态和角色分配。",
+    "fr": "Statut des comptes et attribution des rôles."
+  },
+  "Module permissions by role.": {
+    "zh": "按角色划分的模块权限。",
+    "fr": "Permissions des modules par rôle."
+  },
+  "Test, approve and activate model versions.": {
+    "zh": "测试、审批并启用模型版本。",
+    "fr": "Testez, approuvez et activez les versions de modèles."
+  },
+  "Service availability and file cleanup.": {
+    "zh": "服务可用性和临时文件清理。",
+    "fr": "Disponibilité des services et nettoyage des fichiers temporaires."
+  },
+  "Operation metadata without content.": {
+    "zh": "不含内容的操作元数据。",
+    "fr": "Métadonnées des opérations, sans contenu."
   }
 }
