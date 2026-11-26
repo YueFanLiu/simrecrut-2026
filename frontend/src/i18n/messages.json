@@ -8346,5 +8346,789 @@
   "CV sections": {
     "zh": "简历分组",
     "fr": "Sections du CV"
+  },
+  "Your skills": {
+    "zh": "你的技能",
+    "fr": "Vos compétences"
+  },
+  "Review, edit or add any skill": {
+    "zh": "检查、修改或自由添加技能",
+    "fr": "Vérifiez, modifiez ou ajoutez une compétence"
+  },
+  "No skills yet. Add the skills you want to include in your CV.": {
+    "zh": "还没有技能，可以添加你希望展示的技能。",
+    "fr": "Aucune compétence. Ajoutez celles que vous souhaitez inclure dans votre CV."
+  },
+  "View evidence for {skill}": {
+    "zh": "查看“{skill}”的依据",
+    "fr": "Voir la source de {skill}"
+  },
+  "Edit skill {skill}": {
+    "zh": "编辑技能“{skill}”",
+    "fr": "Modifier la compétence {skill}"
+  },
+  "Remove skill {skill}": {
+    "zh": "移除技能“{skill}”",
+    "fr": "Retirer la compétence {skill}"
+  },
+  "Edit skill": {
+    "zh": "编辑技能",
+    "fr": "Modifier une compétence"
+  },
+  "Add a skill": {
+    "zh": "补充一项技能",
+    "fr": "Ajouter une compétence"
+  },
+  "For example: Figma, user interviews, event planning…": {
+    "zh": "例如：Figma、用户访谈、活动策划……",
+    "fr": "Par exemple : Figma, entretiens utilisateurs, organisation événementielle…"
+  },
+  "Save skill": {
+    "zh": "保存技能",
+    "fr": "Enregistrer la compétence"
+  },
+  "Add skill": {
+    "zh": "添加技能",
+    "fr": "Ajouter la compétence"
+  },
+  "Your addition or correction": {
+    "zh": "本人补充或修改",
+    "fr": "Votre ajout ou correction"
+  },
+  "Added by you. No excerpt from the original CV is attached.": {
+    "zh": "这是你补充的内容，没有附带原简历摘录。",
+    "fr": "Ajout personnel, sans extrait du CV original."
+  },
+  "Suggestion to review": {
+    "zh": "待你确认的建议",
+    "fr": "Suggestion à vérifier"
+  },
+  "Confirm and add": {
+    "zh": "确认并加入",
+    "fr": "Confirmer et ajouter"
+  },
+  "Dismiss suggestion": {
+    "zh": "忽略建议",
+    "fr": "Ignorer la suggestion"
+  },
+  "Review your CV information": {
+    "zh": "确认你的简历信息",
+    "fr": "Vérifiez les informations de votre CV"
+  },
+  "Keep what is correct, edit what needs attention and add anything missing.": {
+    "zh": "保留正确的信息，修改需要调整的内容，并补充遗漏。",
+    "fr": "Conservez les informations exactes, corrigez les autres et complétez les éléments manquants."
+  },
+  "Add section": {
+    "zh": "添加栏目",
+    "fr": "Ajouter une section"
+  },
+  "Section name": {
+    "zh": "栏目名称",
+    "fr": "Nom de la section"
+  },
+  "For example: Certificates, volunteering, portfolio": {
+    "zh": "例如：证书、志愿经历、作品集",
+    "fr": "Par exemple : certifications, bénévolat, portfolio"
+  },
+  "Create section": {
+    "zh": "创建栏目",
+    "fr": "Créer la section"
+  },
+  "Remove section": {
+    "zh": "删除栏目",
+    "fr": "Supprimer la section"
+  },
+  "Write the information you want to include in your CV.": {
+    "zh": "填写你希望展示在简历中的信息。",
+    "fr": "Saisissez les informations à inclure dans votre CV."
+  },
+  "Additional details": {
+    "zh": "补充说明",
+    "fr": "Informations complémentaires"
+  },
+  "Add free-text details": {
+    "zh": "补充文字说明",
+    "fr": "Ajouter une description libre"
+  },
+  "I have reviewed this section and have no further extracted facts to confirm.": {
+    "zh": "我已检查本栏目，没有其他提取信息需要确认。",
+    "fr": "J’ai vérifié cette section et n’ai pas d’autres informations extraites à confirmer."
+  },
+  "You can add any skill. Additional skills and sections are saved with your CV; the current assessment uses the recognised facts only.": {
+    "zh": "可以自由添加技能。补充技能和栏目会随简历保存；当前评估仅使用已识别的标准信息。",
+    "fr": "Vous pouvez ajouter toute compétence. Les ajouts sont conservés avec votre CV ; l’évaluation actuelle utilise uniquement les informations reconnues."
+  },
+  "Enter a skill of 1–100 characters.": {
+    "zh": "请输入 1–100 个字符的技能名称。",
+    "fr": "Saisissez une compétence de 1 à 100 caractères."
+  },
+  "Enter a section name of 1–60 characters.": {
+    "zh": "请输入 1–60 个字符的栏目名称。",
+    "fr": "Saisissez un nom de section de 1 à 60 caractères."
+  },
+  "Keep this section within 2,000 characters, including its heading.": {
+    "zh": "栏目及其标题总计不能超过 2,000 个字符。",
+    "fr": "Limitez cette section à 2 000 caractères, titre compris."
+  },
+  "This skill is already in your CV.": {
+    "zh": "简历中已有这项技能。",
+    "fr": "Cette compétence figure déjà dans votre CV."
+  },
+  "You can keep up to 100 additional CV items.": {
+    "zh": "最多可以保留 100 条简历补充信息。",
+    "fr": "Vous pouvez conserver jusqu’à 100 informations complémentaires."
+  },
+  "Reload the latest CV facts before editing.": {
+    "zh": "请重新加载最新简历资料后编辑。",
+    "fr": "Rechargez les dernières informations du CV avant de les modifier."
+  },
+  "This section already exists.": {
+    "zh": "这个栏目已存在。",
+    "fr": "Cette section existe déjà."
+  },
+  "Use the existing section to add this information.": {
+    "zh": "请在已有的对应栏目中补充信息。",
+    "fr": "Ajoutez ces informations dans la section existante."
+  },
+  "The current service requires at least one recognised fact before confirmation. You can save your additions as a draft.": {
+    "zh": "当前服务要求至少有一条已识别的标准信息才能确认。你可以先将补充内容保存为草稿。",
+    "fr": "Le service actuel exige au moins une information reconnue pour confirmer. Vous pouvez enregistrer vos ajouts en brouillon."
+  },
+  "Confirmed facts are locked.": {
+    "zh": "已确认的资料不可修改。",
+    "fr": "Les informations confirmées sont verrouillées."
+  },
+  "Choose your CV": {
+    "zh": "选择你的简历",
+    "fr": "Choisissez votre CV"
+  },
+  "Reuse a confirmed CV without uploading or extracting the PDF again.": {
+    "zh": "使用已确认的简历，无需再次上传或提取 PDF。",
+    "fr": "Réutilisez un CV confirmé sans téléverser ni extraire le PDF à nouveau."
+  },
+  "No saved CVs are available yet. You can upload a new PDF below.": {
+    "zh": "暂时没有可用的已存简历。你可以在下方上传新的 PDF。",
+    "fr": "Aucun CV enregistré n’est disponible. Vous pouvez téléverser un nouveau PDF ci-dessous."
+  },
+  "Review this CV before using it": {
+    "zh": "使用前请先审核这份简历",
+    "fr": "Vérifiez ce CV avant de l’utiliser"
+  },
+  "Ready to use": {
+    "zh": "可以使用",
+    "fr": "Prêt à utiliser"
+  },
+  "Review CV": {
+    "zh": "核对简历",
+    "fr": "Vérifier le CV"
+  },
+  "Use selected CV": {
+    "zh": "使用选中的简历",
+    "fr": "Utiliser le CV sélectionné"
+  },
+  "Or upload a new CV": {
+    "zh": "或者上传一份新简历",
+    "fr": "Ou téléversez un nouveau CV"
+  },
+  "A new PDF uses the existing extraction service for this simulation.": {
+    "zh": "新 PDF 将通过现有提取服务用于本次模拟。",
+    "fr": "Un nouveau PDF utilise le service d’extraction existant pour cette simulation."
+  },
+  "A new simulation upload is not automatically added to your CV library yet.": {
+    "zh": "目前，在模拟中上传的新简历尚不会自动加入 CV 库。",
+    "fr": "Un nouveau CV téléversé pour une simulation n’est pas encore ajouté automatiquement à votre bibliothèque."
+  },
+  "Upload a new CV": {
+    "zh": "上传新简历",
+    "fr": "Téléverser un nouveau CV"
+  },
+  "Choose a saved CV instead": {
+    "zh": "改用已保存的简历",
+    "fr": "Choisir un CV enregistré"
+  },
+  "Your account cannot access the CV library. You can still upload a PDF for this simulation.": {
+    "zh": "你的账户无法访问 CV 库，仍可为本次模拟上传 PDF。",
+    "fr": "Votre compte ne peut pas accéder à la bibliothèque. Vous pouvez téléverser un PDF pour cette simulation."
+  },
+  "The selected CV is unavailable, expired or not confirmed. Choose another CV or review it first.": {
+    "zh": "所选简历不可用、已过期或尚未确认。请选择其他简历，或先完成审核。",
+    "fr": "Le CV sélectionné est indisponible, expiré ou non confirmé. Choisissez-en un autre ou vérifiez-le d’abord."
+  },
+  "This simulation already has CV information. Continuing from its saved step.": {
+    "zh": "这次模拟已有简历信息，将从已保存的步骤继续。",
+    "fr": "Cette simulation contient déjà un CV. Reprise à l’étape enregistrée."
+  },
+  "This CV could not be used. Choose another CV or retry.": {
+    "zh": "无法使用这份简历。请选择其他简历或重试。",
+    "fr": "Impossible d’utiliser ce CV. Choisissez-en un autre ou réessayez."
+  },
+  "Review or choose a confirmed CV, then return to your simulation.": {
+    "zh": "审核简历或选择已确认的简历，然后返回本次模拟。",
+    "fr": "Vérifiez ou choisissez un CV confirmé, puis revenez à votre simulation."
+  },
+  "Back to CV selection": {
+    "zh": "返回简历选择",
+    "fr": "Retour au choix du CV"
+  },
+  "Use for this simulation": {
+    "zh": "用于本次模拟",
+    "fr": "Utiliser pour cette simulation"
+  },
+  "Use for a simulation": {
+    "zh": "用于岗位模拟",
+    "fr": "Utiliser pour une simulation"
+  },
+  "Your CV is ready to reuse": {
+    "zh": "这份简历可以重复使用",
+    "fr": "Votre CV est prêt à être réutilisé"
+  },
+  "Use these confirmed facts for another job without uploading the PDF again. Changes in a simulation do not change this library CV.": {
+    "zh": "可以将已确认的信息用于其他岗位，无需再次上传 PDF。模拟中的修改不会改变 CV 库中的这份简历。",
+    "fr": "Utilisez ces informations confirmées pour un autre poste sans renvoyer le PDF. Les modifications dans une simulation ne changent pas ce CV enregistré."
+  },
+  "Choose a job for this CV": {
+    "zh": "为这份简历选择岗位",
+    "fr": "Choisir un poste pour ce CV"
+  },
+  "Choose a CV for this simulation": {
+    "zh": "为本次模拟选择简历",
+    "fr": "Choisir un CV pour cette simulation"
+  },
+  "Choose a saved CV or upload a new PDF for this simulation.": {
+    "zh": "选择已保存的简历，或为本次模拟上传新的 PDF。",
+    "fr": "Choisissez un CV enregistré ou téléversez un nouveau PDF pour cette simulation."
+  },
+  "A library CV is selected. Choose a job to use it in a simulation.": {
+    "zh": "已选中一份 CV 库简历，选择岗位后即可用于模拟。",
+    "fr": "Un CV de votre bibliothèque est sélectionné. Choisissez un poste pour l’utiliser."
+  },
+  "Change CV": {
+    "zh": "更换简历",
+    "fr": "Changer de CV"
+  },
+  "Your library CV will be preselected in the next step. You can choose a different CV before continuing.": {
+    "zh": "下一步会预选 CV 库中的这份简历，你也可以更换后再继续。",
+    "fr": "Votre CV sera présélectionné à l’étape suivante. Vous pourrez en choisir un autre avant de continuer."
+  },
+  "Confirm and use for this simulation": {
+    "zh": "确认并用于本次模拟",
+    "fr": "Confirmer et utiliser pour cette simulation"
+  },
+  "Your CV could not be used for this simulation. Retry or choose another CV.": {
+    "zh": "无法将这份简历用于本次模拟。请重试或选择其他简历。",
+    "fr": "Impossible d’utiliser ce CV pour cette simulation. Réessayez ou choisissez-en un autre."
+  },
+  "Edit a revised copy": {
+    "zh": "编辑修订版副本",
+    "fr": "Modifier une copie révisée"
+  },
+  "Revised copy": {
+    "zh": "修订版副本",
+    "fr": "Copie révisée"
+  },
+  "Edit a copy of your CV": {
+    "zh": "编辑简历副本",
+    "fr": "Modifier une copie de votre CV"
+  },
+  "Start from your confirmed information. Your original CV and existing simulations stay unchanged.": {
+    "zh": "从已确认的信息开始修改，原简历和已有模拟保持不变。",
+    "fr": "Partez des informations confirmées. Le CV original et les simulations existantes restent inchangés."
+  },
+  "Back to source CV": {
+    "zh": "返回原简历",
+    "fr": "Retour au CV source"
+  },
+  "Source CV": {
+    "zh": "原简历",
+    "fr": "CV source"
+  },
+  "Name of the revised copy": {
+    "zh": "修订版名称",
+    "fr": "Nom de la copie révisée"
+  },
+  "Not saved to your library": {
+    "zh": "尚未保存到 CV 库",
+    "fr": "Non enregistré dans votre bibliothèque"
+  },
+  "Draft saved": {
+    "zh": "草稿已保存",
+    "fr": "Brouillon enregistré"
+  },
+  "Loading source CV…": {
+    "zh": "正在加载原简历……",
+    "fr": "Chargement du CV source…"
+  },
+  "Saving revised copies is not available on this service yet. You can edit, download and restore a draft here; it is not added to your CV library.": {
+    "zh": "当前服务尚不支持保存修订版。你可以在此编辑、下载和恢复草稿，但它尚未加入 CV 库。",
+    "fr": "Ce service ne permet pas encore d’enregistrer une copie révisée. Vous pouvez modifier, télécharger et restaurer un brouillon ici ; il n’est pas ajouté à votre bibliothèque."
+  },
+  "The new copy will be saved as an editable draft. Confirm it separately before using it in a simulation.": {
+    "zh": "新副本将保存为可编辑草稿。用于岗位模拟前，需要单独审核并确认。",
+    "fr": "La nouvelle copie sera enregistrée comme brouillon modifiable. Confirmez-la séparément avant de l’utiliser dans une simulation."
+  },
+  "Download draft": {
+    "zh": "下载草稿",
+    "fr": "Télécharger le brouillon"
+  },
+  "Restore draft": {
+    "zh": "恢复草稿",
+    "fr": "Restaurer un brouillon"
+  },
+  "Save as a new CV draft": {
+    "zh": "另存为新简历草稿",
+    "fr": "Enregistrer comme nouveau brouillon de CV"
+  },
+  "Retry saving this copy": {
+    "zh": "重试保存这份副本",
+    "fr": "Réessayer d’enregistrer cette copie"
+  },
+  "Open saved copy": {
+    "zh": "打开已保存的副本",
+    "fr": "Ouvrir la copie enregistrée"
+  },
+  "Your account cannot create CV copies. You can download your draft instead.": {
+    "zh": "你的账户无权创建简历副本，可以先下载草稿。",
+    "fr": "Votre compte ne peut pas créer de copie de CV. Vous pouvez télécharger le brouillon."
+  },
+  "Revised copy saved as a draft. Review it before confirming.": {
+    "zh": "修订版已保存为草稿，请审核后再确认。",
+    "fr": "La copie révisée est enregistrée en brouillon. Vérifiez-la avant de confirmer."
+  },
+  "Saving revised copies is not available on this service yet. Your edits are still on this page.": {
+    "zh": "当前服务尚不支持保存修订版，你的修改仍保留在此页面。",
+    "fr": "Ce service ne permet pas encore d’enregistrer une copie révisée. Vos modifications restent sur cette page."
+  },
+  "The revised copy was not saved. Your edits are still on this page.": {
+    "zh": "修订版未保存，你的修改仍保留在此页面。",
+    "fr": "La copie révisée n’a pas été enregistrée. Vos modifications restent sur cette page."
+  },
+  "Draft downloaded to this device. It is not saved to your CV library.": {
+    "zh": "草稿已下载到本机，尚未保存到 CV 库。",
+    "fr": "Le brouillon est téléchargé sur cet appareil, mais n’est pas enregistré dans votre bibliothèque."
+  },
+  "Draft restored on this page. Save it to add a new CV to your library.": {
+    "zh": "草稿已恢复到此页面，保存后才会作为新简历加入 CV 库。",
+    "fr": "Le brouillon est restauré sur cette page. Enregistrez-le pour ajouter un nouveau CV à votre bibliothèque."
+  },
+  "The save result is unknown. Editing is paused so a retry can check the same copy without creating another one.": {
+    "zh": "保存结果尚不确定。已暂停编辑，重试时会核对同一份副本，避免重复创建。",
+    "fr": "Le résultat de l’enregistrement est inconnu. La modification est suspendue pour vérifier la même copie lors d’une nouvelle tentative."
+  },
+  "Wait until the save finishes before leaving.": {
+    "zh": "请等待保存结束后再离开。",
+    "fr": "Attendez la fin de l’enregistrement avant de quitter."
+  },
+  "The save result is unknown. Retry the save to check it, or leave this page without checking.": {
+    "zh": "保存结果尚不确定。可以重试核对结果，或不核对直接离开。",
+    "fr": "Le résultat de l’enregistrement est inconnu. Réessayez pour le vérifier, ou quittez sans vérifier."
+  },
+  "This revised copy is not saved to your library. Download the draft or stay to keep editing.": {
+    "zh": "这份修订版尚未保存到 CV 库。你可以先下载草稿，或留在此页继续编辑。",
+    "fr": "Cette copie révisée n’est pas enregistrée dans votre bibliothèque. Téléchargez le brouillon ou restez pour continuer."
+  },
+  "Leave this revised copy?": {
+    "zh": "离开这份修订版？",
+    "fr": "Quitter cette copie révisée ?"
+  },
+  "Leave page": {
+    "zh": "离开页面",
+    "fr": "Quitter la page"
+  },
+  "Keep editing": {
+    "zh": "继续编辑",
+    "fr": "Continuer à modifier"
+  },
+  "Choose a confirmed CV before creating a revised copy.": {
+    "zh": "请先选择已确认的简历，再创建修订版副本。",
+    "fr": "Choisissez un CV confirmé avant de créer une copie révisée."
+  },
+  "This draft file has an unsupported structure.": {
+    "zh": "此草稿文件的结构不受支持。",
+    "fr": "La structure de ce fichier brouillon n’est pas prise en charge."
+  },
+  "Enter a CV name of 1–120 characters.": {
+    "zh": "请输入 1–120 个字符的简历名称。",
+    "fr": "Saisissez un nom de CV de 1 à 120 caractères."
+  },
+  "Reload the source CV before creating a revised copy.": {
+    "zh": "请重新加载原简历后再创建修订版副本。",
+    "fr": "Rechargez le CV source avant de créer une copie révisée."
+  },
+  "Choose a revision draft file smaller than 2 MB.": {
+    "zh": "请选择小于 2 MB 的修订版草稿文件。",
+    "fr": "Choisissez un fichier brouillon de moins de 2 Mo."
+  },
+  "Choose a valid revision draft file.": {
+    "zh": "请选择有效的修订版草稿文件。",
+    "fr": "Choisissez un fichier brouillon de révision valide."
+  },
+  "This draft belongs to a different CV or source revision.": {
+    "zh": "此草稿属于其他简历或原简历的其他版本。",
+    "fr": "Ce brouillon appartient à un autre CV ou à une autre révision source."
+  },
+  "The previous save result is unknown. Retry that save before changing the copy.": {
+    "zh": "上一次保存结果尚不确定，请先重试核对，再修改副本。",
+    "fr": "Le résultat précédent est inconnu. Réessayez cet enregistrement avant de modifier la copie."
+  },
+  "The service did not return a new editable CV. Your source CV has not been replaced in this page.": {
+    "zh": "服务未返回新的可编辑简历，此页面没有用返回结果替换原简历。",
+    "fr": "Le service n’a pas renvoyé de nouveau CV modifiable. Le CV source n’a pas été remplacé sur cette page."
+  },
+  "Confirmed facts saved. No original PDF is stored.": {
+    "zh": "已确认的信息已保存，没有存储原始 PDF。",
+    "fr": "Les informations confirmées sont enregistrées. Aucun PDF original n’est conservé."
+  },
+  "Only reviewed facts are kept. No original PDF is currently stored.": {
+    "zh": "仅保留已审核的信息，目前没有存储原始 PDF。",
+    "fr": "Seules les informations vérifiées sont conservées. Aucun PDF original n’est actuellement stocké."
+  },
+  "This draft contains structured information only; no original PDF is stored.": {
+    "zh": "此草稿仅包含结构化信息，没有存储原始 PDF。",
+    "fr": "Ce brouillon ne contient que des informations structurées ; aucun PDF original n’est conservé."
+  },
+  "Optional settings — saved with your review": {
+    "zh": "可选设置 · 随审核一起保存",
+    "fr": "Paramètres facultatifs · enregistrés avec la vérification"
+  },
+  "Optional text and portrait inputs are omitted unless you enable them. Confirm and Continue saves all changes together.": {
+    "zh": "只有主动启用后，才会使用可选文本和照片。「确认并继续」会依次保存全部修改。",
+    "fr": "Le texte et le portrait facultatifs sont omis sauf si vous les activez. Confirmer et continuer enregistre toutes les modifications."
+  },
+  "All review changes saved.": {
+    "zh": "审核中的全部修改已保存。",
+    "fr": "Toutes les modifications de la vérification sont enregistrées."
+  },
+  "Confirm and Continue saves your review, locks the facts and opens simulation progress.": {
+    "zh": "「确认并继续」会保存审核结果、锁定资料，并打开模拟进度页。",
+    "fr": "Confirmer et continuer enregistre votre vérification, verrouille les informations et ouvre le suivi de la simulation."
+  },
+  "After confirmation, deletion of the original PDF is queued.": {
+    "zh": "确认后，原始 PDF 将进入删除队列。",
+    "fr": "Après confirmation, la suppression du PDF original est mise en attente."
+  },
+  "I have reviewed the facts and the optional inputs I chose to use.": {
+    "zh": "我已核对简历资料，以及我选择使用的可选信息。",
+    "fr": "J’ai vérifié les informations et les données facultatives que j’ai choisi d’utiliser."
+  },
+  "The previous save result is uncertain. Retry it before making further changes.": {
+    "zh": "上一次保存的结果尚未确认，请先重试该请求，再继续修改。",
+    "fr": "Le résultat du dernier enregistrement est incertain. Réessayez avant de modifier les données."
+  },
+  "Retry Previous Save": {
+    "zh": "重试上次保存",
+    "fr": "Réessayer le dernier enregistrement"
+  },
+  "Save All Changes": {
+    "zh": "保存全部修改",
+    "fr": "Enregistrer toutes les modifications"
+  },
+  "Reload Saved Draft": {
+    "zh": "重新加载已保存的草稿",
+    "fr": "Recharger le brouillon enregistré"
+  },
+  "Leave this review? Unsaved changes will be lost. A save with an uncertain result may already have reached the server.": {
+    "zh": "确定离开审核吗？未保存的修改将丢失。结果尚未确认的保存请求可能已到达服务器。",
+    "fr": "Quitter cette vérification ? Les modifications non enregistrées seront perdues. Un enregistrement au résultat incertain peut déjà avoir atteint le serveur."
+  },
+  "Leave Review": {
+    "zh": "离开审核",
+    "fr": "Quitter la vérification"
+  },
+  "Confirm the optional details you chose to provide, or restore their saved values.": {
+    "zh": "请确认你选择提供的可选信息，或恢复为已保存的值。",
+    "fr": "Confirmez les informations facultatives fournies ou rétablissez leurs valeurs enregistrées."
+  },
+  "Save All Changes keeps an incomplete draft. Confirm and Continue saves your choices, locks valid facts and opens simulation progress.": {
+    "zh": "「保存全部修改」允许保留未完成的草稿。「确认并继续」会保存选择、锁定核对完成的资料，并打开模拟进度页。",
+    "fr": "Enregistrer toutes les modifications conserve un brouillon incomplet. Confirmer et continuer enregistre vos choix, verrouille les informations valides et ouvre le suivi de la simulation."
+  },
+  "Reading portrait…": {
+    "zh": "正在读取照片……",
+    "fr": "Lecture du portrait…"
+  },
+  "The portrait could not be read. Choose it again.": {
+    "zh": "无法读取照片，请重新选择。",
+    "fr": "Le portrait n’a pas pu être lu. Sélectionnez-le à nouveau."
+  },
+  "No original PDF is stored.": {
+    "zh": "未保存原始 PDF",
+    "fr": "Aucun PDF original n’est conservé."
+  },
+  "The server reports that no original PDF is stored for this record.": {
+    "zh": "服务器已确认，此记录未保存原始 PDF。",
+    "fr": "Le serveur confirme qu’aucun PDF original n’est conservé pour cet enregistrement."
+  },
+  "PDF deletion pending": {
+    "zh": "原始 PDF 等待删除",
+    "fr": "Suppression du PDF en attente"
+  },
+  "Deletion is not yet confirmed. Cleanup is retried automatically by the server.": {
+    "zh": "删除尚未完成确认，服务器会自动重试清理。",
+    "fr": "La suppression n’est pas encore confirmée. Le serveur réessaie automatiquement le nettoyage."
+  },
+  "PDF deletion failed": {
+    "zh": "原始 PDF 删除失败",
+    "fr": "Échec de la suppression du PDF"
+  },
+  "The server has not confirmed deletion. Refresh to check the latest status.": {
+    "zh": "服务器尚未确认删除，请刷新查看最新状态。",
+    "fr": "Le serveur n’a pas confirmé la suppression. Actualisez pour vérifier le dernier état."
+  },
+  "Original PDF temporarily stored": {
+    "zh": "原始 PDF 暂存中",
+    "fr": "PDF original conservé temporairement"
+  },
+  "Confirm the reviewed facts to request cleanup. Check this status again after confirmation.": {
+    "zh": "确认核对后的资料以请求清理，确认后请再次查看此状态。",
+    "fr": "Confirmez les informations vérifiées pour demander le nettoyage, puis vérifiez à nouveau cet état."
+  },
+  "Original PDF still stored": {
+    "zh": "仍保存原始 PDF",
+    "fr": "PDF original toujours conservé"
+  },
+  "The server still reports an original PDF. Automatic deletion is not confirmed for this record.": {
+    "zh": "服务器仍报告存在原始 PDF，此记录的自动删除尚未确认。",
+    "fr": "Le serveur signale encore un PDF original. La suppression automatique de cet enregistrement n’est pas confirmée."
+  },
+  "PDF cleanup starts after confirmation": {
+    "zh": "确认后请求清理 PDF",
+    "fr": "Nettoyage du PDF après confirmation"
+  },
+  "After confirmation, the server requests deletion of any uploaded original PDF.": {
+    "zh": "确认后，服务器会请求删除已上传的原始 PDF（如有）。",
+    "fr": "Après confirmation, le serveur demande la suppression de tout PDF original éventuellement téléversé."
+  },
+  "PDF status unavailable": {
+    "zh": "原始 PDF 状态未知",
+    "fr": "État du PDF indisponible"
+  },
+  "The server has not provided enough information to confirm whether an original PDF is still stored.": {
+    "zh": "服务器返回的信息不足，暂时无法确认是否仍保存原始 PDF。",
+    "fr": "Les informations du serveur ne permettent pas de confirmer si un PDF original est encore conservé."
+  },
+  "PDF not uploaded in this demo": {
+    "zh": "演示模式未上传 PDF",
+    "fr": "PDF non téléversé dans cette démonstration"
+  },
+  "The demo uses local file metadata and synthetic facts. It does not delete files on a server.": {
+    "zh": "演示仅使用本地文件信息和示例资料，不执行服务器文件删除。",
+    "fr": "La démonstration utilise des métadonnées locales et des données fictives. Elle ne supprime aucun fichier sur un serveur."
+  },
+  "PDF status could not be refreshed. Showing the last reported status; retry to check it.": {
+    "zh": "无法刷新 PDF 状态，当前显示上次返回的状态，请重试核实。",
+    "fr": "Impossible d’actualiser l’état du PDF. Le dernier état reçu est affiché ; réessayez pour le vérifier."
+  },
+  "Refresh PDF status": {
+    "zh": "刷新 PDF 状态",
+    "fr": "Actualiser l’état du PDF"
+  },
+  "Unconfirmed CVs expire after 24 hours. Confirmed CVs expire after 30 days. Confirmation requests cleanup of the original PDF; check each CV's PDF status for completion.": {
+    "zh": "未确认的简历在 24 小时后过期，已确认的简历在 30 天后过期。确认后会请求清理原始 PDF，请查看每份简历的 PDF 状态以核实是否完成。",
+    "fr": "Les CV non confirmés expirent après 24 heures, les CV confirmés après 30 jours. La confirmation demande le nettoyage du PDF original ; consultez l’état de chaque CV pour vérifier la fin du nettoyage."
+  },
+  "Confirmation requests cleanup of the original PDF. Check the PDF status above for completion.": {
+    "zh": "确认后会请求清理原始 PDF，请通过上方的 PDF 状态核实是否完成。",
+    "fr": "La confirmation demande le nettoyage du PDF original. Vérifiez sa fin dans l’état du PDF ci-dessus."
+  },
+  "Confirmed facts published.": {
+    "zh": "已发布确认后的资料。",
+    "fr": "Les informations confirmées sont publiées."
+  },
+  "Approved model inputs are temporary and have a separate cleanup process after predictions finish. Their status is separate from original PDF cleanup.": {
+    "zh": "已确认的模型输入为临时数据，预测结束后由独立流程清理，与原始 PDF 的清理状态分别管理。",
+    "fr": "Les données de modèle approuvées sont temporaires et font l’objet d’un nettoyage distinct après les prédictions. Leur état est indépendant du nettoyage du PDF original."
+  },
+  "After confirmation, the server requests deletion of any original PDF. Check its status on simulation progress.": {
+    "zh": "确认后，服务器会请求删除原始 PDF（如有），请在模拟进度页核实删除状态。",
+    "fr": "Après confirmation, le serveur demande la suppression de tout PDF original éventuel. Vérifiez son état dans le suivi de la simulation."
+  },
+  "After signing in, you will return to your selected page. No simulation starts automatically.": {
+    "zh": "登录后会返回你刚才选择的页面，不会自动开始模拟。",
+    "fr": "Après connexion, vous retrouverez la page choisie. Aucune simulation ne démarre automatiquement."
+  },
+  "Sign in to return to your selected page. No simulation has been created.": {
+    "zh": "登录后即可返回之前选择的页面，目前尚未创建模拟。",
+    "fr": "Connectez-vous pour retrouver la page choisie. Aucune simulation n’a été créée."
+  },
+  "Your selected page is kept while you create an account. You will sign in afterwards to continue.": {
+    "zh": "注册期间会保留之前选择的页面，完成后请登录继续。",
+    "fr": "La page choisie est conservée pendant la création du compte. Connectez-vous ensuite pour continuer."
+  },
+  "Remember my username or email": {
+    "zh": "记住用户名或邮箱",
+    "fr": "Mémoriser mon nom d’utilisateur ou mon e-mail"
+  },
+  "This option saves your username or email in this browser, never your password.": {
+    "zh": "此选项只在当前浏览器保存用户名或邮箱，不保存密码。",
+    "fr": "Cette option enregistre votre nom d’utilisateur ou votre e-mail dans ce navigateur, jamais votre mot de passe."
+  },
+  "A verification code is sent to confirm your email address. You can optionally remember your username or email in this browser; this option never saves your password.": {
+    "zh": "我们会发送验证码以确认邮箱。你可以选择在当前浏览器记住用户名或邮箱，此选项不会保存密码。",
+    "fr": "Un code vérifie votre adresse e-mail. Vous pouvez mémoriser votre nom d’utilisateur ou votre e-mail dans ce navigateur ; cette option n’enregistre jamais votre mot de passe."
+  },
+  "No registration data is sent to a server in this demo. The optional sign-in preference saves your username or email in this browser, never your password.": {
+    "zh": "此演示不会向服务器发送注册资料。可选的登录偏好只在当前浏览器保存用户名或邮箱，不保存密码。",
+    "fr": "Cette démonstration n’envoie aucune donnée d’inscription à un serveur. L’option de connexion enregistre votre nom d’utilisateur ou votre e-mail dans ce navigateur, jamais votre mot de passe."
+  },
+  "Choose CV": {
+    "zh": "选择简历",
+    "fr": "Choisir le CV"
+  },
+  "Review your CV": {
+    "zh": "核对你的简历",
+    "fr": "Vérifier votre CV"
+  },
+  "CV information": {
+    "zh": "简历信息",
+    "fr": "Informations du CV"
+  },
+  "Your extracted information and additions, organised by CV section.": {
+    "zh": "按简历栏目查看提取结果和补充内容。",
+    "fr": "Vos informations extraites et vos ajouts, regroupés par rubrique du CV."
+  },
+  "Reload the saved CV? Your unsaved changes will be discarded.": {
+    "zh": "重新加载已保存的简历吗？未保存的修改将被丢弃。",
+    "fr": "Recharger le CV enregistré ? Les modifications non enregistrées seront perdues."
+  },
+  "Reload saved CV": {
+    "zh": "重新加载已保存的简历",
+    "fr": "Recharger le CV enregistré"
+  },
+  "This CV version is confirmed. Create a revised copy to make changes.": {
+    "zh": "此版本已确认。如需修改，请创建修订版副本。",
+    "fr": "Cette version du CV est confirmée. Créez une copie révisée pour la modifier."
+  },
+  "Check all CV sections, including personal information and additions, before confirming. Confirmed information is locked.": {
+    "zh": "确认前请检查所有简历栏目，包括个人信息和补充内容。确认后，此版本将被锁定。",
+    "fr": "Avant de confirmer, vérifiez toutes les rubriques, y compris les informations personnelles et vos ajouts. Les informations confirmées sont verrouillées."
+  },
+  "Extracting CV information…": {
+    "zh": "正在提取简历信息……",
+    "fr": "Extraction des informations du CV…"
+  },
+  "You have unsaved CV changes.": {
+    "zh": "你有尚未保存的简历修改。",
+    "fr": "Certaines modifications du CV ne sont pas enregistrées."
+  },
+  "I have reviewed all the CV information shown above.": {
+    "zh": "我已核对上方展示的全部简历信息。",
+    "fr": "J’ai vérifié toutes les informations du CV affichées ci-dessus."
+  },
+  "Confirmed information published.": {
+    "zh": "已发布确认后的信息。",
+    "fr": "Les informations confirmées sont publiées."
+  },
+  "Publish confirmed information": {
+    "zh": "发布已确认的信息",
+    "fr": "Publier les informations confirmées"
+  },
+  "Confirm and publish": {
+    "zh": "确认并发布",
+    "fr": "Confirmer et publier"
+  },
+  "Publication includes all CV sections except Personal information.": {
+    "zh": "发布内容包含「个人信息」以外的所有简历栏目。",
+    "fr": "La publication inclut toutes les rubriques du CV sauf les informations personnelles."
+  },
+  "Check each CV section, correct any details and review empty sections before confirming.": {
+    "zh": "请逐栏检查简历、修正信息，并在确认前核对空白栏目。",
+    "fr": "Vérifiez chaque rubrique, corrigez les informations et vérifiez les rubriques vides avant de confirmer."
+  },
+  "Confirm your CV information": {
+    "zh": "确认简历信息",
+    "fr": "Confirmer les informations du CV"
+  },
+  "I have reviewed my CV information and any optional inputs I chose to use.": {
+    "zh": "我已核对简历信息，以及我选择使用的可选内容。",
+    "fr": "J’ai vérifié les informations de mon CV et les données facultatives que j’ai choisi d’utiliser."
+  },
+  "Check each CV section against the available excerpts, and correct or add any details.": {
+    "zh": "请对照已有原文片段检查各个简历栏目，并修正或补充信息。",
+    "fr": "Vérifiez chaque rubrique à l’aide des extraits disponibles, puis corrigez ou complétez les informations."
+  },
+  "Review confirmed": {
+    "zh": "审核已确认",
+    "fr": "Vérification confirmée"
+  },
+  "Your review is confirmed and editing is locked in this demo session. Temporary file metadata and the editable draft have been cleared.": {
+    "zh": "本次演示中的审核已确认，编辑已锁定。临时文件信息和可编辑草稿已清除。",
+    "fr": "Votre vérification est confirmée et l’édition est verrouillée dans cette session de démonstration. Les métadonnées temporaires du fichier et le brouillon modifiable ont été effacés."
+  },
+  "Your CV draft is saved in this demo session.": {
+    "zh": "简历草稿已保存到本次演示会话。",
+    "fr": "Le brouillon du CV est enregistré dans cette session de démonstration."
+  },
+  "Delete simulation": {
+    "zh": "删除模拟",
+    "fr": "Supprimer la simulation"
+  },
+  "Keep simulation": {
+    "zh": "保留模拟",
+    "fr": "Conserver la simulation"
+  },
+  "Delete this simulation?": {
+    "zh": "删除此模拟？",
+    "fr": "Supprimer cette simulation ?"
+  },
+  "Delete this demo simulation?": {
+    "zh": "删除此演示模拟？",
+    "fr": "Supprimer cette simulation de démonstration ?"
+  },
+  "Delete demo simulation": {
+    "zh": "删除演示模拟",
+    "fr": "Supprimer la simulation de démonstration"
+  },
+  "Add or save this skill, or cancel its edit, before saving or confirming the CV.": {
+    "zh": "请先添加或保存这项技能，或取消本次编辑，再保存或确认简历。",
+    "fr": "Ajoutez ou enregistrez cette compétence, ou annulez sa modification, avant d’enregistrer ou de confirmer le CV."
+  },
+  "Create this section or cancel it before saving or confirming the CV.": {
+    "zh": "请先创建此栏目，或取消添加，再保存或确认简历。",
+    "fr": "Créez cette rubrique ou annulez son ajout avant d’enregistrer ou de confirmer le CV."
+  },
+  "The model text could not be loaded. Retry this save.": {
+    "zh": "无法加载模型文本，请重试本次保存。",
+    "fr": "Le texte du modèle n’a pas pu être chargé. Réessayez cet enregistrement."
+  },
+  "Your CV information was saved. Review the updated model text before confirming.": {
+    "zh": "简历信息已保存。模型文本已更新，请核对后重新勾选审核，再确认。",
+    "fr": "Les informations du CV sont enregistrées. Vérifiez le texte du modèle mis à jour, puis cochez à nouveau la validation avant de confirmer."
+  },
+  "The model text was updated after your CV changes. You can restore the previous text and review it instead.": {
+    "zh": "模型文本已根据简历修改更新。你也可以恢复之前的文本，再重新核对。",
+    "fr": "Le texte du modèle a été actualisé après les modifications du CV. Vous pouvez aussi rétablir le texte précédent et le vérifier."
+  },
+  "Restore previous model text": {
+    "zh": "恢复之前的模型文本",
+    "fr": "Rétablir le texte précédent du modèle"
+  },
+  "Wait until the draft finishes loading before leaving.": {
+    "zh": "请等待草稿恢复完成后再离开。",
+    "fr": "Attendez la fin du chargement du brouillon avant de quitter cette page."
+  },
+  "Wait until the current operation finishes before leaving.": {
+    "zh": "请等待当前操作完成后再离开。",
+    "fr": "Attendez la fin de l’opération en cours avant de quitter cette page."
+  },
+  "Your CV changes have not been saved. Leave and discard them?": {
+    "zh": "简历修改尚未保存，确定离开并丢弃这些修改吗？",
+    "fr": "Les modifications du CV ne sont pas enregistrées. Quitter et les abandonner ?"
+  },
+  "Leave this CV review?": {
+    "zh": "离开简历核对页面？",
+    "fr": "Quitter la vérification du CV ?"
+  },
+  "Could not load the case status": {
+    "zh": "暂时无法加载案例状态",
+    "fr": "Impossible de charger l’état du dossier"
+  },
+  "The case status could not be refreshed. Your upload may still be processing.": {
+    "zh": "暂时无法刷新案例状态，已上传的简历可能仍在处理中。",
+    "fr": "L’état du dossier n’a pas pu être actualisé. Le CV envoyé est peut-être encore en cours de traitement."
+  },
+  "Restoring draft…": {
+    "zh": "正在恢复草稿……",
+    "fr": "Restauration du brouillon…"
   }
 }

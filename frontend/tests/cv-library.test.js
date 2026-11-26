@@ -39,5 +39,10 @@ test('library CV, rename and work-location adapters send only the documented fie
     await resumes.resumeAction(resumeId, 'rename', { displayName: 'CV for IT' }, { operationKey: 'rename-key-0123456789', silent: true })
     assert.deepEqual(seen.at(-1), { method: 'post', pathname: `/api/v1/resumes/${resumeId}/rename`,
       body: { displayName: 'CV for IT' }, key: 'rename-key-0123456789' })
+
+    const revision = { displayName: 'CV for IT — revised', expectedRevision: 2, draft: { professional: {}, warnings: [] } }
+    await resumes.createResumeRevision(resumeId, revision, 'revision-key-0123456789')
+    assert.deepEqual(seen.at(-1), { method: 'post', pathname: `/api/v1/resumes/${resumeId}/revisions`,
+      body: revision, key: 'revision-key-0123456789' })
   } finally { await server.close() }
 })

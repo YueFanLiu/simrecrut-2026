@@ -1,6 +1,6 @@
 <script setup>
 defineProps({ readyForReview: Boolean, currentStep: { type: Number, default: 0 }, reviewConfirmed: Boolean, simulationComplete: Boolean })
-const steps = ['Upload CV', 'Review Facts', 'Run Simulation', 'View Results']
+const steps = ['Choose CV', 'Review CV', 'Run Simulation', 'View Results']
 </script>
 
 <template>

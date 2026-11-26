@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { pinia } from '../store/index.js'
 import { demoMode } from '../config/runtime.js'
 import { useAuthStore } from '../store/modules/auth.js'
+import { authGuardDestination } from '../utils/auth-navigation.js'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,7 +12,8 @@ const router = createRouter({
     { path: '/forgot-password', name: 'ForgotPassword', component: () => import('../views/auth/ForgotPasswordView.vue'), meta: { title: 'Reset password' } },
     // Keep the existing resume API adapter alongside the preferred prototype pages.
     { path: '/candidate/resumes', name: 'ConnectedResumes', component: () => import('../views/candidate/ResumeUpload.vue'), meta: { title: 'My CVs', requiresDemoSession: true, demoRole: 'Candidate', connected: true } },
-    { path: '/candidate/resumes/:id', name: 'ConnectedResumeReview', component: () => import('../views/candidate/ResumeReview.vue'), meta: { title: 'Review CV facts', requiresDemoSession: true, demoRole: 'Candidate', connected: true } },
+    { path: '/candidate/resumes/:id', name: 'ConnectedResumeReview', component: () => import('../views/candidate/ResumeReview.vue'), meta: { title: 'Review your CV', requiresDemoSession: true, demoRole: 'Candidate', connected: true } },
+    { path: '/candidate/resumes/:id/revise', name: 'CreateResumeRevision', component: () => import('../views/candidate/ResumeRevision.vue'), meta: { title: 'Edit a copy of your CV', requiresDemoSession: true, demoRole: 'Candidate', connected: true } },
     {
       path: '/login',
       name: 'Login',
@@ -128,7 +130,7 @@ const router = createRouter({
       path: '/candidate/cases/:caseId/review',
       name: 'CvReview',
       component: () => demoMode ? import('../views/candidate/cases/review.vue') : import('../views/candidate/cases/ConnectedReview.vue'),
-      meta: { title: 'Review your CV facts', requiresDemoSession: true, demoRole: 'Candidate' },
+      meta: { title: 'Review your CV', requiresDemoSession: true, demoRole: 'Candidate' },
     },
     {
       path: '/candidate/cases/:caseId/progress',
@@ -163,19 +165,8 @@ router.beforeEach(async (to) => {
   const auth = useAuthStore(pinia)
   if (!demoMode) {
     try { await auth.restoreConnectedSession() } catch { auth.demoUser = null }
-    if (to.meta.requiresDemoSession && !auth.isDemoSignedIn) return { name: 'Login' }
-    if (to.meta.demoRole && !auth.hasDemoRole(to.meta.demoRole)) return { name: 'Forbidden' }
-    if (to.meta.demoRoles && !to.meta.demoRoles.some(role => auth.hasDemoRole(role))) return { name: 'Forbidden' }
-    if (to.meta.demoOnly) return { name: 'AssignPrimaryReviews' }
-    if (['Login', 'Register'].includes(to.name) && auth.isDemoSignedIn) return { name: 'DemoDashboard' }
-    return
   }
-  if (to.meta.requiresDemoSession && !auth.isDemoSignedIn) return { name: 'Login' }
-  if (to.meta.demoRoles && !to.meta.demoRoles.some(role => auth.hasDemoRole(role))) return { name: 'Forbidden' }
-  if (to.meta.demoRole && !auth.hasDemoRole(to.meta.demoRole)) return { name: 'Forbidden' }
-  if (['Login', 'Register'].includes(to.name) && auth.isDemoSignedIn) {
-    return { name: 'DemoDashboard' }
-  }
+  return authGuardDestination(to, auth, demoMode, path => router.resolve(path))
 })
 
 router.afterEach((to, _from, failure) => {

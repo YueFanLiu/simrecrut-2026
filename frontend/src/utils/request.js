@@ -4,6 +4,7 @@ import axios from "axios";
 import { ElMessage } from "element-plus";
 import { getToken, removeToken } from "./auth";
 import { requestErrorMessage } from "./ui-message.js";
+import { expiredSessionLoginUrl } from './auth-navigation.js';
 
 const request = axios.create({
   baseURL: import.meta.env.VITE_APP_BASE_API || "/dev-api",
@@ -24,7 +25,7 @@ request.interceptors.response.use(
     if (code === 0 || code === 200) return body;
     if (code === 401 && !response.config.publicRequest) {
       removeToken();
-      if (location.pathname !== "/login") location.assign("/login");
+      if (location.pathname !== "/login") location.assign(expiredSessionLoginUrl(location));
     }
     const message = requestErrorMessage({ response: { status: code, data: body } });
     if (!response.config.silent) ElMessage.error(t(message));
@@ -37,7 +38,7 @@ request.interceptors.response.use(
     if (axios.isCancel(error)) return Promise.reject(error);
     if (error.response?.status === 401 && !error.config?.publicRequest) {
       removeToken();
-      if (location.pathname !== "/login") location.assign("/login");
+      if (location.pathname !== "/login") location.assign(expiredSessionLoginUrl(location));
     }
     error.message = requestErrorMessage(error);
     if (!error.config?.silent) ElMessage.error(t(error.message));

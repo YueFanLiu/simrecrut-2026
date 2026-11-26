@@ -8,6 +8,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElTag } from 'element-plus'
 import CandidateLayout from '../../../layouts/CandidateLayout.vue'
 import CaseProgressStepper from '../../../components/simrecrut/CaseProgressStepper.vue'
+import OriginalPdfStatus from '../../../components/simrecrut/OriginalPdfStatus.vue'
 import { useCasesStore } from '../../../store/modules/cases.js'
 import { simulationScenario } from '../../../config/demo.js'
 
@@ -37,21 +38,28 @@ async function runSimulation(caseId, scenario, retry = false) {
 }
 
 // Direct navigation must load the authorized case instead of requiring demo memory.
-let connectedRequest = 0, connectedActive = true, polling = false
+let connectedRequest = 0, connectedActive = true, loadingCaseId
+const statusLoading = ref(false), statusError = ref(false)
 async function refreshConnectedCase() {
   if (demoMode) return
-  const request = ++connectedRequest, id = String(route.params.caseId)
-  polling = true
+  const id = String(route.params.caseId)
+  if (statusLoading.value && loadingCaseId === id) return
+  const request = ++connectedRequest
+  loadingCaseId = id
+  statusLoading.value = true; statusError.value = false
   try {
     const row = await cases.loadConnectedCase(id)
     if (connectedActive && request === connectedRequest && route.params.caseId === id) cases.cases[id] = row
   } catch (error) {
-    if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(t(error.message)) }
-  } finally { if (request === connectedRequest) polling = false }
+    if (connectedActive && request === connectedRequest) {
+      statusError.value = true
+      if ([401, 403, 404, 410].includes(error.status)) { delete cases.cases[id]; ElMessage.error(t(error.message)) }
+    }
+  } finally { if (request === connectedRequest) statusLoading.value = false }
 }
 watch(() => route.params.caseId, refreshConnectedCase)
 refreshConnectedCase()
-const connectedTimer = setInterval(() => { if (!demoMode && entry.value && running.value && !polling) refreshConnectedCase() }, 2000)
+const connectedTimer = setInterval(() => { if (!demoMode && entry.value && running.value && !statusLoading.value) refreshConnectedCase() }, 2000)
 onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterval(connectedTimer) })
 </script>
 
@@ -60,6 +68,7 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
     <section v-if="!entry" class="panel unavailable">
       <h1>{{ $t("Case Not Available") }}</h1>
       <p>{{ $t("This case does not exist, has expired or is not available to your account.") }}</p>
+      <ElButton v-if="!demoMode" :loading="statusLoading" @click="refreshConnectedCase">{{ $t('Try Again') }}</ElButton>
       <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">{{ $t("Back to Jobs") }}</ElButton>
     </section>
     <section v-else-if="!entry.confirmedAt" class="panel unavailable">
@@ -74,6 +83,8 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
       <p class="subtitle">{{ $t("Follow the automated assessment stages for your confirmed case.") }}</p>
       <ElAlert v-if="demoMode" type="info" :closable="false" :title="$t(&quot;Frontend demo only: fixed mock states, no model inference or API calls. Confirmed checkpoints survive reloads in this tab. Retry continues interrupted stages with the retained job version. Sign out clears case checkpoints.&quot;)" />
       <CaseProgressStepper :current-step="2" review-confirmed :simulation-complete="complete" />
+      <OriginalPdfStatus :record="entry" :source="demoMode ? 'demo' : 'case'" :refreshable="!demoMode" auto-refresh
+        :refreshing="statusLoading" :error="statusError" :disabled="submitting" @refresh="refreshConnectedCase" />
       <div class="progress-grid">
         <div class="main-column">
           <section class="panel" :aria-busy="running" aria-labelledby="status-title">
@@ -103,7 +114,6 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
           <section class="panel"><h2>{{ $t("Simulation Parameters") }}</h2><dl>
             <div><dt>{{ $t("Case ID") }}</dt><dd>{{ entry.caseId }}</dd></div><div v-if="entry.jobTitle"><dt>{{ $t("Job") }}</dt><dd>{{ entry.jobTitle }}</dd></div>
             <div v-if="entry.jobVersionId"><dt>{{ $t("Job version") }}</dt><dd>{{ entry.jobVersionId }}</dd></div><div><dt>{{ $t("Professional facts") }}</dt><dd>{{ $t("Confirmed and locked") }}</dd></div>
-            <div v-if="!demoMode"><dt>{{ $t("Original PDF") }}</dt><dd>{{ $t(entry.cleanupStatus === 'COMPLETE' ? 'Deleted after confirmation' : 'Being deleted after confirmation') }}</dd></div>
             <div><dt>{{ $t("Assessment methods") }}</dt><dd>{{ assessmentMethods }}</dd></div><div v-if="demoMode"><dt>{{ $t("Configuration") }}</dt><dd>{{ $t("Fixed frontend mock stages") }}</dd></div>
           </dl></section>
           <section class="panel"><h2>{{ $t("Progress Summary") }}</h2><dl><div><dt>{{ $t("Current stage") }}</dt><dd>{{ $t(entry.stage === 'Ready for review' || ready ? 'Ready to run' : entry.stage) }}</dd></div>

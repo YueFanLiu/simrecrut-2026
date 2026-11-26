@@ -11,11 +11,14 @@ import { formatPublishedDate } from '../../../utils/job-list.js'
 import { caseCreationScenario, jobDetailScenario } from '../../../config/demo.js'
 import { useCasesStore } from '../../../store/modules/cases.js'
 import { useAuthStore } from '../../../store/modules/auth.js'
+import { cvContext, resumeQuery } from '../../../utils/cv-workflow.js'
+import { authPageRoute } from '../../../utils/auth-navigation.js'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const cases = useCasesStore()
+const resumeId = computed(() => !demoMode ? cvContext(route.query).resumeId : '')
 const creatingCase = ref(false)
 const creationError = ref('')
 const job = ref(null)
@@ -63,15 +66,16 @@ onBeforeUnmount(() => { loadSequence += 1; pageActive = false })
 async function startSimulation() {
   if (creatingCase.value || !job.value) return
   // Visitors can read the job; a simulation needs a Candidate account and returns here after sign-in.
-  if (!auth.isDemoSignedIn) { await router.push({ name: 'Login', query: { redirect: route.fullPath } }); return }
+  if (!auth.isDemoSignedIn) { await router.push(authPageRoute('Login', route.fullPath)); return }
   if (!auth.hasDemoRole('Candidate')) { creationError.value = 'Only Candidate accounts can start a simulation.'; return }
   creatingCase.value = true
   creationError.value = ''
   const displayedJob = job.value
+  const displayedResumeId = resumeId.value
   try {
     const caseId = await cases.createCase(displayedJob, caseCreationScenario)
     if (pageActive && route.name === 'JobDetail' && route.params.jobId === displayedJob.jobId) {
-      await router.push({ name: 'CvUpload', params: { caseId } })
+      await router.push({ name: 'CvUpload', params: { caseId }, query: resumeQuery(displayedResumeId) })
     } else if (demoMode) {
       cases.deleteCase(caseId)
     }
@@ -87,7 +91,7 @@ async function startSimulation() {
   <CandidateLayout>
     <section :aria-busy="loading" :aria-label="$t(&quot;Job details&quot;)">
       <nav class="breadcrumb" :aria-label="$t(&quot;Breadcrumb&quot;)">
-        <RouterLink :to="{ name: 'PublishedJobs' }">{{ $t("Jobs") }}</RouterLink>
+        <RouterLink :to="{ name: 'PublishedJobs', query: resumeQuery(resumeId) }">{{ $t("Jobs") }}</RouterLink>
         <span aria-hidden="true">/</span>
         <span aria-current="page">{{ $t(job?.title || 'Job Details') }}</span>
       </nav>
@@ -111,6 +115,7 @@ async function startSimulation() {
         <RouterLink class="back-link" :to="{ name: 'PublishedJobs' }">{{ $t("Back to Jobs") }}</RouterLink>
       </div>
       <template v-else>
+        <ElAlert v-if="resumeId" class="demo-notice" type="info" :closable="false" :title="$t('Your library CV will be preselected in the next step. You can choose a different CV before continuing.')" />
         <div class="detail-heading">
           <div>
             <h1>{{ job.title }}</h1>
@@ -152,7 +157,7 @@ async function startSimulation() {
             </section>
           </div>
         </div>
-        <RouterLink class="back-link bottom-back" :to="{ name: 'PublishedJobs' }">{{ $t("Back to Jobs") }}</RouterLink>
+        <RouterLink class="back-link bottom-back" :to="{ name: 'PublishedJobs', query: resumeQuery(resumeId) }">{{ $t("Back to Jobs") }}</RouterLink>
       </template>
     </section>
   </CandidateLayout>

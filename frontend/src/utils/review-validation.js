@@ -50,6 +50,8 @@ export function copyProfessionalDraft(draft) {
     requiredGroups: [...draft.requiredGroups],
     professional: copyGroups(factGroups, draft.professional),
     profile: copyGroups(profileGroups, draft.profile),
+    ...(draft.supplements ? { supplements: draft.supplements.map(row => ({ categoryCode: row.categoryCode,
+      value: row.value, evidence: { text: row.evidence?.text || '', page: row.evidence?.page ?? null, source: 'USER_SUPPLIED' } })) } : {}),
   }
 }
 

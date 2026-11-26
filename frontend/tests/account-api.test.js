@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url'
 test('JWT identity uses the new envelope, public requests, and clears incomplete sessions', async () => {
   const previousLocation = globalThis.location
   let redirects = 0
-  globalThis.location = { protocol: 'http:', pathname: '/register', assign: () => redirects++ }
+  const destinations = []
+  globalThis.location = { protocol: 'http:', pathname: '/register', assign: value => { redirects++; destinations.push(value) } }
   const server = await createServer({ mode: 'production',
     root: fileURLToPath(new URL('../', import.meta.url)),
     server: { middlewareMode: true, hmr: false }, appType: 'custom' })
@@ -74,8 +75,15 @@ test('JWT identity uses the new envelope, public requests, and clears incomplete
     }
     await assert.rejects(api.login({ identifier: 'wrong', password: 'wrong' }), /Invalid username/)
     assert.equal(redirects, 0, 'Public login failures must stay on the form')
+    globalThis.location.pathname = '/candidate/cases/CASE/review'
+    globalThis.location.search = '?resumeId=' + 'a'.repeat(32)
     await assert.rejects(request({ url: '/api/v1/auth/me', silent: true }))
     assert.equal(redirects, 1, 'Protected requests must redirect an expired session')
+    const expected = '/login?redirect=' + encodeURIComponent(globalThis.location.pathname + globalThis.location.search)
+    assert.equal(destinations[0], expected)
+    request.defaults.adapter = async config => ({ config, status: 200, data: { code: 401, message: 'Session expired.' } })
+    await assert.rejects(request({ url: '/api/v1/auth/me', silent: true }))
+    assert.equal(destinations[1], expected, 'Business-envelope 401 preserves the same target as HTTP 401')
   } finally {
     await server.close()
     if (previousLocation === undefined) delete globalThis.location

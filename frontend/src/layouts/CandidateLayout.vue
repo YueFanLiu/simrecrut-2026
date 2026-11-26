@@ -4,6 +4,7 @@ import { ElButton } from 'element-plus'
 import BrandMark from '../components/simrecrut/BrandMark.vue'
 import { demoMode } from '../config/runtime.js'
 import { useAuthStore } from '../store/modules/auth.js'
+import { authPageRoute } from '../utils/auth-navigation.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -38,8 +39,8 @@ async function signOut() {
         </div>
         <div v-else class="session-controls">
           <span class="user-name">{{ $t("Visitor") }}</span>
-          <ElButton @click="router.push({ name: 'Login', query: { redirect: route.fullPath } })">{{ $t("Sign in") }}</ElButton>
-          <ElButton type="primary" @click="router.push({ name: 'Register' })">{{ $t("Create an account") }}</ElButton>
+          <ElButton @click="router.push(authPageRoute('Login', route.fullPath))">{{ $t("Sign in") }}</ElButton>
+          <ElButton type="primary" @click="router.push(authPageRoute('Register', route.fullPath))">{{ $t("Create an account") }}</ElButton>
         </div>
       </div>
     </header>

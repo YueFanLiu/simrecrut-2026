@@ -5,20 +5,25 @@ import { demoMode } from '../../../config/runtime.js'
 import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElAlert, ElButton, ElDialog, ElEmpty, ElOption, ElSelect } from 'element-plus'
+import { ElAlert, ElButton, ElDialog, ElEmpty } from 'element-plus'
 import CandidateLayout from '../../../layouts/CandidateLayout.vue'
 import CvUploadCard from '../../../components/simrecrut/CvUploadCard.vue'
 import CaseProgressStepper from '../../../components/simrecrut/CaseProgressStepper.vue'
+import CvSourcePicker from '../../../components/simrecrut/CvSourcePicker.vue'
 import { isCaseProcessing, useCasesStore } from '../../../store/modules/cases.js'
 import { extractionScenario } from '../../../config/demo.js'
 import { formatCvSize } from '../../../utils/cv-validation.js'
 import { listResumes } from '../../../api/resumes.js'
 import { useLibraryResume } from '../../../api/cases.js'
 import useUserStore from '../../../store/modules/user.js'
+import { cvContext, cvReviewRoute, createCvAttachment, reusableCv } from '../../../utils/cv-workflow.js'
+import { getCaseDestination } from '../../../utils/case-history.js'
 
 const route = useRoute()
 const router = useRouter()
 const cases = useCasesStore()
+let connectedRequest = 0, connectedActive = true, loadingCaseId
+const statusLoading = ref(false), statusError = ref('')
 const selected = ref(null)
 const uploading = ref(false)
 const confirmDelete = ref(false)
@@ -38,31 +43,59 @@ const user = useUserStore()
 const library = ref([])
 const libraryChoice = ref('')
 const usingLibrary = ref(false)
-let libraryKey
+const libraryLoading = ref(false)
+const libraryError = ref('')
+const selectionError = ref('')
+const sourceMode = ref('library')
+let libraryRequest = 0
+let appliedResumeQuery = ''
 const canUseLibrary = computed(() => !demoMode && canChooseFile.value
   && user.permissions.includes('simrecrut:resume:list'))
 async function loadLibrary() {
-  if (!canUseLibrary.value) return
+  const request = ++libraryRequest, caseId = route.params.caseId
+  libraryError.value = ''; selectionError.value = ''
+  if (!canUseLibrary.value) {
+    if (!demoMode && canChooseFile.value) libraryError.value = 'Your account cannot access the CV library. You can still upload a PDF for this simulation.'
+    return
+  }
+  libraryLoading.value = true
   try {
     const rows = (await listResumes()).data || []
-    if (connectedActive) library.value = rows.filter(row => row.confirmed)
-  } catch { if (connectedActive) library.value = [] }
-}
-async function useLibrary() {
-  if (!libraryChoice.value || usingLibrary.value || !canChooseFile.value) return
-  usingLibrary.value = true
-  const id = String(route.params.caseId)
-  libraryKey ||= crypto.randomUUID()
-  try {
-    await useLibraryResume(id, libraryChoice.value, libraryKey)
-    libraryKey = undefined
-    if (connectedActive && route.params.caseId === id) await router.push({ name: 'CvReview', params: { caseId: id } })
+    if (!connectedActive || request !== libraryRequest || route.params.caseId !== caseId) return
+    library.value = rows
+    const requested = cvContext(route.query).resumeId
+    if (requested && requested !== appliedResumeQuery) {
+      appliedResumeQuery = requested
+      if (rows.some(row => row.id === requested && reusableCv(row))) libraryChoice.value = requested
+      else selectionError.value = 'The selected CV is unavailable, expired or not confirmed. Choose another CV or review it first.'
+    }
+    if (libraryChoice.value && !rows.some(row => row.id === libraryChoice.value && reusableCv(row))) libraryChoice.value = ''
   } catch (error) {
-    if (error.status >= 400 && error.status < 500) libraryKey = undefined
-    ElMessage.error(t(error.message || 'This CV could not be used. Upload a PDF instead.'))
+    if (connectedActive && request === libraryRequest) { library.value = []; libraryError.value = error.message || 'Unable to load your CVs. Please retry.' }
+  } finally { if (request === libraryRequest) libraryLoading.value = false }
+}
+const attachFromLibrary = createCvAttachment({
+  readCase: id => cases.loadConnectedCase(id),
+  attach: useLibraryResume,
+})
+async function useLibrary() {
+  if (usingLibrary.value || !canChooseFile.value || !library.value.some(row => row.id === libraryChoice.value && reusableCv(row))) return
+  usingLibrary.value = true
+  selectionError.value = ''
+  const id = String(route.params.caseId)
+  try {
+    const result = await attachFromLibrary(id, libraryChoice.value)
+    if (!connectedActive || route.params.caseId !== id) return
+    cases.cases[id] = { ...cases.cases[id], ...result.row }
+    if (result.alreadyStarted) ElMessage.info(t('This simulation already has CV information. Continuing from its saved step.'))
+    await router.push(getCaseDestination({ ...result.row, caseId: id }) || { name: 'CvReview', params: { caseId: id } })
+  } catch (error) {
+    if (connectedActive && route.params.caseId === id) selectionError.value = error.message || 'This CV could not be used. Choose another CV or retry.'
   } finally { usingLibrary.value = false }
 }
-watch(canUseLibrary, value => { if (value && !library.value.length) loadLibrary() }, { immediate: true })
+watch(canChooseFile, value => { if (value && !demoMode) loadLibrary() }, { immediate: true })
+watch(() => route.query.resumeId, () => { if (!demoMode && canChooseFile.value) loadLibrary() })
+function chooseSource(mode) { sourceMode.value = mode; selected.value = null; selectionError.value = '' }
 
 async function upload() {
   if (!selected.value || !canChooseFile.value || uploading.value) return
@@ -82,21 +115,31 @@ async function cancelAndDelete() {
   } catch (error) { ElMessage.error(t(error.message)) }
 }
 
-watch(() => route.params.caseId, () => { selected.value = null; confirmDelete.value = false })
+watch(() => route.params.caseId, () => { selected.value = null; confirmDelete.value = false; libraryChoice.value = ''; appliedResumeQuery = ''; library.value = []; libraryRequest++; libraryLoading.value = false; sourceMode.value = 'library'; loadLibrary() })
 onBeforeUnmount(() => clearInterval(expiryTimer))
 
 // Direct navigation must load the authorized case instead of requiring demo memory.
-let connectedRequest = 0, connectedActive = true, polling = false
 async function refreshConnectedCase() {
   if (demoMode) return
-  const request = ++connectedRequest, id = String(route.params.caseId)
-  polling = true
+  const id = String(route.params.caseId)
+  if (statusLoading.value && loadingCaseId === id) return
+  const request = ++connectedRequest
+  loadingCaseId = id
+  statusLoading.value = true; statusError.value = ''
   try {
     const row = await cases.loadConnectedCase(id)
     if (connectedActive && request === connectedRequest && route.params.caseId === id) cases.cases[id] = row
   } catch (error) {
-    if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(t(error.message)) }
-  } finally { if (request === connectedRequest) polling = false }
+    if (connectedActive && request === connectedRequest && route.params.caseId === id) {
+      if ([401, 403, 404, 410].includes(error.status ?? error.response?.status)) {
+        delete cases.cases[id]; ElMessage.error(t(error.message))
+      } else {
+        // A failed status read says nothing about whether extraction stopped.
+        // Keep the known case so polling can resume after a temporary outage.
+        statusError.value = error.message || 'The service is unavailable. Please try again.'
+      }
+    }
+  } finally { if (request === connectedRequest) statusLoading.value = false }
 }
 watch(() => route.params.caseId, refreshConnectedCase)
 refreshConnectedCase()
@@ -108,13 +151,22 @@ watch(ready, (value, previous) => {
 })
 let processingSeen = false
 watch(processing, value => { if (value) processingSeen = true }, { immediate: true })
-const connectedTimer = setInterval(() => { if (!demoMode && processing.value && !polling) refreshConnectedCase() }, 2000)
-onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterval(connectedTimer) })
+const connectedTimer = setInterval(() => { if (!demoMode && processing.value && !statusLoading.value) refreshConnectedCase() }, 2000)
+onBeforeUnmount(() => { connectedActive = false; connectedRequest++; libraryRequest++; clearInterval(connectedTimer) })
 </script>
 
 <template>
   <CandidateLayout>
-    <section v-if="!entry" class="unavailable-panel">
+    <section v-if="!entry && statusLoading" class="unavailable-panel" role="status">
+      <p>{{ $t('Loading case…') }}</p>
+    </section>
+    <section v-else-if="!entry && statusError" class="unavailable-panel">
+      <h1>{{ $t('Could not load the case status') }}</h1>
+      <ElAlert :title="$t(statusError)" type="error" :closable="false" />
+      <ElButton type="primary" :loading="statusLoading" @click="refreshConnectedCase">{{ $t('Try Again') }}</ElButton>
+      <ElButton @click="router.replace({ name: 'PublishedJobs' })">{{ $t('Back to Jobs') }}</ElButton>
+    </section>
+    <section v-else-if="!entry" class="unavailable-panel">
       <ElEmpty :description="$t(&quot;Case not available&quot;)" />
       <h1>{{ $t("Case Not Available") }}</h1>
       <p>{{ $t("This case does not exist, has expired or is not available to your account.") }}</p>
@@ -132,25 +184,27 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
         <RouterLink v-if="entry.jobId" :to="{ name: 'JobDetail', params: { jobId: entry.jobId } }">{{ entry.jobTitle }}</RouterLink>
         <span aria-hidden="true">/</span><span aria-current="page">{{ $t("Upload CV") }}</span>
       </nav>
-      <h1 id="upload-title">{{ $t("Upload Your CV") }}</h1>
-      <p class="subtitle">{{ $t("Choose a PDF and preview the recruitment simulation's extraction workflow.") }}</p>
+      <h1 id="upload-title">{{ $t(!demoMode && canChooseFile && sourceMode === 'library' ? 'Choose a CV for this simulation' : 'Upload Your CV') }}</h1>
+      <p class="subtitle">{{ $t(demoMode ? "Choose a PDF and preview the recruitment simulation's extraction workflow." : 'Choose a saved CV or upload a new PDF for this simulation.') }}</p>
+      <div v-if="statusError" class="status-error" role="alert">
+        <ElAlert :title="$t('The case status could not be refreshed. Your upload may still be processing.')"
+          :description="$t(statusError)" type="error" :closable="false" />
+        <ElButton :loading="statusLoading" @click="refreshConnectedCase">{{ $t('Try Again') }}</ElButton>
+      </div>
       <div class="case-context"><span v-if="entry.jobTitle">{{ entry.jobTitle }}<template v-if="entry.version"> {{ $t("· Version") }} {{ entry.version }}</template></span>
         <span>{{ $t("Case:") }} {{ entry.caseId }}</span><span>{{ $t("Expires:") }} {{ expiresAt }} {{ $t("(Paris time)") }}</span></div>
       <ElAlert v-if="demoMode" class="demo-notice" type="info" :closable="false"
         :title="$t(&quot;Frontend demo only: PDF checks run locally. No file is uploaded and no OCR or AI extraction occurs. Sample facts are unrelated to your PDF. Reload before confirmation requires a new upload; confirmed checkpoints survive reload in this tab.&quot;)" />
-      <p v-else>{{ $t("The PDF is processed on the server. When DeepSeek extraction is enabled, it receives selected professional text with personal details removed.") }}</p>
+      <p v-else-if="sourceMode === 'upload'">{{ $t("The PDF is processed on the server. When DeepSeek extraction is enabled, it receives selected professional text with personal details removed.") }}</p>
+      <p v-if="!demoMode && sourceMode === 'upload'">{{ $t("After confirmation, the server requests deletion of any original PDF. Check its status on simulation progress.") }}</p>
       <CaseProgressStepper :ready-for-review="ready" />
-      <div class="upload-grid">
+      <CvSourcePicker v-if="!demoMode && canChooseFile && sourceMode === 'library'" :resumes="library" :loading="libraryLoading" :busy="usingLibrary"
+        :error="libraryError" :selection-error="selectionError" :selected-id="libraryChoice"
+        @select="libraryChoice = $event; selectionError = ''" @use="useLibrary" @refresh="loadLibrary"
+        @review="router.push(cvReviewRoute($event, entry.caseId))" @upload="chooseSource('upload')" />
+      <ElButton v-if="!demoMode && canChooseFile && sourceMode === 'upload'" class="source-back" text :disabled="uploading" @click="chooseSource('library')">← {{ $t('Choose a saved CV instead') }}</ElButton>
+      <div v-if="demoMode || !canChooseFile || sourceMode === 'upload'" class="upload-grid">
         <div class="upload-column">
-          <section v-if="canUseLibrary && library.length" class="library-panel" aria-labelledby="library-choice-title">
-            <h2 id="library-choice-title">{{ $t("Use a CV from your library") }}</h2>
-            <p>{{ $t("Reuse the facts you already reviewed. No new upload is needed.") }}</p>
-            <ElSelect v-model="libraryChoice" :placeholder="$t('Choose a confirmed CV')" :aria-label="$t('Choose a confirmed CV')">
-              <ElOption v-for="row in library" :key="row.id" :value="row.id" :label="row.display_name || row.filename" />
-            </ElSelect>
-            <ElButton type="primary" :disabled="!libraryChoice" :loading="usingLibrary" @click="useLibrary">{{ $t("Use this CV") }}</ElButton>
-            <p class="divider">{{ $t("Or upload a new PDF") }}</p>
-          </section>
           <CvUploadCard v-if="canChooseFile" :selected="selected" @select="selected = $event" />
           <div v-if="entry.file" class="file-panel">
             <h2>{{ $t(ready ? 'PDF Accepted for the Demo' : 'Selected PDF') }}</h2>
@@ -200,18 +254,18 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++; clearInterv
         </section>
       </div>
       <div class="page-actions">
-        <ElButton @click="confirmDelete = true">{{ $t("Cancel and Delete") }}</ElButton>
-        <ElButton type="primary" :disabled="!ready" :aria-describedby="ready ? 'review-notice' : undefined"
-          @click="router.push({ name: 'CvReview', params: { caseId: entry.caseId } })">{{ $t("Review Extracted Facts") }}</ElButton>
+        <ElButton type="danger" plain @click="confirmDelete = true">{{ $t('Delete simulation') }}</ElButton>
+        <ElButton v-if="demoMode || !canChooseFile || sourceMode === 'upload'" type="primary" :disabled="!ready" :aria-describedby="ready ? 'review-notice' : undefined"
+          @click="router.push({ name: 'CvReview', params: { caseId: entry.caseId } })">{{ $t('Review CV') }}</ElButton>
       </div>
     </section>
-    <ElDialog v-model="confirmDelete" :title="$t(&quot;Cancel and delete this case?&quot;)" width="min(460px, calc(100% - 32px))"
+    <ElDialog v-model="confirmDelete" :title="$t('Delete this simulation?')" width="min(460px, calc(100% - 32px))"
       :close-on-click-modal="false">
       <p v-if="demoMode">{{ $t("The case, file metadata and mock preview will be removed from this session.") }}</p>
       <p v-else>{{ $t("Access ends immediately. The server will remove the case and its data.") }}</p>
       <p>{{ $t("You will return to My simulations.") }}</p>
-      <template #footer><ElButton @click="confirmDelete = false">{{ $t("Keep Case") }}</ElButton>
-        <ElButton type="danger" @click="cancelAndDelete">{{ $t("Delete Case") }}</ElButton></template>
+      <template #footer><ElButton @click="confirmDelete = false">{{ $t('Keep simulation') }}</ElButton>
+        <ElButton type="danger" @click="cancelAndDelete">{{ $t('Delete simulation') }}</ElButton></template>
     </ElDialog>
   </CandidateLayout>
 </template>
@@ -226,6 +280,8 @@ h1 { margin: 0; color: var(--sr-ink); font-size: 28px; line-height: 1.4; letter-
 .case-context { display: flex; flex-wrap: wrap; gap: 8px 22px; color: var(--sr-text-muted); font-size: 12px; line-height: 1.7; margin-bottom: 20px; overflow-wrap: anywhere; }
 .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 .upload-column { min-width: 0; }
+.source-back { margin-bottom:16px; }
+.status-error { display:grid; gap:12px; justify-items:start; margin-bottom:16px; }
 .extraction-panel, .file-panel { padding: 24px; background: white; border: 1px solid var(--sr-border); border-radius: 10px; min-width: 0; }
 h2 { margin: 0 0 16px; font-size: 17px; color: var(--sr-text); }
 h3 { font-size: 18px; line-height: 1.5; color: var(--sr-text); }

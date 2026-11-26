@@ -2,8 +2,9 @@
 import { ElButton, ElTag } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { formatPublishedDate } from '../../utils/job-list.js'
+import { resumeQuery } from '../../utils/cv-workflow.js'
 
-defineProps({ job: { type: Object, required: true } })
+defineProps({ job: { type: Object, required: true }, resumeId: String })
 const router = useRouter()
 </script>
 
@@ -23,7 +24,7 @@ const router = useRouter()
     <div class="card-footer">
       <span class="version">{{ $t("Version") }} {{ job.currentVersion }}</span>
       <ElButton type="primary" size="small"
-        @click="router.push({ name: 'JobDetail', params: { jobId: job.jobId } })">{{ $t("View Details") }}</ElButton>
+        @click="router.push({ name: 'JobDetail', params: { jobId: job.jobId }, query: resumeQuery(resumeId) })">{{ $t("View Details") }}</ElButton>
     </div>
   </article>
 </template>

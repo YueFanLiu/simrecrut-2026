@@ -342,7 +342,7 @@ export const useCasesStore = defineStore('cases', {
             : row.processingStatus.startsWith('FAILED') ? 'Failed' : 'Running',
       }))
       return {
-        ...this.cases[caseId], ...row, confirmedAt: caseExpiry(row.confirmedAt),
+        ...this.cases[caseId], ...row, cleanupStatus: row.cleanupStatus ?? null, confirmedAt: caseExpiry(row.confirmedAt),
         expiresAt: caseExpiry(row.expiresAt), failure: row.message,
         assessment: { methods, retryable: row.retryable, updatedAt: caseExpiry(row.updatedAt), events: [] },
       }

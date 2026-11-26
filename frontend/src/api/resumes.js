@@ -1,5 +1,11 @@
 // Route resume operations through the authenticated Java transport.
 import request from "@/utils/request";
+// Proposed contract; gated by VITE_APP_CV_REVISIONS_ENABLED in the editor.
+// Never fall back to PDF import or mutate the confirmed source on failure.
+export const createResumeRevision = (sourceId, data, operationKey) => request({
+  url: `/api/v1/resumes/${encodeURIComponent(sourceId)}/revisions`, method: 'post', data,
+  headers: { 'Idempotency-Key': operationKey }, timeout: 15000, silent: true,
+});
 export const deleteResume = (id, operationKey = crypto.randomUUID()) => request({ url: "/api/v1/resumes/" + encodeURIComponent(id), method: "delete", headers: { "Idempotency-Key": operationKey }, timeout: 60000, silent: true });
 export const listResumes = (signal) => request({ url: "/api/v1/resumes", signal, silent: true });
 export const getResume = (id, signal) =>

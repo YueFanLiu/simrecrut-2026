@@ -3,18 +3,24 @@ import { dateLocale } from '../../i18n/index.js'
 import { t } from '../../i18n/index.js'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import CandidateLayout from '../../layouts/CandidateLayout.vue'
 import CvUploadCard from '../../components/simrecrut/CvUploadCard.vue'
+import OriginalPdfStatus from '../../components/simrecrut/OriginalPdfStatus.vue'
+import { originalPdfStatus } from '../../utils/original-pdf-status.js'
 import { listResumes, importResume, resumeAction, getResume, deleteResume } from '../../api/resumes.js'
 import { demoMode } from '../../config/runtime.js'
 import useUserStore from '../../store/modules/user.js'
+import { cvContext, cvReviewRoute, cvRevisionRoute, cvSelectionRoute, jobsForResume, reusableCv } from '../../utils/cv-workflow.js'
 
 const router = useRouter()
+const route = useRoute()
+const context = computed(() => cvContext(route.query))
 const user = useUserStore()
 const records = ref([])
 const selected = ref(null)
 const loading = ref(false)
+const refreshing = ref(false)
 const busy = ref(false)
 const listError = ref('')
 const uploadError = ref('')
@@ -36,16 +42,17 @@ let importPayload
 let cleanKey
 const statusLabels = { UPLOADED: 'Ready to extract', EXTRACTING: 'Extracting facts',
   REVIEW_REQUIRED: 'Ready for review', CONFIRMED: 'Confirmed', FAILED: 'Extraction failed' }
-async function refresh() {
-  if (demoMode || loading.value) return
-  loading.value = true
+async function refresh({ quiet = false } = {}) {
+  if (demoMode || refreshing.value) return
+  refreshing.value = true
+  if (!quiet) loading.value = true
   listError.value = ''
   try {
     const result = await listResumes(controller.signal)
     if (active) records.value = result.data
   } catch (error) {
     if (active) listError.value = error.message || 'Unable to load your CVs. Please retry.'
-  } finally { loading.value = false }
+  } finally { loading.value = false; refreshing.value = false }
 }
 watch(displayName, () => { importKey = undefined; importPayload = undefined })
 function selectFile(value) {
@@ -84,7 +91,7 @@ async function upload() {
       cleanKey ||= crypto.randomUUID()
       await resumeAction(data.id, 'clean', {}, { signal: controller.signal, operationKey: cleanKey })
     }
-    if (active) await router.push({ name: 'ConnectedResumeReview', params: { id: data.id } })
+    if (active) await router.push(cvReviewRoute(data.id, context.value.caseId))
   } catch (error) {
     if (!active) return
     uploadError.value = error.message || 'Upload could not finish. Please retry.'
@@ -94,6 +101,10 @@ async function upload() {
 function startRename(row) {
   editingId.value = row.id
   editingName.value = nameOf(row)
+}
+function useForSimulation(row) {
+  if (!reusableCv(row)) return
+  router.push(context.value.caseId ? cvSelectionRoute(context.value.caseId, row.id) : jobsForResume(row.id))
 }
 async function saveRename(row) {
   if (rowBusy.value) return
@@ -124,9 +135,17 @@ async function removeRow(row) {
     if (active) ElMessage.error(t(error.message || 'Deletion could not finish. Reload its current status before retrying.'))
   } finally { rowBusy.value = '' }
 }
-onMounted(refresh)
+let pdfTimer
+onMounted(() => {
+  refresh()
+  pdfTimer = setInterval(() => {
+    if (!busy.value && !rowBusy.value && !editingId.value && !listError.value
+      && records.value.some(row => originalPdfStatus(row).pending)) refresh({ quiet: true })
+  }, 10000)
+})
 onUnmounted(() => {
   active = false
+  clearInterval(pdfTimer)
   controller.abort()
   records.value = []
   selected.value = null
@@ -139,6 +158,8 @@ onUnmounted(() => {
     <div class="page-heading"><div><p class="eyebrow">{{ $t("CANDIDATE WORKSPACE") }}</p>
       <h1>{{ $t("My CVs") }}</h1><p>{{ $t("Upload a CV, review the extracted facts and save your confirmed profile.") }}</p>
     </div></div>
+    <el-alert v-if="context.caseId" class="context-notice" type="info" :closable="false" :title="$t('Review or choose a confirmed CV, then return to your simulation.')" />
+    <el-button v-if="context.caseId" class="return-to-case" @click="router.push(cvSelectionRoute(context.caseId))">{{ $t('Back to CV selection') }}</el-button>
     <el-alert v-if="demoMode" :title="$t(&quot;Sign in to the connected service to upload a real CV.&quot;)"
       type="info" :closable="false" />
     <section class="upload-section" aria-labelledby="upload-title">
@@ -158,11 +179,11 @@ onUnmounted(() => {
         </el-button>
         <span role="status" aria-live="polite">{{ $t(busy ? 'Keep this page open while your PDF uploads.' : 'PDF only · Up to 10 MB · 1–20 pages') }}</span>
       </div>
-      <p class="retention">{{ $t("Unconfirmed CVs expire after 24 hours. Confirmed CVs expire after 30 days. Your original PDF is deleted as soon as you confirm the extracted facts.") }}</p>
+      <p class="retention">{{ $t("Unconfirmed CVs expire after 24 hours. Confirmed CVs expire after 30 days. Confirmation requests cleanup of the original PDF; check each CV's PDF status for completion.") }}</p>
     </section>
     <section class="library" aria-labelledby="library-title" :aria-busy="loading">
       <div class="library-heading"><h2 id="library-title">{{ $t("Your CV library") }}</h2>
-        <el-button :loading="loading" :disabled="busy || demoMode" @click="refresh">{{ $t("Refresh list") }}</el-button>
+        <el-button :loading="refreshing" :disabled="busy || demoMode" @click="refresh">{{ $t("Refresh list") }}</el-button>
       </div>
       <el-alert v-if="listError" :title="$t(listError)" type="error" show-icon :closable="false" />
       <p v-if="loading" role="status">{{ $t("Loading your CVs...") }}</p>
@@ -184,15 +205,17 @@ onUnmounted(() => {
           <el-tag :type="row.status === 'FAILED' ? 'danger' : row.confirmed ? 'success' : 'info'">
             {{ $t(row.cloud_revision === row.revision ? 'Published' : statusLabels[row.status] || row.status) }}
           </el-tag>
-          <small v-if="row.confirmed && !row.originalAvailable" class="pdf-note">{{ $t("PDF deleted") }}</small>
+          <OriginalPdfStatus :record="row" compact />
         </template></el-table-column>
         <el-table-column :label="$t(&quot;Expires&quot;)" min-width="160"><template #default="{ row }">
           {{ $t(row.expires_at ? new Date(row.expires_at).toLocaleString(dateLocale) : '—') }}
         </template></el-table-column>
-        <el-table-column :label="$t(&quot;Action&quot;)" width="230"><template #default="{ row }">
+        <el-table-column :label="$t(&quot;Action&quot;)" min-width="300"><template #default="{ row }">
           <div class="row-actions">
-            <el-button size="small" :disabled="busy" @click="router.push({ name: 'ConnectedResumeReview', params: { id: row.id } })">
+            <el-button v-if="reusableCv(row)" size="small" type="primary" :disabled="busy || !!rowBusy" @click="useForSimulation(row)">{{ $t(context.caseId ? 'Use for this simulation' : 'Use for a simulation') }}</el-button>
+            <el-button size="small" :disabled="busy" @click="router.push(cvReviewRoute(row.id, context.caseId))">
               {{ $t(row.confirmed ? 'View facts' : 'Review facts') }}</el-button>
+            <el-button v-if="canEdit && reusableCv(row)" size="small" :disabled="busy || !!rowBusy" @click="router.push(cvRevisionRoute(row.id, context.caseId))">{{ $t('Edit a revised copy') }}</el-button>
             <el-button v-if="canDelete" size="small" type="danger" plain :loading="rowBusy === row.id"
               :disabled="busy || (!!rowBusy && rowBusy !== row.id)" @click="removeRow(row)">{{ $t("Delete") }}</el-button>
           </div>
@@ -208,6 +231,7 @@ h2 { margin: 0 0 12px; font-size: 20px; color: var(--sr-text); }
 p { color: var(--sr-text-muted); line-height: 1.7; font-size: 14px; }
 .eyebrow { color: var(--sr-primary); font-size: 11px; font-weight: 700; letter-spacing: 1.4px; }
 .page-heading { margin-bottom: 26px; }
+.return-to-case { margin-top:14px; }
 .upload-section, .library { padding: 28px; margin-top: 24px; background: white;
   border: 1px solid var(--sr-border); border-radius: 12px; min-width: 0; }
 .upload-actions, .library-heading { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }

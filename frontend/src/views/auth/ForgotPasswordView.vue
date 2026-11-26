@@ -2,7 +2,7 @@
 <script setup>
 import { useLocalizedValidation, t } from '../../i18n/index.js'
 import { onMounted, onBeforeUnmount, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElForm, ElFormItem, ElInput } from 'element-plus'
 import AuthLayout from '../../layouts/AuthLayout.vue'
 import PasswordInput from '../../components/simrecrut/PasswordInput.vue'
@@ -10,8 +10,10 @@ import { passwordResetOptions, sendPasswordCode, resetPassword } from '../../api
 import { validateConnectedEmail, validateConnectedPassword, validatePasswordConfirmation } from '../../utils/registration-validation.js'
 import { removeToken } from '../../utils/auth.js'
 import { demoMode } from '../../config/runtime.js'
+import { authPageRoute } from '../../utils/auth-navigation.js'
 
 const router=useRouter(), formRef=ref()
+const route=useRoute()
 const form=reactive({ email:'', challengeId:'', emailCode:'', password:'', confirmation:'' })
 const loading=ref(false), checking=ref(true), enabled=ref(false)
 const error=ref(''), feedback=ref(''), done=ref(false), cooldown=ref(0)
@@ -73,7 +75,7 @@ useLocalizedValidation(formRef)
         <ElButton type="primary" native-type="submit" class="wide" :loading="loading" :disabled="loading||!form.challengeId">{{ $t("Reset password") }}</ElButton>
       </ElForm>
     </template>
-    <ElButton class="wide back" :disabled="loading" @click="router.push({name:'Login'})">{{ $t("Back to sign in") }}</ElButton>
+    <ElButton class="wide back" :disabled="loading" @click="router.push(authPageRoute('Login', route.query.redirect))">{{ $t("Back to sign in") }}</ElButton>
   </AuthLayout>
 </template>
 

@@ -8,6 +8,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElSkeleton, ElTabPane, ElTabs, ElTag } from 'element-plus'
 import CandidateLayout from '../../../layouts/CandidateLayout.vue'
 import CaseProgressStepper from '../../../components/simrecrut/CaseProgressStepper.vue'
+import OriginalPdfStatus from '../../../components/simrecrut/OriginalPdfStatus.vue'
 import ResultCard from '../../../components/simrecrut/ResultCard.vue'
 import ScoreScalePanel from '../../../components/simrecrut/ScoreScalePanel.vue'
 import SimulationDeleteDialog from '../../../components/simrecrut/SimulationDeleteDialog.vue'
@@ -99,16 +100,24 @@ watch(() => [route.params.caseId, entry.value?.processingStatus], ([caseId], pre
 onBeforeUnmount(() => { pageActive = false; sequence += 1; results.value = null; clearInterval(timer) })
 
 // Direct navigation must load the authorized case instead of requiring demo memory.
-let connectedRequest = 0, connectedActive = true
+let connectedRequest = 0, connectedActive = true, loadingCaseId
+const statusLoading = ref(false), statusError = ref(false)
 async function refreshConnectedCase() {
   if (demoMode) return
-  const request = ++connectedRequest, id = String(route.params.caseId)
+  const id = String(route.params.caseId)
+  if (statusLoading.value && loadingCaseId === id) return
+  const request = ++connectedRequest
+  loadingCaseId = id
+  statusLoading.value = true; statusError.value = false
   try {
     const row = await cases.loadConnectedCase(id)
     if (connectedActive && request === connectedRequest && route.params.caseId === id) cases.cases[id] = row
   } catch (error) {
-    if (connectedActive && request === connectedRequest) { delete cases.cases[id]; ElMessage.error(t(error.message)) }
-  }
+    if (connectedActive && request === connectedRequest) {
+      statusError.value = true
+      if ([401, 403, 404, 410].includes(error.status)) { delete cases.cases[id]; ElMessage.error(t(error.message)) }
+    }
+  } finally { if (request === connectedRequest) statusLoading.value = false }
 }
 watch(() => route.params.caseId, refreshConnectedCase)
 refreshConnectedCase()
@@ -120,6 +129,7 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++ })
     <section v-if="busy === 'delete'" class="panel state-panel" role="status"><h1>{{ $t("Deleting Case...") }}</h1><p>{{ $t("Revoking access and requesting removal of case data.") }}</p></section>
     <section v-else-if="!entry" class="panel state-panel">
       <h1>{{ $t("Case Not Available") }}</h1><p>{{ $t("This case was removed, has expired or is not available to your account.") }}</p>
+      <ElButton v-if="!demoMode" :loading="statusLoading" @click="refreshConnectedCase">{{ $t('Try Again') }}</ElButton>
       <ElButton type="primary" @click="router.replace({ name: 'PublishedJobs' })">{{ $t("Back to Jobs") }}</ElButton>
     </section>
     <section v-else-if="!ready" class="panel state-panel"><h1>{{ $t("Results Not Ready") }}</h1>
@@ -132,6 +142,8 @@ onBeforeUnmount(() => { connectedActive = false; connectedRequest++ })
       <h1 id="results-title">{{ $t("Simulation Results") }}</h1><p class="subtitle">{{ $t("Three automated assessments and two separate human review conditions.") }}</p>
       <ElAlert v-if="demoMode" type="info" :closable="false" :title="$t(&quot;Frontend demo: scores and decisions are fixed examples unrelated to your CV or selected job. No model or real reviewer is involved. Reload restores the checkpoint and regenerates fixed examples; optional research values and human updates are not retained. Sign out clears the case.&quot;)" />
       <CaseProgressStepper :current-step="3" review-confirmed :simulation-complete="entry.processingStatus === 'AUTOMATED_COMPLETE'" />
+      <OriginalPdfStatus :record="entry" :source="demoMode ? 'demo' : 'case'" :refreshable="!demoMode" auto-refresh
+        :refreshing="statusLoading" :error="statusError" :disabled="Boolean(busy)" @refresh="refreshConnectedCase" />
       <div v-if="loading" class="panel" role="status"><p>{{ $t("Loading results...") }}</p><ElSkeleton :rows="8" animated /></div>
       <div v-else-if="!results" class="panel state-panel" role="alert"><h2>{{ $t("Results Could Not Be Loaded") }}</h2><p>{{ $t(error) }}</p>
         <ElButton type="primary" @click="loadResults()">{{ $t("Try Again") }}</ElButton></div>

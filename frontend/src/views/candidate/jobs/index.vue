@@ -7,8 +7,12 @@ import JobCard from '../../../components/simrecrut/JobCard.vue'
 import { loadPublishedJobs } from '../../../mock/jobs.js'
 import { filterPublishedJobs } from '../../../utils/job-list.js'
 import { jobsScenario } from '../../../config/demo.js'
+import { useRoute, useRouter } from 'vue-router'
+import { cvContext } from '../../../utils/cv-workflow.js'
 
 const jobs = ref([])
+const route = useRoute(), router = useRouter()
+const resumeId = computed(() => !demoMode ? cvContext(route.query).resumeId : '')
 const loading = ref(true)
 const loadError = ref('')
 const page = ref(1)
@@ -52,6 +56,7 @@ onMounted(loadJobs)
         <h1 id="jobs-title">{{ $t("Published Jobs") }}</h1>
         <p>{{ $t("Browse available job postings for your next recruitment simulation.") }}</p>
       </div>
+      <section v-if="resumeId" class="cv-context" aria-live="polite"><p>{{ $t('A library CV is selected. Choose a job to use it in a simulation.') }}</p><ElButton @click="router.push({ name: 'ConnectedResumes' })">{{ $t('Change CV') }}</ElButton></section>
       <ElAlert v-if="demoMode" class="demo-notice" type="info" :closable="false"
         :title="$t(&quot;Frontend demo: search, filters and sorting use local mock data. Open My simulations to continue or delete your retained demo cases.&quot;)" />
 
@@ -116,7 +121,7 @@ onMounted(loadJobs)
           <ElButton v-if="hasFilters" text @click="clearFilters">{{ $t("Clear Filters") }}</ElButton>
         </div>
         <div class="job-grid">
-          <JobCard v-for="job in visibleJobs" :key="job.jobId" :job="job" />
+          <JobCard v-for="job in visibleJobs" :key="job.jobId" :job="job" :resume-id="resumeId" />
         </div>
         <ElPagination v-if="filteredJobs.length > pageSize" v-model:current-page="page"
           class="job-pagination" :page-size="pageSize" :total="filteredJobs.length"
@@ -130,6 +135,7 @@ onMounted(loadJobs)
 h1 { margin: 0; color: var(--sr-ink); font-size: 28px; letter-spacing: -0.7px; }
 .page-heading p { margin: 10px 0 22px; color: var(--sr-text-muted); font-size: 14px; line-height: 1.7; }
 .demo-notice { margin-bottom: 22px; }
+.cv-context { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:20px; padding:16px; background:var(--sr-primary-50); border-radius:9px; } .cv-context p { margin:0; color:var(--sr-text-secondary); font-size:13px; }
 .job-filters { display: grid; grid-template-columns: 2fr repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
 .job-filters > div { min-width: 0; }
 .job-filters label { display: block; margin-bottom: 7px; font-size: 12px; color: var(--sr-text-secondary); font-weight: 600; }

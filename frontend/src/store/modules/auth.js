@@ -1,5 +1,6 @@
 import { useAdminModelsStore } from './admin-models.js'
 import { defineStore } from 'pinia'
+import { nextTick } from 'vue'
 import { useAdminRolesStore } from './admin-roles.js'
 import { useAdminUsersStore } from './admin-users.js'
 import { demoMode } from '../../config/runtime.js'
@@ -58,6 +59,8 @@ export const useAuthStore = defineStore('auth', {
           useResearchModuleStore().clearResearch(); useReviewTasksStore().clearTasks()
           useAdminUsersStore().clearUsers(); useAdminRolesStore().clearRoles(); useAdminModelsStore().clearModels()
           this.demoUser = null
+          // App removes private RouterViews before callers navigate away.
+          await nextTick()
         }
         return
       }
@@ -71,6 +74,7 @@ export const useAuthStore = defineStore('auth', {
       useAdminModelsStore().clearModels()
       this.demoUser = null
       saveDemoSession(null)
+      await nextTick()
     },
   },
 })

@@ -1,7 +1,7 @@
 <script setup>
 import { t, useLocalizedValidation } from '../../i18n/index.js'
 import { computed, onUnmounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElCheckbox, ElDialog, ElForm, ElFormItem, ElInput, ElRadioGroup, ElRadioButton } from 'element-plus'
 import AuthLayout from '../../layouts/AuthLayout.vue'
 import FieldIcon from '../../components/simrecrut/FieldIcon.vue'
@@ -10,12 +10,15 @@ import { registrationEnabled as demoRegistrationEnabled } from '../../config/dem
 import { demoMode } from '../../config/runtime.js'
 import { sendRegistrationCode, register } from '../../api/login.js'
 import { registerDemo } from '../../mock/auth.js'
+import { authPageRoute, resolvedAuthReturnPath } from '../../utils/auth-navigation.js'
 import {
   validateUsername, validateEmail, validateRegistrationPassword,
   validatePasswordConfirmation, validateAgreement, validateConnectedPassword, validateConnectedEmail,
 } from '../../utils/registration-validation.js'
 
 const router = useRouter()
+const route = useRoute()
+const returnTo = computed(() => resolvedAuthReturnPath(route.query.redirect, path => router.resolve(path)))
 const formRef = ref()
 const form = reactive({ username: '', email: '', password: '', confirmation: '', agreedToTerms: false })
 const loading = ref(false)
@@ -118,7 +121,7 @@ async function submitRegistration() {
 }
 
 function goToLogin() {
-  router.push({ name: 'Login' })
+  router.push(authPageRoute('Login', returnTo.value))
 }
 
 useLocalizedValidation(formRef)
@@ -141,13 +144,15 @@ useLocalizedValidation(formRef)
       <p>{{ $t('Your {role} account {name} is ready.', { role: $t(createdRole), name: createdUsername }) }}</p>
       <p>{{ $t("You can now sign in with your username or email.") }}</p>
       <p v-if="demoMode" class="result-note">{{ $t("This account exists only until you refresh or close this browser tab.") }}</p>
-      <p v-else class="result-note">{{ $t("Your account is saved. Sign in to continue to your workspace.") }}</p>
+      <p v-if="returnTo" class="result-note">{{ $t('Sign in to return to your selected page. No simulation has been created.') }}</p>
+      <p v-else-if="!demoMode" class="result-note">{{ $t("Your account is saved. Sign in to continue to your workspace.") }}</p>
       <ElButton type="primary" size="large" @click="goToLogin">{{ $t("Go to sign in") }}</ElButton>
     </div>
 
     <template v-else>
       <h1 id="register-title">{{ $t("Create an account") }}</h1>
       <p class="register-subtitle">{{ $t("Join SimRecrut and start your simulation journey") }}</p>
+      <p v-if="returnTo" class="result-note">{{ $t('Your selected page is kept while you create an account. You will sign in afterwards to continue.') }}</p>
       <div class="feedback" aria-live="polite" aria-atomic="true">
         <ElAlert v-if="registrationError" :title="$t(registrationError)" type="error"
           show-icon :closable="false" />
@@ -232,7 +237,7 @@ useLocalizedValidation(formRef)
       width="min(480px, calc(100vw - 32px))" @close="notice = ''">
       <template v-if="!demoMode">
         <p v-if="notice === 'terms'">{{ $t("This development service creates a persistent Candidate or HR account for the SimRecrut project. This notice is not a finalized legal agreement.") }}</p>
-        <template v-else><p>{{ $t("Your username, email and hashed password are stored in the configured project database. Your password is used for authentication and is not stored as readable text.") }}</p><p>{{ $t("A verification code is sent to confirm your email address. Remember Me stores only your sign-in identifier in this browser.") }}</p></template>
+        <template v-else><p>{{ $t("Your username, email and hashed password are stored in the configured project database. Your password is used for authentication and is not stored as readable text.") }}</p><p>{{ $t("A verification code is sent to confirm your email address. You can optionally remember your username or email in this browser; this option never saves your password.") }}</p></template>
       </template>
       <template v-else-if="notice === 'terms'">
         <p>{{ $t("This is a frontend demonstration for reviewing the SimRecrut interface.") }}</p>
@@ -241,7 +246,7 @@ useLocalizedValidation(formRef)
       </template>
       <template v-else>
         <p>{{ $t("Registration details and demo credentials are held in this tab's memory and cleared on refresh.") }}</p>
-        <p>{{ $t("No registration data is sent to a server. Login's Remember Me option stores only the identifier in local storage.") }}</p>
+        <p>{{ $t("No registration data is sent to a server in this demo. The optional sign-in preference saves your username or email in this browser, never your password.") }}</p>
         <p>{{ $t("Use invented details and a demo password. This prototype notice is not a finalized privacy policy.") }}</p>
       </template>
       <template #footer><ElButton type="primary" @click="notice = ''">{{ $t("Close") }}</ElButton></template>

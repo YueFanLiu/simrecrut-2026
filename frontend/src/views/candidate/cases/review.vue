@@ -6,6 +6,8 @@ import { ElAlert, ElButton, ElCheckbox, ElDialog, ElInput, ElSkeleton } from 'el
 import CandidateLayout from '../../../layouts/CandidateLayout.vue'
 import CaseProgressStepper from '../../../components/simrecrut/CaseProgressStepper.vue'
 import FactGroupEditor from '../../../components/simrecrut/FactGroupEditor.vue'
+import CvFactsEditor from '../../../components/simrecrut/CvFactsEditor.vue'
+import { demoCvFacts, applyDemoCvFacts } from '../../../utils/demo-cv-editor.js'
 import EvidencePanel from '../../../components/simrecrut/EvidencePanel.vue'
 import { factGroups, profileGroups, researchFields, createEmptyFactItem } from '../../../mock/review-draft.js'
 import { emptyResearchAttributes, validateReviewDraft } from '../../../utils/review-validation.js'
@@ -29,14 +31,19 @@ const actionError = ref('')
 const errors = ref({})
 const dirty = ref(false)
 const reviewed = ref(false)
+const editorPending = ref(false)
 const evidence = ref(null)
 const confirmDelete = ref(false)
 const research = ref(emptyResearchAttributes())
 const researchDirty = ref(false)
 const researchConfirmed = ref(false)
+const researchOpen = ref(false)
 let loadSequence = 0
 let pageActive = true
 const noFacts = computed(() => draft.value && factGroups.every((group) => !draft.value.professional[group.key].items.length))
+const editorFacts = computed({ get: () => draft.value ? demoCvFacts(draft.value) : {},
+  set: value => { applyDemoCvFacts(draft.value, value); markChanged() } })
+const editorCounts = computed(() => Object.fromEntries(visibleGroups.value.map(group => [group.key, groupData(group).items.length])))
 const unresolvedFacts = computed(() => draft.value && Object.keys(validateReviewDraft(draft.value, true)).length > 0)
 
 async function loadDraft() {
@@ -48,8 +55,10 @@ async function loadDraft() {
   errors.value = {}
   dirty.value = false
   reviewed.value = false
+  editorPending.value = false
   researchDirty.value = false
   researchConfirmed.value = false
+  researchOpen.value = false
   loadError.value = ''
   feedback.value = ''
   actionError.value = ''
@@ -82,9 +91,8 @@ const visibleGroups = computed(() => {
   const profile = profileGroups.filter(group => draft.value.profile?.[group.key])
   return [...profile.filter(group => group.key === 'personal'), ...factGroups, ...profile.filter(group => group.key !== 'personal')]
 })
-const activeDefinition = computed(() => visibleGroups.value.find(group => group.key === activeGroup.value) || visibleGroups.value[0])
 // One tab per CV section keeps the page short; a tab with problems is marked and opened first.
-const activeGroup = ref('personal')
+const activeGroup = ref('skills')
 const groupHasError = group => Object.keys(errors.value).some(key => key === group.key || key.startsWith(`${group.key}.`))
 watch(errors, () => {
   const first = visibleGroups.value.find(groupHasError)
@@ -117,9 +125,10 @@ function returnToFact() {
 }
 
 async function saveChanges() {
-  if (busy.value || !editable.value || !draft.value) return
+  if (busy.value || editorPending.value || !editable.value || !draft.value) return
   errors.value = validateReviewDraft(draft.value)
   if (Object.keys(errors.value).length) { actionError.value = 'Correct the highlighted values before saving.'; return }
+  if (!validateOptionalDetails()) return
   busy.value = 'save'
   const caseId = route.params.caseId
   feedback.value = ''
@@ -128,29 +137,33 @@ async function saveChanges() {
     await cases.saveReview(caseId, draft.value, reviewScenario)
     if (!pageActive || route.params.caseId !== caseId) return
     dirty.value = false
+    await saveOptionalDetails(caseId)
+    if (!pageActive || route.params.caseId !== caseId) return
     feedback.value = 'Changes saved in this demo session.'
   } catch (error) { if (pageActive && route.params.caseId === caseId) actionError.value = error.message }
   finally { if (route.params.caseId === caseId) busy.value = '' }
 }
 
-async function saveOptionalDetails() {
-  if (busy.value || !editable.value) return
-  busy.value = 'research'
-  const caseId = route.params.caseId
-  feedback.value = ''
-  actionError.value = ''
-  try {
-    await cases.saveResearch(caseId, research.value, researchConfirmed.value, reviewScenario)
-    if (!pageActive || route.params.caseId !== caseId) return
-    research.value = { ...entry.value.researchAttributes }
-    researchDirty.value = false
-    feedback.value = 'Optional details saved separately in this demo session.'
-  } catch (error) { if (pageActive && route.params.caseId === caseId) actionError.value = error.message }
-  finally { if (route.params.caseId === caseId) busy.value = '' }
+function validateOptionalDetails() {
+  const supplied = Object.values(research.value).some(value => value.trim() && value.trim().toUpperCase() !== 'UNKNOWN')
+  if (researchDirty.value && supplied && !researchConfirmed.value) {
+    researchOpen.value = true
+    actionError.value = 'Confirm the optional details you chose to provide, or restore their saved values.'
+    return false
+  }
+  return true
+}
+
+async function saveOptionalDetails(caseId) {
+  if (!researchDirty.value) return
+  await cases.saveResearch(caseId, research.value, researchConfirmed.value, reviewScenario)
+  if (!pageActive || route.params.caseId !== caseId) return
+  research.value = { ...entry.value.researchAttributes }
+  researchDirty.value = false
 }
 
 async function confirmFacts() {
-  if (busy.value || !editable.value || !draft.value) return
+  if (busy.value || editorPending.value || !editable.value || !draft.value) return
   errors.value = validateReviewDraft(draft.value, true)
   actionError.value = ''
   if (Object.keys(errors.value).length) {
@@ -158,15 +171,18 @@ async function confirmFacts() {
     return
   }
   if (!reviewed.value) { actionError.value = 'Confirm that you reviewed the professional facts.'; return }
-  if (researchDirty.value) { actionError.value = 'Save optional details before confirming, or restore their saved values.'; return }
+  if (!validateOptionalDetails()) return
   busy.value = 'confirm'
   const caseId = route.params.caseId
   try {
+    await saveOptionalDetails(caseId)
+    if (!pageActive || route.params.caseId !== caseId) return
     await cases.confirmReview(caseId, draft.value, reviewed.value, reviewScenario)
     if (!pageActive || route.params.caseId !== caseId) return
     draft.value = null
     evidence.value = null
     dirty.value = false
+    await router.push({ name: 'SimulationProgress', params: { caseId } })
   } catch (error) { if (pageActive && route.params.caseId === caseId) actionError.value = error.message }
   finally { if (route.params.caseId === caseId) busy.value = '' }
 }
@@ -190,6 +206,7 @@ watch(() => entry.value?.processingStatus, (status) => {
   }
 })
 onBeforeUnmount(() => { loadSequence += 1; pageActive = false; clearInterval(expiryTimer) })
+watch(editorPending, value => { if (value) reviewed.value = false }, { flush: 'sync' })
 
 </script>
 
@@ -208,17 +225,17 @@ onBeforeUnmount(() => { loadSequence += 1; pageActive = false; clearInterval(exp
     <section v-else aria-labelledby="review-title">
       <nav class="breadcrumb" :aria-label="$t(&quot;Breadcrumb&quot;)">
         <RouterLink :to="{ name: 'PublishedJobs' }">{{ $t("Jobs") }}</RouterLink><span aria-hidden="true">/</span>
-        <span>{{ entry.jobTitle }}</span><span aria-hidden="true">/</span><span aria-current="page">{{ $t("Review Facts") }}</span>
+        <span>{{ entry.jobTitle }}</span><span aria-hidden="true">/</span><span aria-current="page">{{ $t('Review CV') }}</span>
       </nav>
-      <h1 id="review-title">{{ $t("Review Your CV Facts") }}</h1>
-      <p class="subtitle">{{ $t("Check professional facts against short evidence excerpts and correct missing or uncertain values.") }}</p>
+      <h1 id="review-title">{{ $t('Review your CV') }}</h1>
+      <p class="subtitle">{{ $t('Check each CV section against the available excerpts, and correct or add any details.') }}</p>
       <p class="case-context">{{ entry.jobTitle }} {{ $t("· Version") }} {{ entry.version }} · {{ entry.caseId }}</p>
       <ElAlert type="info" :closable="false"
         :title="$t(&quot;Frontend demo: these fixed sample facts and excerpts are unrelated to your PDF. Changes stay in memory and disappear on refresh or sign out. No assessment is run on this page.&quot;)" />
       <CaseProgressStepper :current-step="1" :review-confirmed="confirmed" />
       <div v-if="confirmed" class="state-panel confirmed-panel" role="status">
-        <h2>{{ $t("Facts Confirmed") }}</h2>
-        <p>{{ $t("Your professional facts are saved and locked in this demo session. Temporary file metadata and the editable draft have been cleared.") }}</p>
+        <h2>{{ $t('Review confirmed') }}</h2>
+        <p>{{ $t('Your review is confirmed and editing is locked in this demo session. Temporary file metadata and the editable draft have been cleared.') }}</p>
         <p>{{ $t("Continue to the simulation progress page to run or check the automated demo stages.") }}</p>
         <ElButton type="primary" @click="router.push({ name: 'SimulationProgress', params: { caseId: entry.caseId } })">{{ $t("Continue to Simulation") }}</ElButton>
         <ElButton @click="router.push({ name: 'PublishedJobs' })">{{ $t("Back to Jobs") }}</ElButton>
@@ -231,52 +248,49 @@ onBeforeUnmount(() => { loadSequence += 1; pageActive = false; clearInterval(exp
           :title="$t(&quot;No professional facts were extracted in this demo scenario. Add facts manually or explicitly confirm that a group has no facts to report.&quot;)" />
         <ElAlert v-if="!noFacts && unresolvedFacts" class="review-notice" type="warning" :closable="false"
           :title="$t(&quot;Some sample facts are missing or conflicting. Resolve required facts before confirming.&quot;)" />
-        <div class="fact-tabs" role="tablist" :aria-label="$t('CV sections')">
-          <button v-for="group in visibleGroups" :key="group.key" type="button" role="tab" class="fact-tab"
-            :class="{ active: activeDefinition.key === group.key }" :aria-selected="activeDefinition.key === group.key"
-            @click="activeGroup = group.key">
-            {{ $t(group.label) }}<em>{{ groupData(group).items.length }}</em>
-            <i v-if="groupHasError(group)" class="tab-error" :aria-label="$t('Needs attention')" />
-          </button>
-        </div>
-        <div class="review-grid">
-          <div class="fact-column" role="tabpanel">
-            <FactGroupEditor :key="activeDefinition.key" :definition="activeDefinition"
-              :group="groupData(activeDefinition)" :required="draft.requiredGroups.includes(activeDefinition.key)"
-              :errors="errors" :disabled="Boolean(busy)" @change="markChanged" @add="addItem(activeDefinition)"
-              @remove="removeItem(activeDefinition, $event)" @evidence="showEvidence" />
-          </div>
-          <aside class="evidence-column"><EvidencePanel :selection="evidence" @back="returnToFact" /></aside>
-        </div>
-        <section v-if="entry.researchAllowed" class="research-panel" aria-labelledby="research-title">
+        <CvFactsEditor v-model="editorFacts" :counts="editorCounts" :focus-section="activeGroup" :locked="Boolean(busy)" @pending-change="editorPending = $event">
+          <template #skills-footer>
+            <p v-if="groupHasError(factGroups[0])" class="skill-error" role="alert">{{ $t(errors.skills || Object.entries(errors).find(([key]) => key.startsWith('skills.'))?.[1]) }}</p>
+            <ElCheckbox v-if="!draft.professional.skills.items.length" v-model="draft.professional.skills.confirmedAbsent" :disabled="Boolean(busy)" @change="markChanged">{{ $t('I have reviewed this section and have no further extracted facts to confirm.') }}</ElCheckbox>
+          </template>
+          <template #section="{ group }">
+            <FactGroupEditor v-if="visibleGroups.find(item => item.key === group)" :key="group" :definition="visibleGroups.find(item => item.key === group)"
+              :group="groupData(visibleGroups.find(item => item.key === group))" :required="draft.requiredGroups.includes(group)"
+              :errors="errors" :disabled="Boolean(busy)" @change="markChanged" @add="addItem(visibleGroups.find(item => item.key === group))"
+              @remove="removeItem(visibleGroups.find(item => item.key === group), $event)" @evidence="showEvidence" />
+          </template>
+        </CvFactsEditor>
+        <EvidencePanel v-if="evidence" :selection="evidence" @back="returnToFact" />
+        <details v-if="entry.researchAllowed" class="research-panel" :open="researchOpen" @toggle="researchOpen = $event.target.open">
+          <summary>{{ $t("Optional settings — saved with your review") }}</summary>
           <h2 id="research-title">{{ $t("Optional Research Details") }}</h2>
           <p>{{ $t("Enabled by a demo permission flag. These details are saved separately from professional facts. Leave UNKNOWN when you do not wish to provide a value; no value is inferred.") }}</p>
           <p>{{ $t("These local text values demonstrate the form only. The future research schema will define permitted categories.") }}</p>
           <div class="research-grid"><div v-for="field in researchFields" :key="field.key">
             <label :for="`research-${field.key}`">{{ $t(field.label) }}</label>
             <ElInput :id="`research-${field.key}`" v-model="research[field.key]" :disabled="Boolean(busy)" maxlength="80"
-              @input="researchDirty = true; researchConfirmed = false; feedback = ''" />
+              @input="researchDirty = true; researchConfirmed = false; reviewed = false; feedback = ''" />
           </div></div>
           <ElCheckbox v-model="researchConfirmed" :disabled="Boolean(busy)">{{ $t("I confirm the optional details I chose to provide.") }}</ElCheckbox>
-          <div class="research-actions"><ElButton :disabled="Boolean(busy)" :loading="busy === 'research'" @click="saveOptionalDetails">{{ $t("Save Optional Details") }}</ElButton>
+          <div class="research-actions">
             <ElButton v-if="researchDirty" text :disabled="Boolean(busy)"
-              @click="research = { ...entry.researchAttributes }; researchDirty = false; researchConfirmed = false">{{ $t("Restore Saved Optional Details") }}</ElButton></div>
-        </section>
+              @click="research = { ...entry.researchAttributes }; researchDirty = false; researchConfirmed = false; reviewed = false">{{ $t("Restore Saved Optional Details") }}</ElButton></div>
+        </details>
         <div class="confirmation-panel">
-          <p>{{ $t(dirty ? 'You have unsaved professional changes.' : 'Professional draft is saved in this demo session.') }}</p>
-          <p>{{ $t("Save Changes can keep an incomplete draft. Confirm Facts saves the valid professional draft and locks editing. Continue to Simulation after confirmation to run the demo.") }}</p>
-          <ElCheckbox v-model="reviewed" :disabled="Boolean(busy)">{{ $t("I have reviewed the professional facts and confirm that they are correct.") }}</ElCheckbox>
+          <p>{{ $t(dirty || editorPending ? 'You have unsaved CV changes.' : 'Your CV draft is saved in this demo session.') }}</p>
+          <p>{{ $t("Save All Changes keeps an incomplete draft. Confirm and Continue saves your choices, locks valid facts and opens simulation progress.") }}</p>
+          <ElCheckbox v-model="reviewed" :disabled="Boolean(busy) || editorPending">{{ $t('I have reviewed my CV information and any optional inputs I chose to use.') }}</ElCheckbox>
           <ElAlert v-if="actionError" class="action-feedback" type="error" :closable="false" :title="$t(actionError)" />
           <ElAlert v-if="feedback" class="action-feedback" type="success" :closable="false" :title="$t(feedback)" />
-          <div class="page-actions"><ElButton :disabled="Boolean(busy)" @click="confirmDelete = true">{{ $t("Cancel and Delete") }}</ElButton>
-            <ElButton :disabled="Boolean(busy)" :loading="busy === 'save'" @click="saveChanges">{{ $t("Save Changes") }}</ElButton>
-            <ElButton type="primary" :disabled="Boolean(busy)" :loading="busy === 'confirm'" @click="confirmFacts">{{ $t("Confirm Facts") }}</ElButton></div>
+          <div class="page-actions"><ElButton type="danger" plain :disabled="Boolean(busy)" @click="confirmDelete = true">{{ $t('Delete simulation') }}</ElButton>
+            <ElButton :disabled="Boolean(busy) || editorPending" :loading="busy === 'save'" @click="saveChanges">{{ $t("Save All Changes") }}</ElButton>
+            <ElButton type="primary" :disabled="Boolean(busy) || editorPending || !reviewed" :loading="busy === 'confirm'" @click="confirmFacts">{{ $t("Confirm and Continue") }}</ElButton></div>
         </div>
       </template>
     </section>
-    <ElDialog v-model="confirmDelete" :title="$t(&quot;Cancel and delete this demo case?&quot;)" width="min(460px, calc(100% - 32px))" :close-on-click-modal="false">
+    <ElDialog v-model="confirmDelete" :title="$t('Delete this demo simulation?')" width="min(460px, calc(100% - 32px))" :close-on-click-modal="false">
       <p>{{ $t("The professional draft, optional details and file metadata will be removed from this session. You will return to My simulations.") }}</p>
-      <template #footer><ElButton @click="confirmDelete = false">{{ $t("Keep Case") }}</ElButton><ElButton type="danger" @click="deleteCase">{{ $t("Delete Demo Case") }}</ElButton></template>
+      <template #footer><ElButton @click="confirmDelete = false">{{ $t('Keep simulation') }}</ElButton><ElButton type="danger" @click="deleteCase">{{ $t('Delete demo simulation') }}</ElButton></template>
     </ElDialog>
   </CandidateLayout>
 </template>
@@ -290,6 +304,7 @@ h2 { font-size: 17px; color: var(--sr-text); }
 .subtitle { color: var(--sr-text-muted); font-size: 14px; line-height: 1.8; margin: 10px 0 16px; }
 .case-context { margin: 0 0 20px; color: var(--sr-text-muted); font-size: 12px; line-height: 1.8; }
 .review-notice { margin-bottom: 20px; }
+.skill-error { color:var(--el-color-danger); font-size:13px; }
 .review-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 22px; align-items: start; }
 .fact-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .evidence-column { position: sticky; top: 104px; min-width: 0; }
@@ -308,10 +323,12 @@ h2 { font-size: 17px; color: var(--sr-text); }
 .state-panel h2 { font-size: 22px; }
 .confirmed-panel h2 { color: #218458; }
 .research-panel, .confirmation-panel { margin-top: 24px; }
+.research-panel summary { cursor:pointer; font-weight:600; color:var(--sr-ink); }
+.research-panel summary:focus-visible { outline:2px solid var(--sr-primary); outline-offset:4px; }
 .research-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
 .research-grid label { display: block; margin-bottom: 7px; font-size: 13px; color: var(--sr-text-secondary); }
 .research-actions, .page-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
-.page-actions .el-button, .research-actions .el-button { margin: 0; }
+.page-actions .el-button, .research-actions .el-button { margin: 0; white-space:normal; height:auto; min-height:34px; max-width:100%; line-height:1.5; }
 .page-actions .el-button:first-child { margin-right: auto; }
 .action-feedback { margin-top: 16px; }
 :deep(.el-checkbox) { height: auto; }

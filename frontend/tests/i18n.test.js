@@ -120,8 +120,8 @@ test('workspace steps and result cards render in all three languages', async () 
       const app = createSSRApp(components[0])
       app.config.globalProperties.$t = i18n.t
       const html = await renderToString(app)
-      assert.ok(html.includes(i18n.t('Upload CV')))
-      assert.ok(html.includes(i18n.t('Review Facts')))
+      assert.ok(html.includes(i18n.t('Choose CV')))
+      assert.ok(html.includes(i18n.t('Review CV')))
       const results = createSSRApp(components[1], { title: 'Neutral ML', status: 'Complete', decision: 'Accept', score: 0.9 })
       results.config.globalProperties.$t = i18n.t
       const resultHtml = await renderToString(results)
