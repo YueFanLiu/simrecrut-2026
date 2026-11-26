@@ -1,0 +1,92 @@
+<script setup>
+import { ElButton, ElCheckbox, ElInput, ElOption, ElSelect } from 'element-plus'
+
+const props = defineProps({
+  definition: { type: Object, required: true }, group: { type: Object, required: true },
+  errors: { type: Object, required: true }, required: Boolean, disabled: Boolean,
+})
+const emit = defineEmits(['change', 'add', 'remove', 'evidence'])
+const errorKey = (item, field) => `${props.definition.key}.${item.id}.${field.key}`
+
+function editField(item, field, value) {
+  item[field.key].value = value
+  item[field.key].status = 'USER_SUPPLIED'
+  emit('change')
+}
+</script>
+
+<template>
+  <section class="fact-group" :aria-labelledby="`group-${definition.key}`">
+    <div class="group-heading">
+      <h2 :id="`group-${definition.key}`">{{ $t(definition.label) }}</h2>
+      <span>{{ $t(required ? 'Required by demo criteria' : 'Optional group') }}</span>
+    </div>
+    <p v-if="definition.hint" class="group-hint">{{ $t(definition.hint) }}</p>
+    <p v-if="errors[definition.key]" class="field-error" role="alert">{{ $t(errors[definition.key]) }}</p>
+    <p v-if="!group.items.length" class="empty-message">{{ $t('No {group} added.', { group: $t(definition.label) }) }}</p>
+    <article v-for="(item, index) in group.items" :key="item.id" class="fact-item">
+      <div class="item-heading"><h3>{{ $t(definition.singular) }} {{ index + 1 }}</h3>
+        <ElButton text type="danger" :disabled="disabled" :aria-label="$t('Remove {item} {index}', { item: $t(definition.singular), index: index + 1 })"
+          @click="emit('remove', item.id)">{{ $t("Remove") }}</ElButton></div>
+      <div v-for="field in definition.fields" :key="field.key" class="fact-field"
+        :class="{ wide: field.type === 'image' || field.key === 'summary' || definition.fields.length === 1 }">
+        <label :for="`fact-${item.id}-${field.key}`">{{ $t(field.label) }}</label>
+        <div v-if="field.type === 'image'" :id="`fact-${item.id}-${field.key}`" class="photo-field" tabindex="-1">
+          <img v-if="item[field.key].value" :src="item[field.key].value" :alt="$t(field.label)" />
+          <span v-else>{{ $t("No photo in this CV") }}</span>
+          <ElButton v-if="item[field.key].value" text type="danger" :disabled="disabled" @click="editField(item, field, '')">{{ $t("Remove photo") }}</ElButton>
+        </div>
+        <ElSelect v-else-if="field.options" :id="`fact-${item.id}-${field.key}`" :model-value="item[field.key].value"
+          :aria-label="$t(definition.singular) + ' ' + (index + 1) + ': ' + $t(field.label)" :disabled="disabled" :placeholder="$t(&quot;Choose a value&quot;)"
+          :aria-invalid="Boolean(errors[errorKey(item, field)])" :aria-describedby="errors[errorKey(item, field)] ? `error-${item.id}-${field.key}` : undefined"
+          @update:model-value="editField(item, field, $event)">
+          <ElOption v-for="option in field.options" :key="option" :value="option" :label="$t(option)" />
+        </ElSelect>
+        <ElInput v-else :id="`fact-${item.id}-${field.key}`" :model-value="item[field.key].value"
+          :aria-label="$t(definition.singular) + ' ' + (index + 1) + ': ' + $t(field.label)" :disabled="disabled"
+          :type="field.type === 'number' ? 'number' : field.key === 'summary' ? 'textarea' : 'text'"
+          :min="field.type === 'number' ? 0 : undefined" :max="field.type === 'number' ? field.max : undefined"
+          :maxlength="field.type === 'number' ? undefined : field.max" :rows="2"
+          :aria-invalid="Boolean(errors[errorKey(item, field)])" :aria-describedby="errors[errorKey(item, field)] ? `error-${item.id}-${field.key}` : undefined"
+          @update:model-value="editField(item, field, $event)" />
+        <p v-if="errors[errorKey(item, field)]" :id="`error-${item.id}-${field.key}`" class="field-error" role="alert">{{ $t(errors[errorKey(item, field)]) }}</p>
+        <div class="field-actions"><span>{{ $t(item[field.key].status.replaceAll('_', ' ')) }}</span>
+          <ElButton text :aria-label="$t('View evidence for {item} {index}: {field}', { item: $t(definition.singular), index: index + 1, field: $t(field.label) })"
+            @click="emit('evidence', { label: `${definition.singular} ${index + 1}: ${field.label}`, field: item[field.key], itemId: item.id, inputId: `fact-${item.id}-${field.key}` })">{{ $t("View Evidence") }}</ElButton>
+          <ElButton v-if="['UNKNOWN', 'CONFLICT'].includes(item[field.key].status) && String(item[field.key].value).trim()"
+            text :disabled="disabled" @click="editField(item, field, item[field.key].value)">{{ $t("Use This Value") }}</ElButton>
+        </div>
+      </div>
+    </article>
+    <ElCheckbox v-if="!group.items.length" v-model="group.confirmedAbsent" :disabled="disabled" @change="emit('change')"> {{ $t('I confirm I have no {group} to report.', { group: $t(definition.label) }) }} </ElCheckbox>
+    <ElButton class="add-button" :disabled="disabled" @click="emit('add')">{{ $t("Add") }} {{ $t(definition.singular) }}</ElButton>
+  </section>
+</template>
+
+<style scoped>
+.fact-group { padding: 24px; border: 1px solid var(--sr-border); border-radius: 10px; background: white; }
+.group-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+h2 { margin: 0; color: var(--sr-text); font-size: 17px; }
+.group-hint { margin: 8px 0 0; color: var(--sr-text-muted); font-size: 13px; line-height: 1.6; }
+.group-heading span, .empty-message { color: var(--sr-text-muted); font-size: 12px; line-height: 1.7; }
+.fact-item { margin-top: 18px; padding: 18px; border: 1px solid var(--sr-surface-sunken); border-radius: 8px; background: var(--sr-surface-tint); }
+.item-heading { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 0; }
+/* Short fields sit side by side; photos and long text use the full width. */
+.fact-item { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
+.fact-field { min-width: 0; }
+.fact-field.wide { grid-column: 1 / -1; }
+h3 { margin: 0; color: var(--sr-text-secondary); font-size: 14px; }
+label { display: block; margin-bottom: 7px; color: var(--sr-text-secondary); font-size: 13px; font-weight: 600; }
+.el-select { width: 100%; }
+.photo-field { display: flex; align-items: center; gap: 16px; }
+.photo-field img { width: 72px; height: 72px; object-fit: cover; border-radius: 12px; border: 1px solid var(--sr-border); background: white; }
+.photo-field span { color: var(--sr-text-muted); font-size: 13px; }
+.field-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 5px; }
+.field-actions span { font-size: 10px; color: var(--sr-text-muted); }
+.field-actions .el-button { font-size: 12px; margin: 0; padding: 4px 0; height: auto; }
+.field-error { margin: 7px 0; color: #b42318; font-size: 12px; line-height: 1.7; }
+.add-button { display: block; margin-top: 18px; }
+:deep(.el-checkbox) { height: auto; margin-top: 12px; }
+:deep(.el-checkbox__label) { white-space: normal; font-size: 12px; line-height: 1.7; }
+@media (max-width: 700px) { .fact-group { padding: 20px; } .fact-item { padding: 14px; grid-template-columns: minmax(0, 1fr); } }
+</style>

@@ -1,0 +1,56 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ../backend/java
+    env_file:
+      - ../.env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_PORT: "10000"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+      JOB_RULE_ROOT: /app/model_artifacts/rules
+      MODEL_ARTIFACTS_PATH: /app/model_artifacts
+      CASE_WORKSPACE_PATH: /app/runtime/cases
+      SIMRECRUT_RESUMES_DIRECTORY: /app/runtime/resumes
+    volumes:
+      - ../model_artifacts:/app/model_artifacts:ro
+      - backend-runtime:/app/runtime
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://127.0.0.1:10000/actuator/health/readiness]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 12
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "127.0.0.1:8088:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  backend-runtime:

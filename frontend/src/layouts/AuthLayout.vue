@@ -1,0 +1,82 @@
+<script setup>
+import BrandMark from '../components/simrecrut/BrandMark.vue'
+import { demoMode } from '../config/runtime.js'
+import illustration from '../assets/recruitment-illustration.svg'
+
+defineProps({ titleId: { type: String, default: 'login-title' } })
+</script>
+
+<template>
+  <main class="auth-layout">
+    <div class="auth-content">
+      <section class="brand-panel" :aria-label="$t(&quot;About SimRecrut&quot;)">
+        <div class="brand-intro">
+          <BrandMark />
+          <p>{{ $t("A recruitment simulator for") }}<br class="desktop-break" /> {{ $t("fairness research") }}</p>
+        </div>
+        <img class="recruitment-illustration" :src="illustration" alt="" />
+        <p class="brand-caption">{{ $t("Compare") }} <span>·</span> {{ $t("Understand") }} <span>·</span> {{ $t("Support Fairer Decisions") }}</p>
+      </section>
+      <section class="auth-card" :aria-labelledby="titleId">
+        <slot />
+      </section>
+    </div>
+    <footer>{{ $t("SimRecrut") }} <span>·</span> {{ $t(demoMode ? 'Frontend demonstration' : 'Recruitment and fairness research') }}</footer>
+  </main>
+</template>
+
+<style scoped>
+.auth-layout {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px 32px 24px;
+  background:
+    radial-gradient(ellipse at 12% 50%, var(--sr-primary-100) 0, transparent 55%),
+    radial-gradient(circle at 92% 92%, var(--sr-accent-50) 0, transparent 38%),
+    var(--sr-page);
+}
+.auth-content {
+  width: min(1060px, 100%);
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  align-items: center;
+  gap: 48px;
+}
+.brand-panel { min-width: 0; }
+.brand-intro { padding: 0 40px; }
+.brand-intro p { margin: 18px 0 0 54px; color: var(--sr-text-secondary); font-size: 19px; line-height: 1.55; font-weight: 500; }
+.recruitment-illustration { display: block; width: 100%; margin-top: 32px; }
+.brand-caption { text-align: center; font-size: 13px; color: var(--sr-text-muted); margin: 20px 0 0; }
+.brand-caption span { margin: 0 9px; color: var(--sr-accent); font-weight: 700; }
+.auth-card {
+  position: relative;
+  overflow: hidden;
+  padding: 40px;
+  border: 1px solid var(--sr-border);
+  border-radius: var(--sr-radius-lg);
+  background: var(--sr-surface);
+  box-shadow: var(--sr-shadow-lg);
+}
+.auth-card::before { content: ''; position: absolute; inset: 0 0 auto; height: 5px; background: var(--sr-brand-gradient); }
+footer { margin-top: 40px; text-align: center; color: var(--sr-text-muted); font-size: 12px; }
+footer span { margin: 0 8px; }
+@media (max-width: 900px) {
+  .auth-content { gap: 24px; grid-template-columns: 1fr 1fr; }
+  .brand-intro { padding: 0; }
+  .brand-intro p { margin-left: 0; }
+  .auth-card { padding: 30px; }
+  .brand-caption { line-height: 1.8; }
+}
+@media (max-width: 700px) {
+  .auth-layout { padding: 28px 16px 20px; }
+  .auth-content { max-width: 440px; grid-template-columns: 1fr; gap: 24px; }
+  .brand-intro { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .brand-intro p { font-size: 14px; margin-top: 8px; }
+  .desktop-break, .recruitment-illustration, .brand-caption { display: none; }
+  .auth-card { padding: 28px 24px; border-radius: 12px; }
+  footer { margin-top: 24px; }
+}
+</style>

@@ -1,0 +1,119 @@
+<script setup>
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { ElAlert, ElButton, ElDrawer, ElEmpty, ElInput, ElOption, ElPagination, ElSelect, ElSkeleton, ElTag } from 'element-plus'
+import AdminLayout from '../../../layouts/AdminLayout.vue'
+import { useAuthStore } from '../../../store/modules/auth.js'
+import { filterFrozenProtocols, listFrozenProtocols, readFrozenProtocol } from '../../../mock/admin-protocols.js'
+import { adminProtocolsScenario } from '../../../config/demo.js'
+
+const auth = useAuthStore()
+const rows = ref([]), loading = ref(false), error = ref(''), detailError = ref(''), detailLoading = ref(false)
+const drawer = ref(false), selected = ref(null), selectedVersion = ref(''), page = ref(1), pageSize = ref(10)
+const filters = reactive({ keyword: '', type: '', status: '' })
+const filtered = computed(() => filterFrozenProtocols(rows.value, filters))
+const visible = computed(() => filtered.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value))
+// Null means the fixture has no value; it is shown as Unavailable and never as zero.
+const configuration = computed(() => selected.value ? [
+  ['Protocol Version', selected.value.version], ['Feature Schema', selected.value.schema],
+  ['Preprocessing Version', selected.value.preprocessing], ['ML Cutoff', selected.value.cutoff],
+  ['Model Type', selected.value.modelTypes.join(' / ')], ['Label configuration', null], ['Feature ordering', null],
+  ['Category mappings', null], ['Preprocessing parameters', null], ['Objective rule threshold', null],
+] : [])
+let active = true, listRequest = 0, detailRequest = 0
+const delay = () => new Promise(resolve => setTimeout(resolve, 400))
+watch(filters, () => { page.value = 1 })
+watch(pageSize, () => { page.value = 1 })
+function resetFilters() { Object.assign(filters, { keyword: '', type: '', status: '' }) }
+async function load() {
+  const request = ++listRequest, user = auth.demoUser
+  const current = () => active && request === listRequest && auth.demoUser === user
+  detailRequest += 1; drawer.value = false; selected.value = null
+  loading.value = true; error.value = ''; rows.value = []
+  try {
+    const result = await listFrozenProtocols(user)
+    await delay()
+    if (adminProtocolsScenario === 'load-error') throw new Error('Frozen protocols could not be loaded. Refresh to try again.')
+    if (current()) { rows.value = adminProtocolsScenario === 'empty' ? [] : result; page.value = 1 }
+  } catch (failure) { if (current()) error.value = failure.message }
+  finally { if (current()) loading.value = false }
+}
+async function viewProtocol(version) {
+  const request = ++detailRequest, user = auth.demoUser
+  const current = () => active && request === detailRequest && drawer.value && auth.demoUser === user
+  selectedVersion.value = version; selected.value = null; detailError.value = ''; drawer.value = true; detailLoading.value = true
+  try {
+    const result = await readFrozenProtocol(version, user)
+    await delay()
+    if (adminProtocolsScenario === 'detail-error') throw new Error('Protocol details could not be loaded. Refresh the details to try again.')
+    if (current()) selected.value = result
+  } catch (failure) { if (current()) detailError.value = failure.message }
+  finally { if (current()) detailLoading.value = false }
+}
+onBeforeUnmount(() => { active = false; listRequest += 1; detailRequest += 1 })
+load()
+</script>
+
+<template>
+  <AdminLayout>
+    <section aria-labelledby="protocols-title" :aria-busy="loading">
+      <div class="heading"><div><p class="breadcrumb">{{ $t("Administration / Protocols") }}</p><h1 id="protocols-title">{{ $t("Frozen Protocols") }}</h1><p>{{ $t("Inspect fixed assessment configuration and version references.") }}</p></div><ElButton :loading="loading" :disabled="loading" @click="load">{{ $t("Refresh") }}</ElButton></div>
+      <ElAlert type="info" :closable="false" :title="$t(&quot;Read-only frontend demonstration. This synthetic summary does not execute matching, generate labels or change models and historical results. Missing configuration is marked Unavailable.&quot;)" />
+      <form class="filters panel" @submit.prevent="page = 1">
+        <label>{{ $t("Search") }}<ElInput v-model="filters.keyword" :aria-label="$t(&quot;Search protocols&quot;)" :placeholder="$t(&quot;Name, version, schema or description&quot;)" clearable /></label>
+        <label>{{ $t("Model Type") }}<ElSelect v-model="filters.type" :aria-label="$t(&quot;Model Type&quot;)" :placeholder="$t(&quot;All model types&quot;)" clearable><ElOption :label="$t(&quot;Neutral ML&quot;)" value="Neutral ML" /><ElOption :label="$t(&quot;Biased ML&quot;)" value="Biased ML" /></ElSelect></label>
+        <label>{{ $t("Status") }}<ElSelect v-model="filters.status" :aria-label="$t(&quot;Status&quot;)" :placeholder="$t(&quot;All statuses&quot;)" clearable><ElOption :label="$t(&quot;Frozen&quot;)" value="Frozen" /></ElSelect></label>
+        <ElButton native-type="button" @click="resetFilters">{{ $t("Reset") }}</ElButton>
+      </form>
+      <div class="panel results">
+        <div class="list-heading"><h2>{{ $t("Protocol Versions") }}</h2><span>{{ filtered.length }} {{ $t(filtered.length === 1 ? 'version' : 'versions') }}</span></div>
+        <ElSkeleton v-if="loading" :rows="5" animated />
+        <ElAlert v-else-if="error" type="error" :closable="false" :title="$t(error)" />
+        <ElEmpty v-else-if="!filtered.length" :description="$t(rows.length ? 'No protocols match your filters.' : 'No frozen protocols are available.')" />
+        <template v-else>
+          <table class="protocol-table"><thead><tr><th>{{ $t("Protocol / Version") }}</th><th>{{ $t("Model Type") }}</th><th>{{ $t("Feature Schema") }}</th><th>{{ $t("Cutoff") }}</th><th>{{ $t("Status") }}</th><th>{{ $t("Action") }}</th></tr></thead><tbody><tr v-for="row in visible" :key="row.version"><td><strong>{{ row.name }}</strong><p>{{ row.version }}</p><small>{{ row.description }}</small></td><td>{{ $t(row.modelTypes.join(' / ')) }}</td><td>{{ row.schema }}</td><td>{{ row.cutoff }}</td><td><ElTag type="info">{{ $t(row.status) }}</ElTag></td><td><ElButton type="primary" plain @click="viewProtocol(row.version)">{{ $t("View Protocol") }}</ElButton></td></tr></tbody></table>
+          <div class="protocol-cards"><article v-for="row in visible" :key="row.version"><div class="list-heading"><h3>{{ row.name }}</h3><ElTag type="info">{{ $t("Frozen") }}</ElTag></div><p>{{ row.version }}</p><p>{{ row.description }}</p><dl><dt>{{ $t("Feature Schema") }}</dt><dd>{{ row.schema }}</dd><dt>{{ $t("Cutoff") }}</dt><dd>{{ row.cutoff }}</dd><dt>{{ $t("Model Type") }}</dt><dd>{{ $t(row.modelTypes.join(' / ')) }}</dd></dl><ElButton type="primary" plain @click="viewProtocol(row.version)">{{ $t("View Protocol") }}</ElButton></article></div>
+          <ElPagination v-model:current-page="page" v-model:page-size="pageSize" :total="filtered.length" :page-sizes="[10, 20]" layout="prev, pager, next" :aria-label="$t(&quot;Protocol pagination&quot;)" />
+        </template>
+      </div>
+    </section>
+    <ElDrawer v-model="drawer" :title="$t(&quot;Protocol Details&quot;)" size="min(620px, 100%)" @closed="detailRequest += 1">
+      <ElSkeleton v-if="detailLoading" :rows="8" animated />
+      <div v-else-if="detailError"><ElAlert type="error" :closable="false" :title="$t(detailError)" /><ElButton class="retry" @click="viewProtocol(selectedVersion)">{{ $t("Refresh") }}</ElButton></div>
+      <div v-else-if="selected" class="details">
+        <ElTag type="info">{{ $t("Frozen / Read only") }}</ElTag><h2>{{ selected.name }}</h2><p>{{ selected.description }}</p>
+        <dl><dt>{{ $t("Protocol Version") }}</dt><dd>{{ selected.version }}</dd><dt>{{ $t("Feature Schema") }}</dt><dd>{{ selected.schema }}</dd><dt>{{ $t("Preprocessing Version") }}</dt><dd>{{ selected.preprocessing }}</dd><dt>{{ $t("ML Cutoff") }}</dt><dd>{{ selected.cutoff }}</dd><dt>{{ $t("Model Type") }}</dt><dd>{{ $t(selected.modelTypes.join(' / ')) }}</dd><dt>{{ $t("Frozen At") }}</dt><dd>{{ $t("Unavailable in this demo fixture") }}</dd></dl>
+        <h3>{{ $t("Frozen Matching Configuration") }}</h3><p>{{ selected.matching }}</p>
+        <h3>{{ $t("Frozen Label Configuration") }}</h3><p>{{ $t(selected.labels) }}</p>
+        <h3>{{ $t("Feature Schema & Preprocessing") }}</h3><p>{{ selected.inputs }}</p><p>{{ selected.encoding }}</p>
+        <h3>{{ $t("Cutoff Context") }}</h3><p>{{ selected.threshold }}</p>
+        <h3>{{ $t("Configuration Summary") }}</h3><p>{{ $t("Read only. Unavailable means the configuration is missing; it is never interpreted as zero.") }}</p>
+        <ul class="config-list" :aria-label="$t(&quot;Read-only protocol configuration&quot;)"><li v-for="[name, value] in configuration" :key="name"><span>{{ $t(name) }}</span>
+          <ElTag v-if="value === null" type="info" size="small">{{ $t("Unavailable") }}</ElTag><strong v-else>{{ $t(String(value)) }}</strong></li></ul>
+      </div>
+    </ElDrawer>
+  </AdminLayout>
+</template>
+
+<style scoped>
+.heading, .list-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.heading { margin-bottom: 24px; }
+h1 { margin: 8px 0; font-size: 28px; color: var(--sr-text); }
+h2 { font-size: 18px; } h3 { font-size: 15px; }
+p, dd, small { color: var(--sr-text-muted); line-height: 1.7; }
+.breadcrumb { font-size: 12px; }
+.panel { border: 1px solid var(--sr-border); border-radius: 8px; background: white; padding: 22px; margin-top: 22px; }
+.filters { display: grid; grid-template-columns: minmax(180px, 2fr) minmax(120px, 1fr) minmax(100px, 1fr) auto; gap: 16px; align-items: end; }
+label { display: flex; flex-direction: column; gap: 8px; font-size: 13px; min-width: 0; }
+label .el-select { width: 100%; }
+.list-heading { margin-bottom: 16px; }.list-heading h2 { margin: 0; }.list-heading span { color: var(--sr-text-muted); font-size: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; } th { text-align: left; color: var(--sr-text-muted); background: var(--sr-surface-tint); } td, th { padding: 14px 10px; border-bottom: 1px solid var(--sr-border); } td { overflow-wrap: anywhere; } td p { margin: 6px 0; } td:first-child { width: 30%; } small { font-size: 12px; }
+.el-pagination { margin-top: 20px; justify-content: end; }
+.protocol-cards { display: none; }
+dl { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 13px; } dt { font-weight: 600; color: var(--sr-text-secondary); } dd { margin: 0; overflow-wrap: anywhere; }
+.details { overflow-wrap: anywhere; }.details h3 { margin-top: 26px; } .config-list { list-style: none; margin: 0; padding: 4px 16px; background: var(--sr-surface-tint); border: 1px solid var(--sr-border); border-radius: var(--sr-radius); }
+.config-list li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 0; font-size: 13px; border-bottom: 1px solid var(--sr-border); }
+.config-list li:last-child { border-bottom: 0; } .config-list span { color: var(--sr-text-muted); } .config-list strong { color: var(--sr-ink); font-weight: 600; text-align: right; }.retry { margin-top: 16px; }
+@media (max-width: 1100px) { .filters { grid-template-columns: 1fr 1fr; } .filters .el-button { justify-self: start; } }
+@media (max-width: 760px) { .heading { align-items: start; flex-wrap: wrap; } h1 { font-size: 24px; }.protocol-table { display: none; }.protocol-cards { display: grid; gap: 16px; }.protocol-cards article { border-bottom: 1px solid var(--sr-border); padding-bottom: 18px; } .list-heading { flex-wrap: wrap; } .panel { padding: 16px; } }
+@media (max-width: 480px) { .filters { grid-template-columns: minmax(0, 1fr); } dl { grid-template-columns: minmax(0, 1fr); gap: 6px; } dd { margin-bottom: 8px; }.details h2 { font-size: 20px; } }
+</style>

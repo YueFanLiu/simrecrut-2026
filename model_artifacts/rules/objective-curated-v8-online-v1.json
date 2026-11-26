@@ -1,0 +1,106 @@
+{
+  "version": "objective-curated-v8-online-v1",
+  "description": "Reviewed professional facts only. Match order and seven-place HALF_UP rounding follow the offline Objective Rule. Alternatives and activity requirements need an explicit reviewed condition code.",
+  "catalogs": {
+    "skillCodes": [
+      "JAVA",
+      "JAVASCRIPT",
+      "TYPESCRIPT",
+      "SPRING_BOOT",
+      "MYSQL",
+      "POSTGRESQL",
+      "SQL",
+      "PYTHON",
+      "GIT",
+      "DOCKER",
+      "HTML",
+      "CSS",
+      "VUE",
+      "REACT",
+      "LINUX",
+      "RUST",
+      "ROCKSDB",
+      "WEBASSEMBLY"
+    ],
+    "roleFamilyCodes": [
+      "BACKEND_DEVELOPER",
+      "SOFTWARE_ENGINEERING",
+      "SOFTWARE_TESTING",
+      "DATA_ANALYSIS"
+    ],
+    "degreeLevelCodes": [
+      "ASSOCIATE",
+      "BACHELOR",
+      "MASTER",
+      "PHD"
+    ],
+    "subjectCodes": [
+      "COMPUTER_SCIENCE",
+      "MATHEMATICS",
+      "ENGINEERING",
+      "BUSINESS",
+      "UNKNOWN"
+    ],
+    "languageCodes": [
+      "EN",
+      "FR",
+      "DE",
+      "ES",
+      "ZH"
+    ],
+    "languageLevelCodes": [
+      "A1",
+      "A2",
+      "B1",
+      "B2",
+      "C1",
+      "C2"
+    ],
+    "conditionCodes": [
+      "REST_API_PROJECT",
+      "SOFTWARE_PROJECT",
+      "DEPLOYMENT",
+      "TEST_SUPPORT",
+      "ENGINEER_MENTORING",
+      "SOLE_QA",
+      "API_DEVELOPMENT",
+      "WEB_APPLICATION"
+    ]
+  },
+  "degreeOrder": [
+    "ASSOCIATE",
+    "BACHELOR",
+    "MASTER",
+    "PHD"
+  ],
+  "languageLevelOrder": [
+    "A1",
+    "A2",
+    "B1",
+    "B2",
+    "C1",
+    "C2"
+  ],
+  "aliases": {
+    "skillCodes": {
+      "Java": "JAVA",
+      "JavaScript": "JAVASCRIPT",
+      "TypeScript": "TYPESCRIPT",
+      "Spring Boot": "SPRING_BOOT",
+      "MySQL": "MYSQL",
+      "PostgreSQL": "POSTGRESQL",
+      "SQL": "SQL",
+      "Python": "PYTHON",
+      "Git": "GIT",
+      "Docker": "DOCKER",
+      "HTML": "HTML",
+      "CSS": "CSS",
+      "Vue": "VUE",
+      "React": "REACT",
+      "Linux": "LINUX",
+      "Rust": "RUST",
+      "RocksDB": "ROCKSDB",
+      "WebAssembly": "WEBASSEMBLY"
+    }
+  }
+}
